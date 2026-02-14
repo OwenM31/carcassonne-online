@@ -22,6 +22,10 @@ export function GameHud({ hud }: GameHudProps) {
   const activePlayer = hud.activePlayer;
   const chipClass = activePlayer ? `hud-chip--${activePlayer.color}` : 'hud-chip--neutral';
   const tileId = hud.currentTileId;
+  const playerColorById = hud.scoreboard.reduce<Record<string, string>>((index, player) => {
+    index[player.id] = player.color;
+    return index;
+  }, {});
 
   return (
     <aside className="card game-hud">
@@ -102,14 +106,18 @@ export function GameHud({ hud }: GameHudProps) {
 
       <div className="hud-section">
         <p className="hud-label">Event log</p>
-        <ol className="hud-events">
+        <ul className="hud-events">
           {hud.eventLog.map((entry, index) => (
-            <li key={`${entry.turn}-${entry.type}-${index}`} className="hud-event">
-              <span className="hud-event__turn">T{entry.turn}</span>
+            <li
+              key={`${entry.turn}-${entry.type}-${index}`}
+              className={`hud-event ${
+                entry.playerId ? `hud-event--${playerColorById[entry.playerId] ?? 'neutral'}` : 'hud-event--neutral'
+              }`}
+            >
               <span className="hud-event__text">{entry.detail}</span>
             </li>
           ))}
-        </ol>
+        </ul>
       </div>
     </aside>
   );

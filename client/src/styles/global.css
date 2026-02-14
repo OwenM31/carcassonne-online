@@ -472,21 +472,48 @@ button.board-tile {
 }
 
 .hud-events {
+  list-style: none;
   margin: 0;
-  padding-left: 1.1rem;
+  padding: 0;
   display: grid;
   gap: 0.35rem;
 }
 
 .hud-event {
   font-size: 0.8rem;
-  color: #4a433a;
+  color: #3e382f;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.6rem;
+  border: 0.08rem solid rgba(45, 39, 32, 0.14);
 }
 
-.hud-event__turn {
-  font-family: var(--font-display);
-  color: var(--color-olive);
-  margin-right: 0.35rem;
+.hud-event__text {
+  display: block;
+}
+
+.hud-event--red {
+  background: rgba(181, 74, 59, 0.16);
+}
+
+.hud-event--blue {
+  background: rgba(79, 111, 168, 0.16);
+}
+
+.hud-event--green {
+  background: rgba(79, 122, 75, 0.16);
+}
+
+.hud-event--yellow {
+  background: rgba(198, 167, 74, 0.2);
+}
+
+.hud-event--black {
+  background: rgba(47, 44, 40, 0.16);
+  color: #2f2c28;
+}
+
+.hud-event--neutral {
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .hud-label {
