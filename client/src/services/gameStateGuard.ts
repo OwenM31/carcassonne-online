@@ -1,0 +1,77 @@
+/**
+ * @description Runtime guard for game state payloads from the server.
+ */
+import type { GameState } from '@carcassonne/shared';
+import {
+  isBoardState,
+  isGameEvent,
+  isGameStatus,
+  isPlacedMeeple,
+  isPlacedTile,
+  isPlayerState,
+  isRecord,
+  isTurnPhase
+} from './gameStateGuardChecks';
+
+export function isGameState(value: unknown): value is GameState {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (typeof value.id !== 'string') {
+    return false;
+  }
+
+  if (!isGameStatus(value.status) || !isTurnPhase(value.phase)) {
+    return false;
+  }
+
+  if (!Array.isArray(value.players) || value.players.some((player) => !isPlayerState(player))) {
+    return false;
+  }
+
+  if (!isBoardState(value.board)) {
+    return false;
+  }
+
+  if (!Array.isArray(value.tileDeck) || value.tileDeck.some((tile) => typeof tile !== 'string')) {
+    return false;
+  }
+
+  if (
+    !Array.isArray(value.tileDiscard) ||
+    value.tileDiscard.some((tile) => typeof tile !== 'string')
+  ) {
+    return false;
+  }
+
+  if (typeof value.startingTileId !== 'string') {
+    return false;
+  }
+
+  if (value.currentTileId !== null && typeof value.currentTileId !== 'string') {
+    return false;
+  }
+
+  if (value.lastPlacedTile !== null && !isPlacedTile(value.lastPlacedTile)) {
+    return false;
+  }
+
+  if (!Array.isArray(value.meeples) || value.meeples.some((meeple) => !isPlacedMeeple(meeple))) {
+    return false;
+  }
+
+  if (!Array.isArray(value.eventLog) || value.eventLog.some((entry) => !isGameEvent(entry))) {
+    return false;
+  }
+
+  if (typeof value.activePlayerIndex !== 'number' || Number.isNaN(value.activePlayerIndex)) {
+    return false;
+  }
+
+  if (typeof value.turnNumber !== 'number' || Number.isNaN(value.turnNumber)) {
+    return false;
+  }
+
+  return value.seed === undefined || typeof value.seed === 'string';
+}

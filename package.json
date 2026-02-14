@@ -1,0 +1,15 @@
+{
+  "name": "carcassonne-online",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "test": "npm -w @carcassonne/shared test && npm -w @carcassonne/server test && npm -w @carcassonne/client test",
+    "build": "npm -w @carcassonne/shared build && npm -w @carcassonne/server build && npm -w @carcassonne/client build",
+    "dev:client": "npm -w @carcassonne/client run dev",
+    "dev:server": "npm -w @carcassonne/server run dev"
+  }
+}

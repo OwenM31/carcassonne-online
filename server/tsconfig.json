@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@carcassonne/shared": ["../shared/src"]
+    }
+  },
+  "include": ["src", "test"]
+}

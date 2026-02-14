@@ -1,0 +1,53 @@
+# Carcassonne Online: Agent Context
+A web-based, online multiplayer clone of the Carcassonne base game.
+
+## 1. Core Tech & Architecture
+
+* **Stack:** React (Atomic Components), Node.js (SOA), Strict TypeScript (No `any`).
+* **Logging:**
+    *  **Frontend:** `loglevel` (wrapped in a utility)
+    * **Backend:** `pino` (JSON in prod, `pino-pretty` in dev)
+* **Rules:** 
+    * **Frontend:** Atomic, reusable components with clear structure. No business logic in `App.tsx`.
+    * **Backend:** Service-Oriented architecture (SOA). Decouple Services (logic) from Controllers (transport).
+    *  Use Dependency Injection for testability.
+* **Styling:** Relative units only (`rem`, `%`, `vh`); no `px`.
+
+## 2. Workflow & Dev Protocol
+
+* **TDD:** Red  Green  Refactor. Run tests every turn.
+* **Git:** Atomic commits on every "Green" state. Format: `type: description`.
+* **Branching:** `feature/name` off `develop`.
+
+## 3. Coding Standards
+
+* **Structure:** Files must include `@description`, grouped imports, and named exports.
+* **Size:** Maximum 200 lines per file; enforce Single Responsibility (SRP).
+* **Clean Code:** Follow DRY and KISS principles.
+
+## 4. Agent Behavior & Memory
+
+* **Clarify:** Ask questions before generating code if requirements are ambiguous.
+* **Update Memory:** Automatically update the **Project Memory** below when:
+1. Architectural decisions are made.
+2. The user states a recurring preference.
+3. A specific "Green" TDD milestone is reached.
+
+---
+
+## 5. Project Memory (Agent to maintain)
+
+* **User Preferences:** Run tests (`npm test`) every turn; commit (`git commit`) on green. 
+* **Current Focus:** Scoring, end-game resolution, undo support, and board-level meeple visualization.
+* **Accomplished:** [Maintain this list with task completions with most recent at the top; ocasionally condense this list]
+    * Add standard scoring engine (during game and final scoring) with meeple return handling
+    * Add friendly undo support with turn-action history
+    * Render on-board meeple indicators by feature anchor
+    * Resolve end-game transition with final scoring when deck is exhausted
+    * Add optional meeple placement phase with skip action and meeple occupancy validation on connected features
+    * Add feature graph analysis for cities/roads/farms/monasteries with open vs closed city/road counters
+    * Add game HUD scoreboard and event log with per-player meeple availability tracking
+    * Shuffle the 72-tile deck at game start
+    * Align placement coordinates with board north-up layout
+    * Create lobby screen
+    * Init project
