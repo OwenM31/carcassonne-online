@@ -245,7 +245,7 @@ export const TILE_CATALOG: TileCatalogEntry[] = [
     startingTileCandidate: false,
     features: {
       edges: edges(CITY, FARM, FARM, CITY),
-      cities: [city(['N', 'W'])],
+      cities: [city(['N']), city(['W'])],
       roads: [],
       farms: [farm(['NE', 'SE', 'SW'])],
       monastery: false

@@ -5,7 +5,7 @@ options:
 
 substitutions:
   _REGION: us-central1
-  _AR_REPOSITORY: carcassonne
+  _AR_REPOSITORY: carcassonne-online
   _SERVER_SERVICE: carcassonne-server
   _CLIENT_SERVICE: carcassonne-client
   _ALLOW_UNAUTHENTICATED: "true"

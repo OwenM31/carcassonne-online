@@ -81,4 +81,13 @@ describe('TILE_CATALOG', () => {
       }
     }
   });
+
+  it('treats T_R2C6 north and west city edges as separate city features', () => {
+    const tile = TILE_CATALOG.find((entry) => entry.id === 'T_R2C6');
+
+    expect(tile).toBeDefined();
+    expect(tile?.features.cities).toHaveLength(2);
+    expect(tile?.features.cities[0]?.edges).toEqual(['N']);
+    expect(tile?.features.cities[1]?.edges).toEqual(['W']);
+  });
 });
