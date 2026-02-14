@@ -9,6 +9,9 @@ substitutions:
   _SERVER_SERVICE: carcassonne-server
   _CLIENT_SERVICE: carcassonne-client
   _ALLOW_UNAUTHENTICATED: "true"
+  _SERVER_TIMEOUT: "3600"
+  _SERVER_MIN_INSTANCES: "1"
+  _SERVER_MAX_INSTANCES: "1"
 
 steps:
   - id: install
@@ -57,6 +60,9 @@ steps:
           --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_SERVER_SERVICE}:$COMMIT_SHA" \
           --platform managed \
           --region "${_REGION}" \
+          --timeout "${_SERVER_TIMEOUT}" \
+          --min-instances "${_SERVER_MIN_INSTANCES}" \
+          --max-instances "${_SERVER_MAX_INSTANCES}" \
           --quiet \
           $${AUTH_FLAG}
 

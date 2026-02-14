@@ -17,6 +17,7 @@ import { createGameController } from '../controllers/gameController';
 import { createLobbyController } from '../controllers/lobbyController';
 import { parseClientMessage } from '../controllers/messageParser';
 import type { SessionService } from '../services/sessionService';
+import { SocketPresenceService } from '../services/socketPresenceService';
 
 interface WsServerOptions {
   server: HttpServer;
@@ -25,7 +26,7 @@ interface WsServerOptions {
 
 export function createWsServer({ server, sessionService }: WsServerOptions) {
   const wss = new WebSocketServer({ server });
-  const sessionBySocket = new Map<WebSocket, { sessionId: SessionId; playerId: string }>();
+  const disconnectGraceMs = Number(process.env.DISCONNECT_GRACE_MS ?? 90_000);
 
   const broadcast = (message: ServerMessage) => {
     const payload = JSON.stringify(message);
@@ -41,6 +42,26 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
       socket.send(JSON.stringify(message));
     }
   };
+
+  const presenceService = new SocketPresenceService(
+    disconnectGraceMs,
+    (sessionId, playerId) => {
+      const session = sessionService.getSession(sessionId);
+      if (!session) {
+        broadcast(buildSessionListMessage(sessionService));
+        return;
+      }
+
+      const lobbyController = createLobbyController(
+        sessionId,
+        session.lobbyService,
+        session.gameService
+      );
+      const response = lobbyController.handleDisconnect(playerId);
+      broadcast(response);
+      broadcast(buildSessionListMessage(sessionService));
+    }
+  );
 
   wss.on('connection', (socket) => {
     socket.on('message', (raw) => {
@@ -107,14 +128,12 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
       }
 
       if (parsed.type === 'join_lobby') {
-        sessionBySocket.set(socket, {
-          sessionId: parsed.sessionId,
-          playerId: parsed.playerId
-        });
+        presenceService.bind(socket, parsed.sessionId, parsed.playerId);
       }
 
       if (parsed.type === 'leave_lobby') {
-        sessionBySocket.delete(socket);
+        presenceService.clearPendingDisconnect(parsed.sessionId, parsed.playerId);
+        presenceService.unbind(socket);
       }
 
       broadcast(response);
@@ -125,27 +144,12 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
     });
 
     socket.on('close', () => {
-      const sessionInfo = sessionBySocket.get(socket);
-      sessionBySocket.delete(socket);
-      if (!sessionInfo) {
-        return;
-      }
-
-      const session = sessionService.getSession(sessionInfo.sessionId);
-      if (!session) {
-        broadcast(buildSessionListMessage(sessionService));
-        return;
-      }
-
-      const lobbyController = createLobbyController(
-        sessionInfo.sessionId,
-        session.lobbyService,
-        session.gameService
-      );
-      const response = lobbyController.handleDisconnect(sessionInfo.playerId);
-      broadcast(response);
-      broadcast(buildSessionListMessage(sessionService));
+      presenceService.scheduleGracefulDisconnect(socket);
     });
+  });
+
+  wss.on('close', () => {
+    presenceService.dispose();
   });
 
   return wss;
@@ -175,9 +179,7 @@ function isGameAction(message: ClientMessage): message is SessionGameAction {
   );
 }
 
-function hasSessionId(
-  message: ClientMessage
-): message is ClientMessage & { sessionId: SessionId } {
+function hasSessionId(message: ClientMessage): message is ClientMessage & { sessionId: SessionId } {
   return 'sessionId' in message && typeof message.sessionId === 'string';
 }
 

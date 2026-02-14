@@ -6,6 +6,7 @@ import type { GameState } from '@carcassonne/shared';
 import { LobbyPanel } from '../organisms/LobbyPanel';
 import { GameScreen } from './GameScreen';
 import { LobbyClient } from '../../services/lobbyClient';
+import { startLobbyConnection } from '../../services/lobbyConnection';
 import { isPlayerInGame } from '../../state/gameSelectors';
 import { applyLobbyMessage, initialLobbyViewState } from '../../state/lobbyState';
 import { loadOrCreatePlayerId } from '../../state/playerIdentity';
@@ -20,12 +21,15 @@ export function LobbyScreen() {
   const [gameError, setGameError] = useState<string | null>(null);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const activeSessionRef = useRef(activeSessionId);
+  const playerNameRef = useRef(playerName);
+  const joinedNameRef = useRef('');
   const [playerId] = useState(() => loadOrCreatePlayerId());
   const [serverUrl] = useState(DEFAULT_SERVER_URL);
   const client = useMemo(() => new LobbyClient(), []);
   const clearActiveSessionState = () => {
     setActiveSessionId(null);
     activeSessionRef.current = null;
+    joinedNameRef.current = '';
     setGame(null);
     setGameError(null);
   };
@@ -41,17 +45,18 @@ export function LobbyScreen() {
   }, [activeSessionId]);
 
   useEffect(() => {
-    client.connect(serverUrl, {
-      onOpen: () => {
-        setConnected(true);
-        client.listSessions();
-      },
-      onClose: () => {
-        setConnected(false);
-      },
-      onError: (message) => {
-        setViewState((prev) => ({ ...prev, error: message }));
-      },
+    playerNameRef.current = playerName;
+  }, [playerName]);
+
+  useEffect(() => {
+    const connection = startLobbyConnection({
+      client,
+      serverUrl,
+      playerId,
+      getActiveSessionId: () => activeSessionRef.current,
+      getReconnectName: () => joinedNameRef.current || playerNameRef.current.trim() || null,
+      setConnected,
+      setError: (message) => setViewState((prev) => ({ ...prev, error: message })),
       onMessage: (message) => {
         const currentSessionId = activeSessionRef.current;
         if (message.type === 'game_started' || message.type === 'game_state') {
@@ -78,8 +83,9 @@ export function LobbyScreen() {
         setViewState((prev) => applyLobbyMessage(prev, message, currentSessionId));
       }
     });
+
     return () => {
-      client.disconnect();
+      connection.stop();
     };
   }, [client, playerId, serverUrl]);
 
@@ -103,6 +109,7 @@ export function LobbyScreen() {
     setViewState((prev) => ({ ...prev, error: null, lobby: null }));
     setActiveSessionId(sessionId);
     activeSessionRef.current = sessionId;
+    joinedNameRef.current = trimmedName;
     setGame(null);
     setGameError(null);
     client.join(sessionId, playerId, trimmedName);

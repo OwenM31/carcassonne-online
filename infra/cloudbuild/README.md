@@ -31,3 +31,6 @@ Create a Cloud Build trigger that points to `cloudbuild.yaml` on your deployment
 - `_SERVER_SERVICE` (default `carcassonne-server`)
 - `_CLIENT_SERVICE` (default `carcassonne-client`)
 - `_ALLOW_UNAUTHENTICATED` (`true` or `false`)
+- `_SERVER_TIMEOUT` (default `3600`)
+- `_SERVER_MIN_INSTANCES` (default `1`)
+- `_SERVER_MAX_INSTANCES` (default `1`)
