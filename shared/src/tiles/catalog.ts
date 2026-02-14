@@ -372,7 +372,7 @@ export const TILE_CATALOG: TileCatalogEntry[] = [
     features: {
       edges: edges(FARM, ROAD, ROAD, ROAD),
       cities: [],
-      roads: [road(['W', 'E', 'S'])],
+      roads: [road(['W']), road(['E']), road(['S'])],
       farms: [farm(['NW', 'NE']), farm(['SW']), farm(['SE'])],
       monastery: false
     }
@@ -386,7 +386,7 @@ export const TILE_CATALOG: TileCatalogEntry[] = [
     features: {
       edges: edges(ROAD, ROAD, ROAD, ROAD),
       cities: [],
-      roads: [road(['N', 'E', 'S', 'W'])],
+      roads: [road(['N']), road(['E']), road(['S']), road(['W'])],
       farms: [farm(['NW']), farm(['NE']), farm(['SE']), farm(['SW'])],
       monastery: false
     }
