@@ -40,6 +40,7 @@ A web-based, online multiplayer clone of the Carcassonne base game.
 * **User Preferences:** Run tests (`npm test`) every turn; commit (`git commit`) on green. 
 * **Current Focus:** Scoring, end-game resolution, undo support, and board-level meeple visualization.
 * **Accomplished:** [Maintain this list with task completions with most recent at the top; ocasionally condense this list]
+    * Add delete-session support in lobby list across shared protocol, server session registry, and client UI
     * Set up Google Cloud Build + Cloud Run CI/CD pipeline for monorepo client/server deployment
     * Add standard scoring engine (during game and final scoring) with meeple return handling
     * Add friendly undo support with turn-action history

@@ -35,6 +35,17 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
     return { type: 'create_session' };
   }
 
+  if (parsed.type === 'delete_session') {
+    if (typeof parsed.sessionId !== 'string') {
+      return null;
+    }
+
+    return {
+      type: 'delete_session',
+      sessionId: parsed.sessionId
+    };
+  }
+
   if (parsed.type === 'join_lobby') {
     if (
       typeof parsed.sessionId !== 'string' ||

@@ -13,6 +13,7 @@ interface LobbyPanelProps {
   onNameChange: (value: string) => void;
   onCreateSession: () => void;
   onJoinSession: (sessionId: string) => void;
+  onDeleteSession: (sessionId: string) => void;
   onLeaveSession: () => void;
   onStartGame: () => void;
   isConnected: boolean;
@@ -29,6 +30,7 @@ export function LobbyPanel({
   onNameChange,
   onCreateSession,
   onJoinSession,
+  onDeleteSession,
   onLeaveSession,
   onStartGame,
   isConnected,
@@ -108,6 +110,7 @@ export function LobbyPanel({
                   const isActive = session.id === activeSessionId;
                   const isInProgress = session.status === 'in_progress';
                   const canJoin = isConnected && !activeSessionId;
+                  const canDelete = isConnected && !activeSessionId;
                   const statusLabel = isInProgress ? 'In progress' : 'Lobby';
 
                   return (
@@ -131,6 +134,14 @@ export function LobbyPanel({
                           onClick={() => onJoinSession(session.id)}
                         >
                           {isActive ? 'Connected' : 'Connect'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={!canDelete}
+                          onClick={() => onDeleteSession(session.id)}
+                        >
+                          Delete
                         </Button>
                       </div>
                     </li>

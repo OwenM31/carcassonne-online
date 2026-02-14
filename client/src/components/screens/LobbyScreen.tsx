@@ -3,7 +3,6 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { GameState } from '@carcassonne/shared';
-
 import { LobbyPanel } from '../organisms/LobbyPanel';
 import { GameScreen } from './GameScreen';
 import { LobbyClient } from '../../services/lobbyClient';
@@ -24,6 +23,18 @@ export function LobbyScreen() {
   const [playerId] = useState(() => loadOrCreatePlayerId());
   const [serverUrl] = useState(DEFAULT_SERVER_URL);
   const client = useMemo(() => new LobbyClient(), []);
+  const clearActiveSessionState = () => {
+    setActiveSessionId(null);
+    activeSessionRef.current = null;
+    setGame(null);
+    setGameError(null);
+  };
+  const withSession = (callback: (sessionId: string) => void) => {
+    if (!activeSessionId) {
+      return;
+    }
+    callback(activeSessionId);
+  };
 
   useEffect(() => {
     activeSessionRef.current = activeSessionId;
@@ -43,40 +54,30 @@ export function LobbyScreen() {
       },
       onMessage: (message) => {
         const currentSessionId = activeSessionRef.current;
-
         if (message.type === 'game_started' || message.type === 'game_state') {
           if (message.sessionId !== currentSessionId) {
             return;
           }
-
           if (!isPlayerInGame(message.game, playerId)) {
-            setGame(null);
+            clearActiveSessionState();
             setGameError('Game in progress.');
-            setActiveSessionId(null);
-            activeSessionRef.current = null;
             return;
           }
-
           setGame(message.game);
           setGameError(null);
           return;
         }
-
         if (message.type === 'error') {
           setViewState((prev) => ({ ...prev, error: message.message }));
           setGameError(message.message);
           if (message.message === 'Game in progress.' || message.message === 'Session not found.') {
-            setActiveSessionId(null);
-            activeSessionRef.current = null;
-            setGame(null);
+            clearActiveSessionState();
           }
           return;
         }
-
         setViewState((prev) => applyLobbyMessage(prev, message, currentSessionId));
       }
     });
-
     return () => {
       client.disconnect();
     };
@@ -94,13 +95,11 @@ export function LobbyScreen() {
     if (!isConnected) {
       return;
     }
-
     const trimmedName = playerName.trim();
     if (!trimmedName) {
       setViewState((prev) => ({ ...prev, error: 'Enter a name to join.' }));
       return;
     }
-
     setViewState((prev) => ({ ...prev, error: null, lobby: null }));
     setActiveSessionId(sessionId);
     activeSessionRef.current = sessionId;
@@ -108,28 +107,32 @@ export function LobbyScreen() {
     setGameError(null);
     client.join(sessionId, playerId, trimmedName);
   };
-
   const handleLeaveSession = () => {
     if (!activeSessionId) {
       return;
     }
-
     client.leave(activeSessionId, playerId);
-    setActiveSessionId(null);
-    activeSessionRef.current = null;
-    setGame(null);
-    setGameError(null);
+    clearActiveSessionState();
     setViewState((prev) => ({ ...prev, lobby: null }));
+  };
+  const handleDeleteSession = (sessionId: string) => {
+    if (!isConnected) {
+      return;
+    }
+    client.deleteSession(sessionId);
+    if (sessionId !== activeSessionRef.current) {
+      return;
+    }
+    clearActiveSessionState();
+    setViewState((prev) => ({ ...prev, lobby: null, error: null }));
   };
 
   const canStartGame =
     isConnected && !!activeSessionId && (viewState.lobby?.players.length ?? 0) >= 2;
-
   const handleStartGame = () => {
     if (!canStartGame || !activeSessionId) {
       return;
     }
-
     client.startGame(activeSessionId, playerId);
   };
 
@@ -138,46 +141,17 @@ export function LobbyScreen() {
       <GameScreen
         game={game}
         playerId={playerId}
-        onDrawTile={() => {
-          if (!activeSessionId) {
-            return;
-          }
-          client.drawTile(activeSessionId, playerId);
-        }}
-        onPlaceTile={(tileId, placement) => {
-          if (!activeSessionId) {
-            return;
-          }
-
-          client.placeTile(
-            activeSessionId,
-            playerId,
-            tileId,
-            placement.position,
-            placement.orientation
-          );
-        }}
-        onPlaceMeeple={(placement) => {
-          if (!activeSessionId) {
-            return;
-          }
-
-          client.placeMeeple(activeSessionId, playerId, placement);
-        }}
-        onSkipMeeple={() => {
-          if (!activeSessionId) {
-            return;
-          }
-
-          client.skipMeeple(activeSessionId, playerId);
-        }}
-        onUndo={() => {
-          if (!activeSessionId) {
-            return;
-          }
-
-          client.undoTurn(activeSessionId, playerId);
-        }}
+        onDrawTile={() => withSession((sessionId) => client.drawTile(sessionId, playerId))}
+        onPlaceTile={(tileId, placement) =>
+          withSession((sessionId) =>
+            client.placeTile(sessionId, playerId, tileId, placement.position, placement.orientation)
+          )
+        }
+        onPlaceMeeple={(placement) =>
+          withSession((sessionId) => client.placeMeeple(sessionId, playerId, placement))
+        }
+        onSkipMeeple={() => withSession((sessionId) => client.skipMeeple(sessionId, playerId))}
+        onUndo={() => withSession((sessionId) => client.undoTurn(sessionId, playerId))}
         error={gameError}
       />
     );
@@ -189,6 +163,7 @@ export function LobbyScreen() {
       onNameChange={setPlayerName}
       onCreateSession={handleCreateSession}
       onJoinSession={handleJoinSession}
+      onDeleteSession={handleDeleteSession}
       onLeaveSession={handleLeaveSession}
       onStartGame={handleStartGame}
       isConnected={isConnected}

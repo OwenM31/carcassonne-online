@@ -34,4 +34,20 @@ describe('InMemorySessionService', () => {
       playerCount: 2
     });
   });
+
+  it('deletes sessions from the registry', () => {
+    const ids = ['session-3', 'session-4'];
+    const service = new InMemorySessionService(() => ids.shift() ?? 'session-fallback');
+    service.createSession();
+    service.createSession();
+
+    const deleted = service.deleteSession('session-3');
+    const missing = service.deleteSession('session-404');
+
+    expect(deleted).toBe(true);
+    expect(missing).toBe(false);
+    expect(service.listSessions()).toEqual([
+      { id: 'session-4', status: 'lobby', playerCount: 0 }
+    ]);
+  });
 });

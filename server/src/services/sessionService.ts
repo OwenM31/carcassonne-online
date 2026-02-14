@@ -18,6 +18,7 @@ export interface SessionService {
   createSession(): SessionRecord;
   getSession(sessionId: SessionId): SessionRecord | null;
   listSessions(): SessionSummary[];
+  deleteSession(sessionId: SessionId): boolean;
 }
 
 type SessionIdFactory = () => SessionId;
@@ -60,6 +61,10 @@ export class InMemorySessionService implements SessionService {
     return Array.from(this.sessions.values()).map((session) =>
       buildSummary(session)
     );
+  }
+
+  deleteSession(sessionId: SessionId): boolean {
+    return this.sessions.delete(sessionId);
   }
 }
 

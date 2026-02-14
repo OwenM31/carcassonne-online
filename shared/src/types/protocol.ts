@@ -15,6 +15,7 @@ import type { SessionId, SessionSummary } from './session';
 export type ClientMessage =
   | { type: 'list_sessions' }
   | { type: 'create_session' }
+  | { type: 'delete_session'; sessionId: SessionId }
   | { type: 'join_lobby'; sessionId: SessionId; playerId: PlayerId; playerName: string }
   | { type: 'leave_lobby'; sessionId: SessionId; playerId: PlayerId }
   | { type: 'start_game'; sessionId: SessionId; playerId: PlayerId }

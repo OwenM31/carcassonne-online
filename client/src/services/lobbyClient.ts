@@ -61,6 +61,10 @@ export class LobbyClient {
     this.send({ type: 'create_session' });
   }
 
+  deleteSession(sessionId: string) {
+    this.send({ type: 'delete_session', sessionId });
+  }
+
   join(sessionId: string, playerId: string, playerName: string) {
     this.send({ type: 'join_lobby', sessionId, playerId, playerName });
   }

@@ -61,6 +61,17 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         return;
       }
 
+      if (parsed.type === 'delete_session') {
+        const deleted = sessionService.deleteSession(parsed.sessionId);
+        if (!deleted) {
+          sendTo(socket, { type: 'error', message: 'Session not found.' });
+          return;
+        }
+
+        broadcast(buildSessionListMessage(sessionService));
+        return;
+      }
+
       if (!hasSessionId(parsed)) {
         sendTo(socket, { type: 'error', message: 'Session id is required.' });
         return;
