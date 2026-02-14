@@ -375,6 +375,7 @@ button.board-tile {
 .board-meeple {
   position: relative;
   pointer-events: none;
+  z-index: 2;
 }
 
 .board-meeple::after {
@@ -389,6 +390,62 @@ button.board-tile {
   border: 0.1rem solid rgba(255, 255, 255, 0.85);
   box-shadow: 0 0.2rem 0.35rem rgba(0, 0, 0, 0.28);
   background: #2f2c28;
+}
+
+.board-meeple__role {
+  position: absolute;
+  left: var(--meeple-x);
+  top: var(--meeple-y);
+  transform: translate(-50%, 0.8rem);
+  font-size: 0.58rem;
+  line-height: 1;
+  text-transform: capitalize;
+  white-space: nowrap;
+  color: #f8f2df;
+  background: rgba(28, 24, 20, 0.85);
+  border-radius: 0.32rem;
+  padding: 0.16rem 0.3rem;
+  box-shadow: 0 0.16rem 0.3rem rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+.board-meeple-target {
+  border: none;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.board-meeple-target::after {
+  width: 1.05rem;
+  height: 1.05rem;
+  border: 0.1rem dashed rgba(194, 112, 63, 0.95);
+  background: rgba(246, 230, 191, 0.68);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
+}
+
+.board-meeple-target .board-meeple__role {
+  color: #fff7ea;
+  background: rgba(194, 112, 63, 0.92);
+}
+
+.board-meeple-target:hover::after {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 0.3rem 0.45rem rgba(56, 34, 19, 0.35);
+  background: rgba(250, 240, 213, 0.86);
+}
+
+.board-meeple-target:focus-visible {
+  outline: 0.14rem solid rgba(194, 112, 63, 0.55);
+  outline-offset: 0.1rem;
+  border-radius: 0.4rem;
+}
+
+.board-meeple-target:disabled {
+  cursor: default;
 }
 
 .board-meeple--red::after {

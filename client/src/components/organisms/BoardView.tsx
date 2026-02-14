@@ -5,6 +5,7 @@ import type { CSSProperties } from 'react';
 
 import type {
   BoardState,
+  MeeplePlacement,
   PlacedMeeple,
   PlayerColor,
   PlacementOption,
@@ -20,7 +21,7 @@ import {
   getTileSheetMetrics,
   toGridPosition
 } from '../../state/boardLayout';
-import { getMeepleAnchor } from '../../state/meepleLayout';
+import { getMeepleAnchor, getMeepleRole } from '../../state/meepleLayout';
 
 const TILE_SIZE_REM = 6;
 const TILE_SHEET_URL = '/tiles.png?v=2';
@@ -35,6 +36,8 @@ interface BoardViewProps {
   placementOptions?: PlacementOption[];
   placementTileId?: TileId | null;
   onPlaceTile?: (placement: PlacementOption) => void;
+  meeplePlacementOptions?: MeeplePlacement[];
+  onPlaceMeeple?: (placement: MeeplePlacement) => void;
 }
 
 export function BoardView({
@@ -44,7 +47,9 @@ export function BoardView({
   highlightTileId,
   placementOptions = [],
   placementTileId,
-  onPlaceTile
+  onPlaceTile,
+  meeplePlacementOptions = [],
+  onPlaceMeeple
 }: BoardViewProps) {
   const placementPositions = placementOptions.map((option) => option.position);
   const bounds = getBoundsWithPositions(board.bounds, placementPositions);
@@ -124,6 +129,36 @@ export function BoardView({
               </button>
             );
           })}
+          {meeplePlacementOptions.map((option) => {
+            const tile = board.tiles[`${option.tilePosition.x},${option.tilePosition.y}`];
+            if (!tile) {
+              return null;
+            }
+
+            const grid = toGridPosition(option.tilePosition, bounds);
+            const anchor = getMeepleAnchor(option, tile);
+            const markerStyle = {
+              gridColumn: grid.column,
+              gridRow: grid.row,
+              '--meeple-x': `${anchor.xPercent}%`,
+              '--meeple-y': `${anchor.yPercent}%`
+            } as CSSProperties;
+            const role = getMeepleRole(option.featureType);
+
+            return (
+              <button
+                key={`meeple-placement-${option.tilePosition.x}-${option.tilePosition.y}-${option.featureType}-${option.featureIndex}`}
+                type="button"
+                className="board-meeple board-meeple-target"
+                style={markerStyle}
+                onClick={() => onPlaceMeeple?.(option)}
+                disabled={!onPlaceMeeple}
+                aria-label={`Place ${role} on ${option.featureType} ${option.featureIndex + 1}`}
+              >
+                <span className="board-meeple__role">{role}</span>
+              </button>
+            );
+          })}
           {meeples.map((meeple, index) => {
             const tile = board.tiles[`${meeple.tilePosition.x},${meeple.tilePosition.y}`];
             if (!tile) {
@@ -139,14 +174,17 @@ export function BoardView({
               '--meeple-x': `${anchor.xPercent}%`,
               '--meeple-y': `${anchor.yPercent}%`
             } as CSSProperties;
+            const role = getMeepleRole(meeple.featureType);
 
             return (
               <div
                 key={`${meeple.playerId}-${meeple.tilePosition.x}-${meeple.tilePosition.y}-${meeple.featureType}-${meeple.featureIndex}-${index}`}
                 className={`board-meeple board-meeple--${color}`}
                 style={markerStyle}
-                aria-label={`Meeple on ${meeple.featureType}`}
-              />
+                aria-label={`${role} on ${meeple.featureType}`}
+              >
+                <span className="board-meeple__role">{role}</span>
+              </div>
             );
           })}
         </div>

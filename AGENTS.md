@@ -40,6 +40,7 @@ A web-based, online multiplayer clone of the Carcassonne base game.
 * **User Preferences:** Run tests (`npm test`) every turn; commit (`git commit`) on green. 
 * **Current Focus:** Scoring, end-game resolution, undo support, and board-level meeple visualization.
 * **Accomplished:** [Maintain this list with task completions with most recent at the top; ocasionally condense this list]
+    * Switch meeple placement to board-click ghost anchors with on-feature role labels while keeping skip action
     * Color-code game event log rows by acting player and wire in-game return-to-lobby control
     * Simplify lobby chrome to a single "Carcassonne Online" header bar and remove server label exposure
     * Add delete-session support in lobby list across shared protocol, server session registry, and client UI

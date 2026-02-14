@@ -1,7 +1,7 @@
 /**
  * @description Helpers for rendering meeple indicators on top of board tiles.
  */
-import type { MeeplePlacement, PlacedTile } from '@carcassonne/shared';
+import type { FeatureType, MeeplePlacement, PlacedTile } from '@carcassonne/shared';
 import { getOrientedTileDefinition } from '@carcassonne/shared';
 
 interface Anchor {
@@ -24,6 +24,16 @@ const CORNER_ANCHORS: Record<string, Anchor> = {
 };
 
 const CENTER_ANCHOR: Anchor = { xPercent: 50, yPercent: 50 };
+const FEATURE_ROLES: Record<FeatureType, string> = {
+  city: 'knight',
+  road: 'highwayman',
+  farm: 'farmer',
+  monastery: 'monk'
+};
+
+export function getMeepleRole(featureType: FeatureType): string {
+  return FEATURE_ROLES[featureType];
+}
 
 export function getMeepleAnchor(placement: MeeplePlacement, tile: PlacedTile): Anchor {
   const definition = getOrientedTileDefinition(tile.tileId, tile.orientation);

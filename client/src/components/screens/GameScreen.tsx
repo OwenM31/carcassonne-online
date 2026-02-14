@@ -162,9 +162,7 @@ export function GameScreen({
                 </Button>
               </div>
               <MeepleActions
-                options={meepleOptions}
                 disabled={!canPlaceMeeple}
-                onPlaceMeeple={onPlaceMeeple}
                 onSkipMeeple={onSkipMeeple}
               />
             </div>
@@ -190,6 +188,8 @@ export function GameScreen({
             placementOptions={placements}
             placementTileId={currentTileId}
             onPlaceTile={canPlaceTile ? handlePlaceTile : undefined}
+            meeplePlacementOptions={canPlaceMeeple ? meepleOptions : []}
+            onPlaceMeeple={canPlaceMeeple ? onPlaceMeeple : undefined}
           />
         </section>
 
