@@ -1,0 +1,10 @@
+# @description Exclude local artifacts from Docker build context.
+.git
+.github
+node_modules
+**/node_modules
+**/dist
+**/coverage
+tmp
+tiles.png
+tiles_ascii.txt

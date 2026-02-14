@@ -1,0 +1,122 @@
+# @description Cloud Build pipeline for CI + Cloud Run CD of the Carcassonne monorepo.
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitutionOption: ALLOW_LOOSE
+
+substitutions:
+  _REGION: us-central1
+  _AR_REPOSITORY: carcassonne
+  _SERVER_SERVICE: carcassonne-server
+  _CLIENT_SERVICE: carcassonne-client
+  _ALLOW_UNAUTHENTICATED: "true"
+
+steps:
+  - id: install
+    name: node:20
+    entrypoint: npm
+    args: ["ci"]
+
+  - id: test
+    name: node:20
+    entrypoint: npm
+    args: ["test"]
+
+  - id: build-workspaces
+    name: node:20
+    entrypoint: npm
+    args: ["run", "build"]
+
+  - id: build-server-image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -f
+      - server/Dockerfile
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_SERVER_SERVICE}:$COMMIT_SHA
+      - .
+
+  - id: push-server-image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_SERVER_SERVICE}:$COMMIT_SHA
+
+  - id: deploy-server
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        AUTH_FLAG="--no-allow-unauthenticated"
+        if [[ "${_ALLOW_UNAUTHENTICATED}" == "true" ]]; then
+          AUTH_FLAG="--allow-unauthenticated"
+        fi
+
+        gcloud run deploy "${_SERVER_SERVICE}" \
+          --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_SERVER_SERVICE}:$COMMIT_SHA" \
+          --platform managed \
+          --region "${_REGION}" \
+          --quiet \
+          $${AUTH_FLAG}
+
+  - id: resolve-server-ws-url
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        SERVER_URL="$$(gcloud run services describe "${_SERVER_SERVICE}" \
+          --platform managed \
+          --region "${_REGION}" \
+          --format='value(status.url)')"
+
+        if [[ -z "$${SERVER_URL}" ]]; then
+          echo "Unable to resolve Cloud Run URL for ${_SERVER_SERVICE}."
+          exit 1
+        fi
+
+        WS_URL="$${SERVER_URL/https:/wss:}"
+        printf '%s' "$${WS_URL}" > /workspace/server_ws_url.txt
+
+  - id: build-client-image
+    name: gcr.io/cloud-builders/docker
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        WS_URL="$$(cat /workspace/server_ws_url.txt)"
+
+        docker build \
+          -f client/Dockerfile \
+          --build-arg "VITE_SERVER_URL=$${WS_URL}" \
+          -t "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_CLIENT_SERVICE}:$COMMIT_SHA" \
+          .
+
+  - id: push-client-image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_CLIENT_SERVICE}:$COMMIT_SHA
+
+  - id: deploy-client
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: bash
+    args:
+      - -ceu
+      - |
+        AUTH_FLAG="--no-allow-unauthenticated"
+        if [[ "${_ALLOW_UNAUTHENTICATED}" == "true" ]]; then
+          AUTH_FLAG="--allow-unauthenticated"
+        fi
+
+        gcloud run deploy "${_CLIENT_SERVICE}" \
+          --image "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_CLIENT_SERVICE}:$COMMIT_SHA" \
+          --platform managed \
+          --region "${_REGION}" \
+          --quiet \
+          $${AUTH_FLAG}
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_SERVER_SERVICE}:$COMMIT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPOSITORY}/${_CLIENT_SERVICE}:$COMMIT_SHA

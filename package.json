@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "test": "npm -w @carcassonne/shared test && npm -w @carcassonne/server test && npm -w @carcassonne/client test",
-    "build": "npm -w @carcassonne/shared build && npm -w @carcassonne/server build && npm -w @carcassonne/client build",
+    "build": "npm -w @carcassonne/shared run build && npm -w @carcassonne/server run build && npm -w @carcassonne/client run build",
     "dev:client": "npm -w @carcassonne/client run dev",
     "dev:server": "npm -w @carcassonne/server run dev"
   }
