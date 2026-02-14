@@ -172,7 +172,6 @@ export function LobbyScreen() {
       sessions={viewState.sessions}
       activeSessionId={activeSessionId}
       error={viewState.error}
-      serverUrl={serverUrl}
     />
   );
 }

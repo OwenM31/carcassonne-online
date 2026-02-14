@@ -22,7 +22,6 @@ interface LobbyPanelProps {
   sessions: SessionSummary[];
   activeSessionId: string | null;
   error: string | null;
-  serverUrl: string;
 }
 
 export function LobbyPanel({
@@ -38,24 +37,15 @@ export function LobbyPanel({
   players,
   sessions,
   activeSessionId,
-  error,
-  serverUrl
+  error
 }: LobbyPanelProps) {
-  const badgeTone = isConnected ? 'positive' : 'warning';
   const canLeaveSession = !!activeSessionId;
   const isNameLocked = !!activeSessionId;
 
   return (
     <main className="page">
-      <header className="hero">
-        <div className="hero__copy">
-          <p className="hero__kicker">Carcassonne Online</p>
-          <h1 className="hero__title">Lay tiles, claim roads, grow cities.</h1>
-          <p className="hero__subtitle">
-            Spin up a lobby, invite friends, and pull the countryside together.
-          </p>
-        </div>
-        <Badge tone={badgeTone}>{isConnected ? 'Connected' : 'Offline'}</Badge>
+      <header className="lobby-header">
+        <h1 className="lobby-header__title">Carcassonne Online</h1>
       </header>
 
       <section className="card lobby-card">
@@ -90,10 +80,6 @@ export function LobbyPanel({
             {activeSessionId && !canStartGame ? (
               <p className="hint">Waiting for at least 2 players to start.</p>
             ) : null}
-            <div className="meta">
-              <span className="meta__label">Server</span>
-              <span className="meta__value">{serverUrl}</span>
-            </div>
             {error ? <p className="error">{error}</p> : null}
           </div>
 

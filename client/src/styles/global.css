@@ -48,6 +48,23 @@ a {
   animation: page-rise 0.9s ease both;
 }
 
+.lobby-header {
+  display: flex;
+  align-items: center;
+  padding: 1.1rem 1.5rem;
+  border-radius: 1.2rem;
+  background: rgba(247, 244, 238, 0.86);
+  border: 0.08rem solid var(--color-edge);
+  box-shadow: var(--shadow-soft);
+}
+
+.lobby-header__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 3.2vw, 2.4rem);
+  line-height: 1.15;
+}
+
 .hero {
   display: flex;
   gap: 2.5rem;
@@ -112,23 +129,6 @@ a {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-}
-
-.meta {
-  display: grid;
-  gap: 0.4rem;
-  font-size: 0.9rem;
-}
-
-.meta__label {
-  color: var(--color-olive);
-  text-transform: uppercase;
-  letter-spacing: 0.12rem;
-  font-size: 0.7rem;
-}
-
-.meta__value {
-  font-family: var(--font-display);
 }
 
 .players-header {
