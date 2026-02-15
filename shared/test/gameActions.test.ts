@@ -69,7 +69,7 @@ describe('applyGameAction', () => {
     expect(placeResult.game.turnNumber).toBe(1);
   });
 
-  it('allows skipping the optional meeple phase and then advances the turn', () => {
+  it('ends the game after skip when the deck is exhausted', () => {
     const state = createGame(setup);
     const drawResult = applyGameAction(state, { type: 'draw_tile', playerId: 'p1' });
 
@@ -103,9 +103,10 @@ describe('applyGameAction', () => {
     }
 
     expect(skipResult.game.currentTileId).toBeNull();
-    expect(skipResult.game.phase).toBe('draw_tile');
-    expect(skipResult.game.activePlayerIndex).toBe(1);
-    expect(skipResult.game.turnNumber).toBe(2);
+    expect(skipResult.game.phase).toBe('game_over');
+    expect(skipResult.game.status).toBe('finished');
+    expect(skipResult.game.activePlayerIndex).toBe(0);
+    expect(skipResult.game.turnNumber).toBe(1);
   });
 
   it('blocks meeple placement on a connected feature that already has a meeple', () => {

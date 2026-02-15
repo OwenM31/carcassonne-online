@@ -568,17 +568,28 @@ button.board-tile {
 .hud-events {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 0.25rem 0 0;
   display: grid;
   gap: 0.35rem;
+  max-height: 18rem;
+  overflow-y: auto;
 }
 
 .hud-event {
   font-size: 0.8rem;
   color: #3e382f;
+  display: grid;
+  gap: 0.25rem;
   padding: 0.5rem 0.65rem;
   border-radius: 0.6rem;
   border: 0.08rem solid rgba(45, 39, 32, 0.14);
+}
+
+.hud-event__time {
+  font-size: 0.67rem;
+  letter-spacing: 0.04rem;
+  color: #5a5348;
+  font-variant-numeric: tabular-nums;
 }
 
 .hud-event__text {

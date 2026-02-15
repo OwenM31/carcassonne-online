@@ -67,6 +67,8 @@ describe('scoring', () => {
     }
 
     const p1 = skipP2.game.players.find((player) => player.id === 'p1');
+    expect(skipP2.game.status).toBe('finished');
+    expect(skipP2.game.phase).toBe('game_over');
     expect(p1?.score).toBe(3);
     expect(p1?.meeplesAvailable).toBe(7);
     expect(skipP2.game.meeples).toHaveLength(0);
@@ -113,17 +115,12 @@ describe('scoring', () => {
       throw new Error('Expected p1 monastery meeple to succeed.');
     }
 
-    const finalDraw = applyGameAction(meepleP1.game, { type: 'draw_tile', playerId: 'p2' });
-    if (finalDraw.type !== 'success') {
-      throw new Error('Expected final draw to succeed.');
-    }
-
-    const p1 = finalDraw.game.players.find((player) => player.id === 'p1');
-    expect(finalDraw.game.status).toBe('finished');
-    expect(finalDraw.game.phase).toBe('game_over');
+    const p1 = meepleP1.game.players.find((player) => player.id === 'p1');
+    expect(meepleP1.game.status).toBe('finished');
+    expect(meepleP1.game.phase).toBe('game_over');
     expect(p1?.score).toBe(2);
-    expect(p1?.meeplesAvailable).toBe(7);
-    expect(finalDraw.game.meeples).toHaveLength(0);
+    expect(p1?.meeplesAvailable).toBe(6);
+    expect(meepleP1.game.meeples).toHaveLength(1);
   });
 
   it('scores farms at game end using completed adjacent cities', () => {
@@ -167,14 +164,11 @@ describe('scoring', () => {
       throw new Error('Expected p1 farm meeple to succeed.');
     }
 
-    const finalDraw = applyGameAction(meepleP1.game, { type: 'draw_tile', playerId: 'p2' });
-    if (finalDraw.type !== 'success') {
-      throw new Error('Expected final draw to succeed.');
-    }
-
-    const p1 = finalDraw.game.players.find((player) => player.id === 'p1');
+    const p1 = meepleP1.game.players.find((player) => player.id === 'p1');
+    expect(meepleP1.game.status).toBe('finished');
+    expect(meepleP1.game.phase).toBe('game_over');
     expect(p1?.score).toBe(3);
-    expect(p1?.meeplesAvailable).toBe(7);
-    expect(finalDraw.game.meeples).toHaveLength(0);
+    expect(p1?.meeplesAvailable).toBe(6);
+    expect(meepleP1.game.meeples).toHaveLength(1);
   });
 });

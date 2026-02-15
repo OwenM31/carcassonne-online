@@ -4,6 +4,7 @@ import { createBoardWithTile } from './board';
 const DEFAULT_MEEPLES = 7;
 
 export function createGame(setup: GameSetup): GameState {
+  const createdAt = new Date().toISOString();
   const players: PlayerState[] = setup.players.map((player) => ({
     id: player.id,
     name: player.name,
@@ -41,7 +42,8 @@ export function createGame(setup: GameSetup): GameState {
       {
         turn: 1,
         type: 'game_started',
-        detail: `Starting tile ${setup.startingTileId} placed at 0,0.`
+        detail: `Starting tile ${setup.startingTileId} placed at 0,0.`,
+        createdAt
       }
     ],
     startingTileId: setup.startingTileId,

@@ -115,6 +115,7 @@ export interface GameEvent {
   type: GameEventType;
   playerId?: PlayerId;
   detail: string;
+  createdAt?: string;
 }
 
 export interface DrawTileAction {

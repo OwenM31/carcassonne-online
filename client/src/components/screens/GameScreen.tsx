@@ -49,7 +49,11 @@ export function GameScreen({
   const [orientation, setOrientation] = useState<Orientation>(0);
   const currentTileId = game.currentTileId;
   const isActivePlayer = activePlayer?.id === playerId;
-  const canDrawTile = isActivePlayer && game.phase === 'draw_tile' && !currentTileId;
+  const canDrawTile =
+    isActivePlayer &&
+    game.phase === 'draw_tile' &&
+    !currentTileId &&
+    game.tileDeck.length > 0;
   const canPlaceTile = isActivePlayer && game.phase === 'place_tile' && !!currentTileId;
   const canPlaceMeeple = isActivePlayer && game.phase === 'place_meeple';
 

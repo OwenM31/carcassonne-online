@@ -89,6 +89,10 @@ export function isGameEvent(value: unknown): boolean {
     return false;
   }
 
+  if (value.createdAt !== undefined && typeof value.createdAt !== 'string') {
+    return false;
+  }
+
   return typeof value.detail === 'string';
 }
 

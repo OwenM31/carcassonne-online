@@ -74,6 +74,6 @@ export function buildGameHudState(game: GameState): GameHudState {
     currentTileId: game.currentTileId,
     scoreboard,
     featureCounter,
-    eventLog: [...game.eventLog].slice(-12).reverse()
+    eventLog: [...game.eventLog]
   };
 }

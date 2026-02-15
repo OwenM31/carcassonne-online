@@ -9,11 +9,19 @@ export function getStatusText(
   activePlayerName: string | undefined,
   meepleOptions: MeeplePlacement[]
 ): string {
+  if (game.status === 'finished' || game.phase === 'game_over') {
+    return 'Game over. Final scoring is complete.';
+  }
+
   if (!isActivePlayer) {
     return `Waiting on ${activePlayerName ?? 'another player'} to move.`;
   }
 
   if (game.phase === 'draw_tile') {
+    if (game.tileDeck.length === 0) {
+      return 'Deck exhausted. Waiting for final scoring.';
+    }
+
     return 'Draw a tile to begin your turn.';
   }
 

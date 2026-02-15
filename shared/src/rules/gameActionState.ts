@@ -27,7 +27,13 @@ export const getActivePlayer = (state: GameState) =>
 
 export const withEvent = (state: GameState, event: GameEvent): GameState => ({
   ...state,
-  eventLog: [...state.eventLog, event].slice(-EVENT_LOG_LIMIT)
+  eventLog: [
+    ...state.eventLog,
+    {
+      ...event,
+      createdAt: event.createdAt ?? new Date().toISOString()
+    }
+  ].slice(-EVENT_LOG_LIMIT)
 });
 
 export const withEvents = (state: GameState, events: GameEvent[]): GameState =>
@@ -59,3 +65,19 @@ export const closeTurnAfterMeeplePhase = (state: GameState): GameState =>
     currentTileId: null,
     lastPlacedTile: null
   });
+
+export const toGameOverState = (state: GameState, detail: string): GameState =>
+  withEvent(
+    {
+      ...state,
+      status: 'finished',
+      phase: 'game_over',
+      currentTileId: null,
+      lastPlacedTile: null
+    },
+    {
+      turn: state.turnNumber,
+      type: 'game_over',
+      detail
+    }
+  );

@@ -14,10 +14,11 @@ import {
   ERROR_OCCUPIED_FEATURE,
   closeTurnAfterMeeplePhase,
   getActivePlayer,
+  toGameOverState,
   type GameActionResult,
   withEvent
 } from './gameActionState';
-import { resolveCompletedFeatureScoring } from './scoring';
+import { resolveCompletedFeatureScoring, resolveFinalScoring } from './scoring';
 
 export const applyPlaceMeepleAction = (
   state: GameState,
@@ -67,6 +68,17 @@ export const applyPlaceMeepleAction = (
     resolveCompletedFeatureScoring(placedState)
   );
 
+  if (scoredState.tileDeck.length === 0) {
+    const finalState = applyScoringResolution(
+      scoredState,
+      resolveFinalScoring(scoredState)
+    );
+    return {
+      type: 'success',
+      game: toGameOverState(finalState, 'Final tile placed. Final scoring complete.')
+    };
+  }
+
   return { type: 'success', game: closeTurnAfterMeeplePhase(scoredState) };
 };
 
@@ -95,6 +107,17 @@ export const applySkipMeepleAction = (
     skippedState,
     resolveCompletedFeatureScoring(skippedState)
   );
+
+  if (scoredState.tileDeck.length === 0) {
+    const finalState = applyScoringResolution(
+      scoredState,
+      resolveFinalScoring(scoredState)
+    );
+    return {
+      type: 'success',
+      game: toGameOverState(finalState, 'Final tile placed. Final scoring complete.')
+    };
+  }
 
   return { type: 'success', game: closeTurnAfterMeeplePhase(scoredState) };
 };

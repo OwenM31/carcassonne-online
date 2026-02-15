@@ -53,10 +53,12 @@ function resolveScoring(state: GameState, isFinal: boolean): ScoringResolution {
       awardedScores[playerId] = (awardedScores[playerId] ?? 0) + points;
     });
 
-    removeMeeplesFromComponents.add(component.id);
-    meeples.forEach((meeple) => {
-      returnedMeeples[meeple.playerId] = (returnedMeeples[meeple.playerId] ?? 0) + 1;
-    });
+    if (!isFinal) {
+      removeMeeplesFromComponents.add(component.id);
+      meeples.forEach((meeple) => {
+        returnedMeeples[meeple.playerId] = (returnedMeeples[meeple.playerId] ?? 0) + 1;
+      });
+    }
 
     if (points > 0) {
       events.push({

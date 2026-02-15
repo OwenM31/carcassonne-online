@@ -15,6 +15,7 @@ import {
   ERROR_TILE_MISMATCH,
   advanceTurn,
   getActivePlayer,
+  toGameOverState,
   type GameActionResult,
   withEvent
 } from './gameActionState';
@@ -35,16 +36,7 @@ export const applyDrawTileAction = (state: GameState, playerId: string): GameAct
 
     return {
       type: 'success',
-      game: withEvent(
-        {
-          ...scored,
-          status: 'finished',
-          phase: 'game_over',
-          currentTileId: null,
-          lastPlacedTile: null
-        },
-        { turn: state.turnNumber, type: 'game_over', detail: 'Tile deck exhausted.' }
-      )
+      game: toGameOverState(scored, 'Tile deck exhausted. Final scoring complete.')
     };
   }
 

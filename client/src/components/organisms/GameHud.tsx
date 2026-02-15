@@ -1,6 +1,7 @@
 /**
  * @description Right-side HUD for game status, scoreboard, feature counters, and event log.
  */
+import { useEffect, useRef } from 'react';
 import type { GameHudState } from '../../state/gameHud';
 import { TileSprite } from '../atoms/TileSprite';
 
@@ -18,14 +19,41 @@ const labelForFeature = (featureType: string) => {
   return featureType.charAt(0).toUpperCase() + featureType.slice(1);
 };
 
+const formatEventTime = (createdAt?: string): string => {
+  if (!createdAt) {
+    return '--:--:--';
+  }
+
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) {
+    return '--:--:--';
+  }
+
+  return date.toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+};
+
 export function GameHud({ hud }: GameHudProps) {
   const activePlayer = hud.activePlayer;
   const chipClass = activePlayer ? `hud-chip--${activePlayer.color}` : 'hud-chip--neutral';
   const tileId = hud.currentTileId;
+  const eventListRef = useRef<HTMLUListElement | null>(null);
   const playerColorById = hud.scoreboard.reduce<Record<string, string>>((index, player) => {
     index[player.id] = player.color;
     return index;
   }, {});
+
+  useEffect(() => {
+    const list = eventListRef.current;
+    if (!list) {
+      return;
+    }
+
+    list.scrollTop = list.scrollHeight;
+  }, [hud.eventLog]);
 
   return (
     <aside className="card game-hud">
@@ -106,7 +134,7 @@ export function GameHud({ hud }: GameHudProps) {
 
       <div className="hud-section">
         <p className="hud-label">Event log</p>
-        <ul className="hud-events">
+        <ul ref={eventListRef} className="hud-events">
           {hud.eventLog.map((entry, index) => (
             <li
               key={`${entry.turn}-${entry.type}-${index}`}
@@ -114,6 +142,7 @@ export function GameHud({ hud }: GameHudProps) {
                 entry.playerId ? `hud-event--${playerColorById[entry.playerId] ?? 'neutral'}` : 'hud-event--neutral'
               }`}
             >
+              <span className="hud-event__time">{formatEventTime(entry.createdAt)}</span>
               <span className="hud-event__text">{entry.detail}</span>
             </li>
           ))}
