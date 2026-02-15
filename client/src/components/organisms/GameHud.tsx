@@ -104,25 +104,32 @@ export function GameHud({
       </div>
 
       <div className="hud-section">
-        <p className="hud-label">Feature counter</p>
-        <ul className="hud-list hud-list--tight">
-          <li className="hud-item">
-            <span className="hud-item__name">{labelForFeature('city')}</span>
-            <span className="hud-item__meta">{hud.featureCounter.cities.closed} closed / {hud.featureCounter.cities.open} open</span>
-          </li>
-          <li className="hud-item">
-            <span className="hud-item__name">{labelForFeature('road')}</span>
-            <span className="hud-item__meta">{hud.featureCounter.roads.closed} closed / {hud.featureCounter.roads.open} open</span>
-          </li>
-          <li className="hud-item">
-            <span className="hud-item__name">{labelForFeature('monastery')}</span>
-            <span className="hud-item__meta">{hud.featureCounter.monasteries}</span>
-          </li>
-          <li className="hud-item">
-            <span className="hud-item__name">{labelForFeature('farm')}</span>
-            <span className="hud-item__meta">{hud.featureCounter.grasslands}</span>
-          </li>
-        </ul>
+        <details className="hud-collapsible">
+          <summary className="hud-collapsible__summary">
+            <span className="hud-label">Feature counter</span>
+            <span className="hud-collapsible__chevron" aria-hidden="true">
+              ▾
+            </span>
+          </summary>
+          <ul className="hud-list hud-list--tight">
+            <li className="hud-item">
+              <span className="hud-item__name">{labelForFeature('city')}</span>
+              <span className="hud-item__meta">{hud.featureCounter.cities.closed} closed / {hud.featureCounter.cities.open} open</span>
+            </li>
+            <li className="hud-item">
+              <span className="hud-item__name">{labelForFeature('road')}</span>
+              <span className="hud-item__meta">{hud.featureCounter.roads.closed} closed / {hud.featureCounter.roads.open} open</span>
+            </li>
+            <li className="hud-item">
+              <span className="hud-item__name">{labelForFeature('monastery')}</span>
+              <span className="hud-item__meta">{hud.featureCounter.monasteries}</span>
+            </li>
+            <li className="hud-item">
+              <span className="hud-item__name">{labelForFeature('farm')}</span>
+              <span className="hud-item__meta">{hud.featureCounter.grasslands}</span>
+            </li>
+          </ul>
+        </details>
       </div>
 
       <div className="hud-section">

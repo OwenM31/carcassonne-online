@@ -237,15 +237,6 @@ export function GameScreen({
             onStepForward={replay.stepForward}
             onResetSandbox={onResetSandboxBoard}
           />
-          {isSandbox ? (
-            <SandboxTileSelector
-              entries={sandboxDeckEntries}
-              selectedTileId={selectedSandboxTileId}
-              onSelectTile={setSelectedSandboxTileId}
-              onDrawSelected={handleDrawTile}
-              canDrawSelected={canDrawSandboxTile}
-            />
-          ) : null}
         </section>
         <GamePlacementPanel
           isActivePlayer={isActivePlayer}
@@ -264,6 +255,17 @@ export function GameScreen({
           onSkipMeeple={onSkipMeeple}
         />
       </div>
+      {isSandbox ? (
+        <section className="sandbox-footer">
+          <SandboxTileSelector
+            entries={sandboxDeckEntries}
+            selectedTileId={selectedSandboxTileId}
+            onSelectTile={setSelectedSandboxTileId}
+            onDrawSelected={handleDrawTile}
+            canDrawSelected={canDrawSandboxTile}
+          />
+        </section>
+      ) : null}
       <GameRulesModal open={isRulesOpen} onClose={() => setRulesOpen(false)} />
     </main>
   );
