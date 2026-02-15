@@ -7,6 +7,7 @@ import type {
   PlayerId,
   SessionDeckSize,
   SessionMode,
+  SessionTurnTimer,
   ServerMessage,
   SessionId
 } from '@carcassonne/shared';
@@ -23,9 +24,14 @@ export function createLobbyController(
   sessionId: SessionId,
   service: LobbyService,
   gameService: GameService,
-  getSessionConfig: () => { deckSize: SessionDeckSize; mode: SessionMode } = () => ({
+  getSessionConfig: () => {
+    deckSize: SessionDeckSize;
+    mode: SessionMode;
+    turnTimerSeconds: SessionTurnTimer;
+  } = () => ({
     deckSize: 'standard',
-    mode: 'standard'
+    mode: 'standard',
+    turnTimerSeconds: 60
   })
 ): LobbyController {
   return {
@@ -38,11 +44,27 @@ export function createLobbyController(
           }
 
           const activeGame = gameService.getGame();
-          if (activeGame && !isPlayerInGame(activeGame, message.playerId)) {
-            return { type: 'error', message: 'Game in progress.' };
+          if (activeGame) {
+            if (!isPlayerInGame(activeGame, message.playerId)) {
+              return { type: 'error', message: 'Game in progress.' };
+            }
+
+            const rejoinCheck = service.validateGameRejoin(
+              message.playerId,
+              message.playerPin
+            );
+            if (rejoinCheck === 'pin_not_set') {
+              return {
+                type: 'error',
+                message: 'Rejoin is unavailable because no PIN was set.'
+              };
+            }
+            if (rejoinCheck === 'incorrect_passkey') {
+              return { type: 'error', message: 'Incorrect passkey.' };
+            }
           }
 
-          const lobby = service.join(message.playerId, trimmedName);
+          const lobby = service.join(message.playerId, trimmedName, message.playerPin);
 
           return activeGame
             ? { type: 'game_state', sessionId, game: activeGame }
@@ -52,6 +74,7 @@ export function createLobbyController(
           const lobby = service.leave(message.playerId);
           if (shouldResetGame(lobby, gameService)) {
             gameService.reset();
+            service.clearGameRejoinPins();
           }
 
           return {
@@ -79,6 +102,8 @@ export function createLobbyController(
             return { type: 'error', message: result.message };
           }
 
+          service.lockGameRejoinPins(lobby.players.map((player) => player.id));
+
           return { type: 'game_started', sessionId, game: result.game };
         }
         default:
@@ -89,6 +114,7 @@ export function createLobbyController(
       const lobby = service.leave(playerId);
       if (shouldResetGame(lobby, gameService)) {
         gameService.reset();
+        service.clearGameRejoinPins();
       }
 
       return {

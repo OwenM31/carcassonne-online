@@ -15,7 +15,7 @@ describe('FileSessionPersistenceService', () => {
     const persistence = new FileSessionPersistenceService(stateFile);
 
     const service = new InMemorySessionService(() => 'session-1', undefined, persistence);
-    const session = service.createSession('small', 'sandbox');
+    const session = service.createSession('small', 'sandbox', 90);
 
     session.lobbyService.join('p1', 'Ada');
     session.lobbyService.join('p2', 'Grace');
@@ -37,7 +37,8 @@ describe('FileSessionPersistenceService', () => {
       playerCount: 2,
       players: [{ name: 'Ada' }, { name: 'Grace' }],
       deckSize: 'small',
-      mode: 'sandbox'
+      mode: 'sandbox',
+      turnTimerSeconds: 90
     });
 
     const restoredSession = restored.getSession('session-1');

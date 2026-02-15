@@ -5,7 +5,8 @@ import type { CSSProperties } from 'react';
 import type {
   SessionDeckSize,
   SessionMode,
-  SessionSummary
+  SessionSummary,
+  SessionTurnTimer
 } from '@carcassonne/shared';
 
 import { Badge } from '../atoms/Badge';
@@ -15,11 +16,14 @@ import { TextField } from '../atoms/TextField';
 interface LobbyPanelProps {
   playerName: string;
   onNameChange: (value: string) => void;
+  playerPin: string;
+  onPinChange: (value: string) => void;
   onCreateSession: () => void;
   onJoinSession: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
   onSetSessionDeckSize: (sessionId: string, deckSize: SessionDeckSize) => void;
   onSetSessionMode: (sessionId: string, mode: SessionMode) => void;
+  onSetSessionTurnTimer: (sessionId: string, turnTimerSeconds: SessionTurnTimer) => void;
   onLeaveSession: () => void;
   onStartGame: () => void;
   isConnected: boolean;
@@ -33,11 +37,14 @@ interface LobbyPanelProps {
 export function LobbyPanel({
   playerName,
   onNameChange,
+  playerPin,
+  onPinChange,
   onCreateSession,
   onJoinSession,
   onDeleteSession,
   onSetSessionDeckSize,
   onSetSessionMode,
+  onSetSessionTurnTimer,
   onLeaveSession,
   onStartGame,
   isConnected,
@@ -65,6 +72,16 @@ export function LobbyPanel({
               value={playerName}
               placeholder="Enter your name"
               onChange={onNameChange}
+              disabled={isNameLocked}
+            />
+            <TextField
+              label="PIN (optional)"
+              value={playerPin}
+              placeholder="Set PIN for reconnects"
+              type="password"
+              inputMode="numeric"
+              maxLength={12}
+              onChange={onPinChange}
               disabled={isNameLocked}
             />
             <div className="button-row">
@@ -107,6 +124,7 @@ export function LobbyPanel({
                   const canDelete = isConnected && !activeSessionId;
                   const canChangeDeckSize = isConnected && !isInProgress;
                   const canChangeMode = isConnected && !isInProgress;
+                  const canChangeTurnTimer = isConnected && !isInProgress;
                   const statusLabel = isInProgress ? 'In progress' : 'Lobby';
                   const nextDeckSize: SessionDeckSize =
                     session.deckSize === 'small' ? 'standard' : 'small';
@@ -114,6 +132,12 @@ export function LobbyPanel({
                   const nextMode: SessionMode =
                     session.mode === 'sandbox' ? 'standard' : 'sandbox';
                   const modeLabel = session.mode === 'sandbox' ? 'Sandbox mode' : 'Standard mode';
+                  const nextTurnTimer: SessionTurnTimer =
+                    session.turnTimerSeconds === 30
+                      ? 60
+                      : session.turnTimerSeconds === 60
+                        ? 90
+                        : 30;
 
                   return (
                     <li
@@ -124,7 +148,7 @@ export function LobbyPanel({
                       <div className="session-info">
                         <span className="session-id">{session.id}</span>
                         <span className="session-meta">
-                          {statusLabel} · {session.playerCount} players · {deckLabel} · {modeLabel}
+                          {statusLabel} · {session.playerCount} players · {deckLabel} · {modeLabel} · Timer {session.turnTimerSeconds}s
                         </span>
                         <ul className="session-players-list">
                           {session.players.length === 0 ? (
@@ -158,6 +182,14 @@ export function LobbyPanel({
                           onClick={() => onSetSessionMode(session.id, nextMode)}
                         >
                           {session.mode === 'sandbox' ? 'Use standard mode' : 'Use sandbox mode'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={!canChangeTurnTimer}
+                          onClick={() => onSetSessionTurnTimer(session.id, nextTurnTimer)}
+                        >
+                          Timer {session.turnTimerSeconds}s
                         </Button>
                         <Button
                           type="button"

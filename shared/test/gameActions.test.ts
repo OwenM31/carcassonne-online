@@ -32,6 +32,7 @@ describe('applyGameAction', () => {
 
     expect(result.game.phase).toBe('place_tile');
     expect(result.game.currentTileId).toBe('T_R1C1');
+    expect([0, 90, 180, 270]).toContain(result.game.currentTileOrientation);
     expect(result.game.tileDeck).toHaveLength(0);
   });
 

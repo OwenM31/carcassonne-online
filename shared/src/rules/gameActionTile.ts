@@ -116,6 +116,7 @@ export const applyPlaceTileAction = (
         ...state,
         board: addTileToBoard(state.board, placedTile),
         phase: 'place_meeple',
+        currentTileOrientation: null,
         lastPlacedTile: placedTile
       },
       {
@@ -143,7 +144,8 @@ const drawResolvedTile = (
         ...state,
         tileDeck: remainingDeck,
         tileDiscard: [...state.tileDiscard, tileId],
-        phase: 'draw_tile'
+        phase: 'draw_tile',
+        currentTileOrientation: null
       },
       {
         turn: state.turnNumber,
@@ -163,6 +165,7 @@ const drawResolvedTile = (
         ...state,
         tileDeck: remainingDeck,
         currentTileId: tileId,
+        currentTileOrientation: randomOrientation(),
         phase: 'place_tile'
       },
       {
@@ -173,4 +176,9 @@ const drawResolvedTile = (
       }
     )
   };
+};
+
+const randomOrientation = (): 0 | 90 | 180 | 270 => {
+  const orientations = [0, 90, 180, 270] as const;
+  return orientations[Math.floor(Math.random() * orientations.length)];
 };

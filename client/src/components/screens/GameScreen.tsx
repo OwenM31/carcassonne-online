@@ -45,8 +45,9 @@ export function GameScreen({
   const viewGame = replay.viewGame;
   const hud = buildGameHudState(viewGame);
   const liveHud = buildGameHudState(game);
-  const [orientation, setOrientation] = useState<Orientation>(0);
+  const [orientation, setOrientation] = useState<Orientation>(game.currentTileOrientation ?? 0);
   const [selectedSandboxTileId, setSelectedSandboxTileId] = useState<TileId | null>(null);
+  const [clockNowMs, setClockNowMs] = useState(() => Date.now());
   const isSandbox = game.mode === 'sandbox';
   const liveCurrentTileId = game.currentTileId;
   const viewCurrentTileId = viewGame.currentTileId;
@@ -58,7 +59,13 @@ export function GameScreen({
   const canPlaceMeeple = isActivePlayer && game.phase === 'place_meeple';
   const canUndo = isActivePlayer;
   const canResetSandbox = isSandbox && isActivePlayer;
-  useEffect(() => setOrientation(0), [viewCurrentTileId, viewGame.id]);
+  useEffect(() => {
+    setOrientation(viewGame.currentTileOrientation ?? 0);
+  }, [viewCurrentTileId, viewGame.currentTileOrientation, viewGame.id]);
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setClockNowMs(Date.now()), 250);
+    return () => window.clearInterval(intervalId);
+  }, []);
   const sandboxDeckEntries = useMemo(() => buildSandboxDeckEntries(viewGame.tileDeck), [viewGame.tileDeck]);
   useEffect(() => {
     if (!isSandbox) {
@@ -80,6 +87,9 @@ export function GameScreen({
   const statusText = replay.isCurrentView
     ? getStatusText(game, isActivePlayer, liveHud.activePlayer?.name, meepleOptions)
     : `Read-only replay after turn ${replay.replayTurn}. Use jump to current to resume play.`;
+  const turnSecondsRemaining = replay.isCurrentView
+    ? computeTurnSecondsRemaining(game, clockNowMs)
+    : null;
   const playerColorById = useMemo(
     () => viewGame.players.reduce<Record<string, typeof viewGame.players[number]['color']>>((index, player) => {
       index[player.id] = player.color;
@@ -139,6 +149,8 @@ export function GameScreen({
           <GamePlacementPanel
             isActivePlayer={isActivePlayer}
             statusText={statusText}
+            turnSecondsRemaining={turnSecondsRemaining}
+            turnTimerSeconds={game.turnTimerSeconds}
             canDrawTile={canDrawTile}
             isSandbox={isSandbox}
             canPlaceTile={canPlaceTile}
@@ -196,4 +208,26 @@ export function GameScreen({
       </div>
     </main>
   );
+}
+
+function computeTurnSecondsRemaining(game: GameState, nowMs: number): number | null {
+  if (game.status !== 'active') {
+    return null;
+  }
+
+  if (
+    game.phase !== 'draw_tile' &&
+    game.phase !== 'place_tile' &&
+    game.phase !== 'place_meeple'
+  ) {
+    return null;
+  }
+
+  const turnStartMs = Number(new Date(game.turnStartedAt));
+  if (!Number.isFinite(turnStartMs)) {
+    return game.turnTimerSeconds;
+  }
+
+  const deadlineMs = turnStartMs + game.turnTimerSeconds * 1000;
+  return Math.max(0, Math.ceil((deadlineMs - nowMs) / 1000));
 }

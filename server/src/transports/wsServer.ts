@@ -11,6 +11,7 @@ import { parseClientMessage } from '../controllers/messageParser';
 import { SocketHeartbeatService } from '../services/socketHeartbeatService';
 import type { SessionService } from '../services/sessionService';
 import { SocketPresenceService } from '../services/socketPresenceService';
+import { TurnTimerService } from '../services/turnTimerService';
 import {
   hasSessionId,
   requiresBoundPlayer,
@@ -43,6 +44,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         socket.send(JSON.stringify(message));
       }
     };
+  const turnTimerService = new TurnTimerService({ sessionService, broadcast });
   const presenceService = new SocketPresenceService(
     disconnectGraceMs,
     (sessionId, playerId) => {
@@ -56,15 +58,21 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         sessionId,
         session.lobbyService,
         session.gameService,
-        () => ({ deckSize: session.deckSize, mode: session.mode })
+        () => ({
+          deckSize: session.deckSize,
+          mode: session.mode,
+          turnTimerSeconds: session.turnTimerSeconds
+        })
       );
       const response = lobbyController.handleDisconnect(playerId);
       sessionService.persist();
       broadcast(response);
       broadcast(buildSessionListMessage(sessionService));
+      turnTimerService.syncSession(sessionId);
     }
   );
   const heartbeatService = new SocketHeartbeatService();
+  turnTimerService.syncAllSessions();
   heartbeatService.start(heartbeatIntervalMs);
   wss.on('connection', (socket) => {
     heartbeatService.register(socket);
@@ -79,7 +87,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         return;
       }
       if (parsed.type === 'create_session') {
-        sessionService.createSession(parsed.deckSize, parsed.mode);
+        sessionService.createSession(parsed.deckSize, parsed.mode, parsed.turnTimerSeconds);
         broadcast(buildSessionListMessage(sessionService));
         return;
       }
@@ -107,12 +115,25 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         broadcast(buildSessionListMessage(sessionService));
         return;
       }
+      if (parsed.type === 'set_session_turn_timer') {
+        const updateResult = sessionService.updateSessionTurnTimer(
+          parsed.sessionId,
+          parsed.turnTimerSeconds
+        );
+        if (updateResult.type === 'error') {
+          sendTo(socket, { type: 'error', message: updateResult.message });
+          return;
+        }
+        broadcast(buildSessionListMessage(sessionService));
+        return;
+      }
       if (parsed.type === 'delete_session') {
         const deleted = sessionService.deleteSession(parsed.sessionId);
         if (!deleted) {
           sendTo(socket, { type: 'error', message: 'Session not found.' });
           return;
         }
+        turnTimerService.clearSession(parsed.sessionId);
         broadcast(buildSessionListMessage(sessionService));
         return;
       }
@@ -129,7 +150,11 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         parsed.sessionId,
         session.lobbyService,
         session.gameService,
-        () => ({ deckSize: session.deckSize, mode: session.mode })
+        () => ({
+          deckSize: session.deckSize,
+          mode: session.mode,
+          turnTimerSeconds: session.turnTimerSeconds
+        })
       );
       const gameController = createGameController(parsed.sessionId, session.gameService);
       if (
@@ -165,6 +190,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         presenceService.unbind(socket);
       }
       broadcast(response);
+      turnTimerService.syncSession(parsed.sessionId);
       if (shouldRefreshSessions(parsed)) {
         broadcast(buildSessionListMessage(sessionService));
       }
@@ -179,6 +205,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
   wss.on('close', () => {
     heartbeatService.dispose();
     presenceService.dispose();
+    turnTimerService.dispose();
   });
   return wss;
 }

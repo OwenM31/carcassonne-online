@@ -37,6 +37,7 @@ export function createGame(setup: GameSetup): GameState {
     tileDeck,
     tileDiscard: [],
     currentTileId: null,
+    currentTileOrientation: null,
     lastPlacedTile: null,
     meeples: [],
     eventLog: [
@@ -48,6 +49,8 @@ export function createGame(setup: GameSetup): GameState {
       }
     ],
     startingTileId: setup.startingTileId,
+    turnTimerSeconds: setup.turnTimerSeconds ?? 60,
+    turnStartedAt: createdAt,
     turnNumber: 1,
     seed: setup.seed
   };

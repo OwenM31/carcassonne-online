@@ -7,7 +7,8 @@ import type {
   LobbyState,
   SessionDeckSize,
   SessionId,
-  SessionMode
+  SessionMode,
+  SessionTurnTimer
 } from '@carcassonne/shared';
 
 import type { GameServiceSnapshot } from './gameServiceSnapshot';
@@ -16,7 +17,10 @@ export interface PersistedSessionSnapshot {
   id: SessionId;
   deckSize: SessionDeckSize;
   mode: SessionMode;
+  turnTimerSeconds: SessionTurnTimer;
   lobby: LobbyState;
+  lobbyPinHashes: Record<string, string | null>;
+  gameRejoinPinHashes: Record<string, string | null>;
   game: GameServiceSnapshot;
 }
 
@@ -68,6 +72,16 @@ function decodeSnapshots(value: unknown): PersistedSessionSnapshot[] {
       return;
     }
 
+    const turnTimerSeconds = isSessionTurnTimer(entry.turnTimerSeconds)
+      ? entry.turnTimerSeconds
+      : 60;
+    const lobbyPinHashes = isNullableStringRecord(entry.lobbyPinHashes)
+      ? entry.lobbyPinHashes
+      : {};
+    const gameRejoinPinHashes = isNullableStringRecord(entry.gameRejoinPinHashes)
+      ? entry.gameRejoinPinHashes
+      : {};
+
     if (
       typeof entry.id !== 'string' ||
       !isSessionDeckSize(entry.deckSize) ||
@@ -82,7 +96,10 @@ function decodeSnapshots(value: unknown): PersistedSessionSnapshot[] {
       id: entry.id,
       deckSize: entry.deckSize,
       mode: entry.mode,
+      turnTimerSeconds,
       lobby: entry.lobby,
+      lobbyPinHashes,
+      gameRejoinPinHashes,
       game: entry.game
     });
   });
@@ -96,6 +113,10 @@ function isSessionDeckSize(value: unknown): value is SessionDeckSize {
 
 function isSessionMode(value: unknown): value is SessionMode {
   return value === 'standard' || value === 'sandbox';
+}
+
+function isSessionTurnTimer(value: unknown): value is SessionTurnTimer {
+  return value === 30 || value === 60 || value === 90;
 }
 
 function isLobbyState(value: unknown): value is LobbyState {
@@ -123,7 +144,9 @@ function isGameSnapshot(value: unknown): value is GameServiceSnapshot {
     if (
       !isRecord(startConfig) ||
       !isSessionDeckSize(startConfig.deckSize) ||
-      !isSessionMode(startConfig.mode)
+      !isSessionMode(startConfig.mode) ||
+      (startConfig.turnTimerSeconds !== undefined &&
+        !isSessionTurnTimer(startConfig.turnTimerSeconds))
     ) {
       return false;
     }
@@ -134,4 +157,12 @@ function isGameSnapshot(value: unknown): value is GameServiceSnapshot {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+function isNullableStringRecord(value: unknown): value is Record<string, string | null> {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return Object.values(value).every((entry) => entry === null || typeof entry === 'string');
 }

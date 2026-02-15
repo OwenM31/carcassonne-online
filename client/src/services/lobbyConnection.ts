@@ -13,6 +13,7 @@ export interface LobbyConnectionOptions {
   playerId: string;
   getActiveSessionId: () => string | null;
   getReconnectName: () => string | null;
+  getReconnectPin: () => string | null;
   setConnected: (connected: boolean) => void;
   setError: (message: string) => void;
   onMessage: (message: ServerMessage) => void;
@@ -28,6 +29,7 @@ export function startLobbyConnection({
   playerId,
   getActiveSessionId,
   getReconnectName,
+  getReconnectPin,
   setConnected,
   setError,
   onMessage
@@ -64,7 +66,8 @@ export function startLobbyConnection({
           return;
         }
 
-        client.join(currentSessionId, playerId, reconnectName);
+        const reconnectPin = getReconnectPin();
+        client.join(currentSessionId, playerId, reconnectName, reconnectPin ?? undefined);
       },
       onClose: () => {
         setConnected(false);

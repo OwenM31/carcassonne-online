@@ -12,6 +12,8 @@ const PLACEMENT_TILE_SIZE_REM = 5.5;
 interface GamePlacementPanelProps {
   isActivePlayer: boolean;
   statusText: string;
+  turnSecondsRemaining: number | null;
+  turnTimerSeconds: number;
   canDrawTile: boolean;
   isSandbox: boolean;
   canPlaceTile: boolean;
@@ -29,6 +31,8 @@ interface GamePlacementPanelProps {
 export function GamePlacementPanel({
   isActivePlayer,
   statusText,
+  turnSecondsRemaining,
+  turnTimerSeconds,
   canDrawTile,
   isSandbox,
   canPlaceTile,
@@ -49,6 +53,9 @@ export function GamePlacementPanel({
           {isActivePlayer ? 'Your turn' : 'Waiting'}
         </Badge>
         <p className="hint">{statusText}</p>
+        {turnSecondsRemaining !== null ? (
+          <p className="hint">Turn timer: {turnSecondsRemaining}s / {turnTimerSeconds}s</p>
+        ) : null}
       </div>
       <div className="placement-actions">
         <Button type="button" variant="primary" disabled={!canDrawTile} onClick={onDrawTile}>

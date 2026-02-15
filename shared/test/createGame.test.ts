@@ -19,6 +19,9 @@ describe('createGame', () => {
     expect(state.status).toBe('active');
     expect(state.phase).toBe('draw_tile');
     expect(state.activePlayerIndex).toBe(0);
+    expect(state.turnTimerSeconds).toBe(60);
+    expect(state.currentTileOrientation).toBeNull();
+    expect(typeof state.turnStartedAt).toBe('string');
     expect(state.players).toHaveLength(2);
     expect(state.players[0].meeplesAvailable).toBe(7);
     expect(state.board.tiles[toBoardKey({ x: 0, y: 0 })].tileId).toBe('START');
@@ -52,5 +55,20 @@ describe('createGame', () => {
     const state = createGame(setup);
 
     expect(state.mode).toBe('sandbox');
+  });
+
+  it('uses the configured turn timer when provided', () => {
+    const setup: GameSetup = {
+      gameId: 'game-4',
+      mode: 'sandbox',
+      startingTileId: 'START',
+      tileDeck: ['A', 'START', 'B'],
+      turnTimerSeconds: 90,
+      players: [{ id: 'p1', name: 'Player 1', color: 'red' }]
+    };
+
+    const state = createGame(setup);
+
+    expect(state.turnTimerSeconds).toBe(90);
   });
 });

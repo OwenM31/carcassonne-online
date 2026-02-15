@@ -20,6 +20,14 @@ describe('parseClientMessage', () => {
     expect(result).toEqual({ type: 'create_session', mode: 'sandbox' });
   });
 
+  it('parses create_session payloads with turn timer', () => {
+    const result = parseClientMessage(
+      Buffer.from(JSON.stringify({ type: 'create_session', turnTimerSeconds: 90 }))
+    );
+
+    expect(result).toEqual({ type: 'create_session', turnTimerSeconds: 90 });
+  });
+
   it('rejects create_session payloads with invalid deck size', () => {
     const result = parseClientMessage(
       Buffer.from(JSON.stringify({ type: 'create_session', deckSize: 'tiny' }))
@@ -72,6 +80,46 @@ describe('parseClientMessage', () => {
     });
   });
 
+  it('parses set_session_turn_timer payloads', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'set_session_turn_timer',
+          sessionId: 'session-1',
+          turnTimerSeconds: 30
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'set_session_turn_timer',
+      sessionId: 'session-1',
+      turnTimerSeconds: 30
+    });
+  });
+
+  it('parses join_lobby payloads with optional PIN', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'join_lobby',
+          sessionId: 'session-1',
+          playerId: 'p1',
+          playerName: 'Ada',
+          playerPin: '1234'
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'join_lobby',
+      sessionId: 'session-1',
+      playerId: 'p1',
+      playerName: 'Ada',
+      playerPin: '1234'
+    });
+  });
+
   it('parses delete_session payloads', () => {
     const result = parseClientMessage(
       Buffer.from(JSON.stringify({ type: 'delete_session', sessionId: 'session-1' }))
@@ -121,6 +169,20 @@ describe('parseClientMessage', () => {
   it('rejects delete_session payloads without a session id', () => {
     const result = parseClientMessage(
       Buffer.from(JSON.stringify({ type: 'delete_session' }))
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it('rejects invalid turn timer values', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'set_session_turn_timer',
+          sessionId: 'session-1',
+          turnTimerSeconds: 45
+        })
+      )
     );
 
     expect(result).toBeNull();

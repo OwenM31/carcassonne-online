@@ -1,11 +1,17 @@
 /**
  * @description Serializable snapshot contracts for game service persistence.
  */
-import type { GameState, SessionDeckSize, SessionMode } from '@carcassonne/shared';
+import type {
+  GameState,
+  SessionDeckSize,
+  SessionMode,
+  SessionTurnTimer
+} from '@carcassonne/shared';
 
 export interface PersistedGameStartConfig {
   deckSize: SessionDeckSize;
   mode: SessionMode;
+  turnTimerSeconds: SessionTurnTimer;
 }
 
 export interface GameServiceSnapshot {

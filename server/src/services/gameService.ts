@@ -5,7 +5,8 @@ import type {
   LobbyPlayer,
   PlayerColor,
   SessionDeckSize,
-  SessionMode
+  SessionMode,
+  SessionTurnTimer
 } from '@carcassonne/shared';
 import {
   applyGameAction,
@@ -27,6 +28,7 @@ export type GameStartResult =
 export interface GameStartConfig {
   deckSize?: SessionDeckSize;
   mode?: SessionMode;
+  turnTimerSeconds?: SessionTurnTimer;
 }
 
 export interface GameService {
@@ -63,6 +65,7 @@ export class InMemoryGameService implements GameService {
   startGame(players: LobbyPlayer[], config: GameStartConfig = {}): GameStartResult {
     const deckSize = config.deckSize ?? 'standard';
     const mode = config.mode ?? 'standard';
+    const turnTimerSeconds = config.turnTimerSeconds ?? 60;
 
     if (this.game) {
       return { type: 'error', message: 'Game already started.' };
@@ -96,12 +99,13 @@ export class InMemoryGameService implements GameService {
       mode,
       players: playerSetups,
       tileDeck: shuffleTileDeck(buildTileDeck(undefined, deckSize)),
-      startingTileId: startingTiles[0]
+      startingTileId: startingTiles[0],
+      turnTimerSeconds
     });
 
     this.game = game;
     this.history = [];
-    this.startConfig = { deckSize, mode };
+    this.startConfig = { deckSize, mode, turnTimerSeconds };
 
     return { type: 'success', game };
   }
@@ -174,6 +178,7 @@ export class InMemoryGameService implements GameService {
     }
 
     const deckSize = this.startConfig?.deckSize ?? 'standard';
+    const turnTimerSeconds = this.startConfig?.turnTimerSeconds ?? 60;
     const resetGame = createGame({
       gameId: this.game.id,
       mode: 'sandbox',
@@ -183,7 +188,8 @@ export class InMemoryGameService implements GameService {
         color: player.color
       })),
       tileDeck: shuffleTileDeck(buildTileDeck(undefined, deckSize)),
-      startingTileId
+      startingTileId,
+      turnTimerSeconds
     });
 
     this.game = resetGame;
@@ -193,8 +199,24 @@ export class InMemoryGameService implements GameService {
 
   private hydrate(snapshot: GameServiceSnapshot): void {
     const next = cloneGameServiceSnapshot(snapshot);
-    this.game = next.game;
-    this.history = next.history;
-    this.startConfig = next.startConfig;
+    const timerSeconds = next.startConfig?.turnTimerSeconds ?? 60;
+    this.game = next.game ? normalizeGameState(next.game, timerSeconds) : null;
+    this.history = next.history.map((state) => normalizeGameState(state, timerSeconds));
+    this.startConfig = next.startConfig
+      ? {
+          deckSize: next.startConfig.deckSize,
+          mode: next.startConfig.mode,
+          turnTimerSeconds: timerSeconds
+        }
+      : null;
   }
+}
+
+function normalizeGameState(game: GameState, timerSeconds: SessionTurnTimer): GameState {
+  return {
+    ...game,
+    currentTileOrientation: game.currentTileOrientation ?? null,
+    turnTimerSeconds: game.turnTimerSeconds ?? timerSeconds,
+    turnStartedAt: game.turnStartedAt ?? new Date().toISOString()
+  };
 }

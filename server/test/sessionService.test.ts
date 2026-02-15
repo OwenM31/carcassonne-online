@@ -16,7 +16,8 @@ describe('InMemorySessionService', () => {
         playerCount: 0,
         players: [],
         deckSize: 'standard',
-        mode: 'standard'
+        mode: 'standard',
+        turnTimerSeconds: 60
       }
     ]);
   });
@@ -44,7 +45,8 @@ describe('InMemorySessionService', () => {
         { name: 'Grace' }
       ],
       deckSize: 'standard',
-      mode: 'standard'
+      mode: 'standard',
+      turnTimerSeconds: 60
     });
   });
 
@@ -66,7 +68,8 @@ describe('InMemorySessionService', () => {
         playerCount: 0,
         players: [],
         deckSize: 'standard',
-        mode: 'standard'
+        mode: 'standard',
+        turnTimerSeconds: 60
       }
     ]);
   });
@@ -85,7 +88,8 @@ describe('InMemorySessionService', () => {
         playerCount: 0,
         players: [],
         deckSize: 'small',
-        mode: 'standard'
+        mode: 'standard',
+        turnTimerSeconds: 60
       }
     ]);
   });
@@ -123,7 +127,8 @@ describe('InMemorySessionService', () => {
         playerCount: 0,
         players: [],
         deckSize: 'standard',
-        mode: 'sandbox'
+        mode: 'sandbox',
+        turnTimerSeconds: 60
       }
     ]);
   });
@@ -144,6 +149,45 @@ describe('InMemorySessionService', () => {
     expect(result).toEqual({
       type: 'error',
       message: 'Cannot change session mode after game start.'
+    });
+  });
+
+  it('updates session turn timer before game start', () => {
+    const service = new InMemorySessionService(() => 'session-9');
+    service.createSession();
+
+    const result = service.updateSessionTurnTimer('session-9', 90);
+
+    expect(result.type).toBe('success');
+    expect(service.listSessions()).toEqual([
+      {
+        id: 'session-9',
+        status: 'lobby',
+        playerCount: 0,
+        players: [],
+        deckSize: 'standard',
+        mode: 'standard',
+        turnTimerSeconds: 90
+      }
+    ]);
+  });
+
+  it('rejects turn timer changes after game start', () => {
+    const service = new InMemorySessionService(() => 'session-10');
+    const session = service.createSession();
+
+    session.lobbyService.join('p1', 'Ada');
+    session.lobbyService.join('p2', 'Grace');
+    session.gameService.startGame([
+      { id: 'p1', name: 'Ada' },
+      { id: 'p2', name: 'Grace' }
+    ]);
+
+    const result = service.updateSessionTurnTimer('session-10', 30);
+
+    expect(result).toEqual({
+      type: 'error',
+      message: 'Cannot change turn timer after game start.'
     });
   });
 });

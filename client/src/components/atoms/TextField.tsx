@@ -5,6 +5,9 @@ interface TextFieldProps {
   value: string;
   placeholder?: string;
   disabled?: boolean;
+  type?: 'text' | 'password';
+  inputMode?: 'text' | 'numeric';
+  maxLength?: number;
   onChange: (value: string) => void;
 }
 
@@ -13,6 +16,9 @@ export function TextField({
   value,
   placeholder,
   disabled = false,
+  type = 'text',
+  inputMode,
+  maxLength,
   onChange
 }: TextFieldProps) {
   const inputId = useId();
@@ -27,7 +33,9 @@ export function TextField({
       <input
         id={inputId}
         className="field__input"
-        type="text"
+        type={type}
+        inputMode={inputMode}
+        maxLength={maxLength}
         value={value}
         placeholder={placeholder}
         onChange={handleChange}

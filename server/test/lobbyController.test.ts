@@ -106,27 +106,13 @@ describe('createLobbyController', () => {
 
   it('resets the game when no active game players remain in the lobby', () => {
     const lobbyService = new InMemoryLobbyService();
+    lobbyService.join('p1', 'Ada', '1234');
+    lobbyService.join('p2', 'Grace', '5678');
+    lobbyService.join('p3', 'Linus');
+    lobbyService.lockGameRejoinPins(['p1', 'p2']);
+
     const gameService = new StubGameService(createTestGame());
     const controller = createLobbyController('session-1', lobbyService, gameService);
-
-    controller.handleMessage({
-      type: 'join_lobby',
-      sessionId: 'session-1',
-      playerId: 'p1',
-      playerName: 'Ada'
-    });
-    controller.handleMessage({
-      type: 'join_lobby',
-      sessionId: 'session-1',
-      playerId: 'p2',
-      playerName: 'Grace'
-    });
-    controller.handleMessage({
-      type: 'join_lobby',
-      sessionId: 'session-1',
-      playerId: 'p3',
-      playerName: 'Linus'
-    });
 
     controller.handleMessage({ type: 'leave_lobby', sessionId: 'session-1', playerId: 'p1' });
 
@@ -160,7 +146,7 @@ describe('createLobbyController', () => {
       'session-1',
       lobbyService,
       gameService,
-      () => ({ deckSize: 'small', mode: 'sandbox' })
+      () => ({ deckSize: 'small', mode: 'sandbox', turnTimerSeconds: 90 })
     );
 
     controller.handleMessage({
@@ -184,6 +170,65 @@ describe('createLobbyController', () => {
 
     expect(gameService.lastDeckSize).toBe('small');
     expect(gameService.lastMode).toBe('sandbox');
+  });
+
+  it('rejects rejoin for active players with incorrect PIN', () => {
+    const lobbyService = new InMemoryLobbyService();
+    lobbyService.join('p1', 'Ada', '1234');
+    lobbyService.lockGameRejoinPins(['p1']);
+
+    const gameService = new StubGameService(createTestGame());
+    const controller = createLobbyController('session-1', lobbyService, gameService);
+
+    const response = controller.handleMessage({
+      type: 'join_lobby',
+      sessionId: 'session-1',
+      playerId: 'p1',
+      playerName: 'Ada',
+      playerPin: '9999'
+    });
+
+    expect(response).toEqual({ type: 'error', message: 'Incorrect passkey.' });
+  });
+
+  it('rejects rejoin for active players who never set a PIN', () => {
+    const lobbyService = new InMemoryLobbyService();
+    lobbyService.join('p1', 'Ada');
+    lobbyService.lockGameRejoinPins(['p1']);
+
+    const gameService = new StubGameService(createTestGame());
+    const controller = createLobbyController('session-1', lobbyService, gameService);
+
+    const response = controller.handleMessage({
+      type: 'join_lobby',
+      sessionId: 'session-1',
+      playerId: 'p1',
+      playerName: 'Ada'
+    });
+
+    expect(response).toEqual({
+      type: 'error',
+      message: 'Rejoin is unavailable because no PIN was set.'
+    });
+  });
+
+  it('allows rejoin for active players with matching PIN', () => {
+    const lobbyService = new InMemoryLobbyService();
+    lobbyService.join('p1', 'Ada', '1234');
+    lobbyService.lockGameRejoinPins(['p1']);
+
+    const gameService = new StubGameService(createTestGame());
+    const controller = createLobbyController('session-1', lobbyService, gameService);
+
+    const response = controller.handleMessage({
+      type: 'join_lobby',
+      sessionId: 'session-1',
+      playerId: 'p1',
+      playerName: 'Ada',
+      playerPin: '1234'
+    });
+
+    expect(response.type).toBe('game_state');
   });
 });
 

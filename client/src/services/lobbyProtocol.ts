@@ -118,7 +118,10 @@ function isSessionSummary(value: unknown): value is SessionSummary {
         typeof player.name === 'string'
     ) &&
     (value.deckSize === 'standard' || value.deckSize === 'small') &&
-    (value.mode === 'standard' || value.mode === 'sandbox')
+    (value.mode === 'standard' || value.mode === 'sandbox') &&
+    (value.turnTimerSeconds === 30 ||
+      value.turnTimerSeconds === 60 ||
+      value.turnTimerSeconds === 90)
   );
 }
 

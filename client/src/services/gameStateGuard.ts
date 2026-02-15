@@ -6,6 +6,7 @@ import {
   isBoardState,
   isGameEvent,
   isGameStatus,
+  isOrientation,
   isPlacedMeeple,
   isPlacedTile,
   isPlayerState,
@@ -57,6 +58,9 @@ export function isGameState(value: unknown): value is GameState {
   if (value.currentTileId !== null && typeof value.currentTileId !== 'string') {
     return false;
   }
+  if (value.currentTileOrientation !== null && !isOrientation(value.currentTileOrientation)) {
+    return false;
+  }
 
   if (value.lastPlacedTile !== null && !isPlacedTile(value.lastPlacedTile)) {
     return false;
@@ -75,6 +79,18 @@ export function isGameState(value: unknown): value is GameState {
   }
 
   if (typeof value.turnNumber !== 'number' || Number.isNaN(value.turnNumber)) {
+    return false;
+  }
+
+  if (
+    value.turnTimerSeconds !== 30 &&
+    value.turnTimerSeconds !== 60 &&
+    value.turnTimerSeconds !== 90
+  ) {
+    return false;
+  }
+
+  if (typeof value.turnStartedAt !== 'string') {
     return false;
   }
 

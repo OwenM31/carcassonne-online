@@ -28,7 +28,9 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
   if (parsed.type === 'create_session') {
     if (
       (parsed.deckSize !== undefined && !isSessionDeckSize(parsed.deckSize)) ||
-      (parsed.mode !== undefined && !isSessionMode(parsed.mode))
+      (parsed.mode !== undefined && !isSessionMode(parsed.mode)) ||
+      (parsed.turnTimerSeconds !== undefined &&
+        !isSessionTurnTimer(parsed.turnTimerSeconds))
     ) {
       return null;
     }
@@ -39,6 +41,9 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
     }
     if (parsed.mode !== undefined) {
       message.mode = parsed.mode;
+    }
+    if (parsed.turnTimerSeconds !== undefined) {
+      message.turnTimerSeconds = parsed.turnTimerSeconds;
     }
     return message;
   }
@@ -65,6 +70,20 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
     };
   }
 
+  if (parsed.type === 'set_session_turn_timer') {
+    if (
+      typeof parsed.sessionId !== 'string' ||
+      !isSessionTurnTimer(parsed.turnTimerSeconds)
+    ) {
+      return null;
+    }
+    return {
+      type: 'set_session_turn_timer',
+      sessionId: parsed.sessionId,
+      turnTimerSeconds: parsed.turnTimerSeconds
+    };
+  }
+
   if (parsed.type === 'delete_session') {
     if (typeof parsed.sessionId !== 'string') {
       return null;
@@ -80,7 +99,8 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
     if (
       typeof parsed.sessionId !== 'string' ||
       typeof parsed.playerId !== 'string' ||
-      typeof parsed.playerName !== 'string'
+      typeof parsed.playerName !== 'string' ||
+      (parsed.playerPin !== undefined && typeof parsed.playerPin !== 'string')
     ) {
       return null;
     }
@@ -89,7 +109,8 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
       type: 'join_lobby',
       sessionId: parsed.sessionId,
       playerId: parsed.playerId,
-      playerName: parsed.playerName
+      playerName: parsed.playerName,
+      playerPin: parsed.playerPin
     };
   }
 
@@ -166,4 +187,8 @@ function isSessionDeckSize(value: unknown): value is 'standard' | 'small' {
 
 function isSessionMode(value: unknown): value is 'standard' | 'sandbox' {
   return value === 'standard' || value === 'sandbox';
+}
+
+function isSessionTurnTimer(value: unknown): value is 30 | 60 | 90 {
+  return value === 30 || value === 60 || value === 90;
 }

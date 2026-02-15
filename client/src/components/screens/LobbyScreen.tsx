@@ -2,7 +2,12 @@
  * @description Handles lobby/session flow and routing into active games.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GameState, SessionDeckSize, SessionMode } from '@carcassonne/shared';
+import type {
+  GameState,
+  SessionDeckSize,
+  SessionMode,
+  SessionTurnTimer
+} from '@carcassonne/shared';
 import { LobbyPanel } from '../organisms/LobbyPanel';
 import { GameScreen } from './GameScreen';
 import { LobbyClient } from '../../services/lobbyClient';
@@ -13,6 +18,7 @@ import { loadOrCreatePlayerId } from '../../state/playerIdentity';
 const DEFAULT_SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'ws://localhost:3001';
 export function LobbyScreen() {
   const [playerName, setPlayerName] = useState('');
+  const [playerPin, setPlayerPin] = useState('');
   const [isConnected, setConnected] = useState(false);
   const [viewState, setViewState] = useState(initialLobbyViewState);
   const [game, setGame] = useState<GameState | null>(null);
@@ -20,7 +26,9 @@ export function LobbyScreen() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const activeSessionRef = useRef(activeSessionId);
   const playerNameRef = useRef(playerName);
+  const playerPinRef = useRef(playerPin);
   const joinedNameRef = useRef('');
+  const joinedPinRef = useRef('');
   const [playerId] = useState(() => loadOrCreatePlayerId());
   const [serverUrl] = useState(DEFAULT_SERVER_URL);
   const client = useMemo(() => new LobbyClient(), []);
@@ -28,6 +36,7 @@ export function LobbyScreen() {
     setActiveSessionId(null);
     activeSessionRef.current = null;
     joinedNameRef.current = '';
+    joinedPinRef.current = '';
     setGame(null);
     setGameError(null);
   };
@@ -44,12 +53,16 @@ export function LobbyScreen() {
     playerNameRef.current = playerName;
   }, [playerName]);
   useEffect(() => {
+    playerPinRef.current = playerPin;
+  }, [playerPin]);
+  useEffect(() => {
     const connection = startLobbyConnection({
       client,
       serverUrl,
       playerId,
       getActiveSessionId: () => activeSessionRef.current,
       getReconnectName: () => joinedNameRef.current || playerNameRef.current.trim() || null,
+      getReconnectPin: () => joinedPinRef.current || playerPinRef.current.trim() || null,
       setConnected,
       setError: (message) => setViewState((prev) => ({ ...prev, error: message })),
       onMessage: (message) => {
@@ -70,7 +83,12 @@ export function LobbyScreen() {
         if (message.type === 'error') {
           setViewState((prev) => ({ ...prev, error: message.message }));
           setGameError(message.message);
-          if (message.message === 'Game in progress.' || message.message === 'Session not found.') {
+          if (
+            message.message === 'Game in progress.' ||
+            message.message === 'Session not found.' ||
+            message.message === 'Incorrect passkey.' ||
+            message.message === 'Rejoin is unavailable because no PIN was set.'
+          ) {
             clearActiveSessionState();
           }
           return;
@@ -99,13 +117,15 @@ export function LobbyScreen() {
       setViewState((prev) => ({ ...prev, error: 'Enter a name to join.' }));
       return;
     }
+    const trimmedPin = playerPin.trim();
     setViewState((prev) => ({ ...prev, error: null, lobby: null }));
     setActiveSessionId(sessionId);
     activeSessionRef.current = sessionId;
     joinedNameRef.current = trimmedName;
+    joinedPinRef.current = trimmedPin;
     setGame(null);
     setGameError(null);
-    client.join(sessionId, playerId, trimmedName);
+    client.join(sessionId, playerId, trimmedName, trimmedPin || undefined);
   };
   const handleLeaveSession = () => {
     if (!activeSessionId) {
@@ -137,6 +157,15 @@ export function LobbyScreen() {
       return;
     }
     client.setSessionMode(sessionId, mode);
+  };
+  const handleSetSessionTurnTimer = (
+    sessionId: string,
+    turnTimerSeconds: SessionTurnTimer
+  ) => {
+    if (!isConnected) {
+      return;
+    }
+    client.setSessionTurnTimer(sessionId, turnTimerSeconds);
   };
   const activeSession = useMemo(
     () => viewState.sessions.find((session) => session.id === activeSessionId) ?? null,
@@ -182,11 +211,14 @@ export function LobbyScreen() {
     <LobbyPanel
       playerName={playerName}
       onNameChange={setPlayerName}
+      playerPin={playerPin}
+      onPinChange={setPlayerPin}
       onCreateSession={handleCreateSession}
       onJoinSession={handleJoinSession}
       onDeleteSession={handleDeleteSession}
       onSetSessionDeckSize={handleSetSessionDeckSize}
       onSetSessionMode={handleSetSessionMode}
+      onSetSessionTurnTimer={handleSetSessionTurnTimer}
       onLeaveSession={handleLeaveSession}
       onStartGame={handleStartGame}
       isConnected={isConnected}

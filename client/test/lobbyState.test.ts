@@ -50,7 +50,8 @@ describe('applyLobbyMessage', () => {
           playerCount: 0,
           players: [],
           deckSize: 'standard',
-          mode: 'standard'
+          mode: 'standard',
+          turnTimerSeconds: 60
         }
       ]
     }, null);
@@ -62,7 +63,8 @@ describe('applyLobbyMessage', () => {
         playerCount: 0,
         players: [],
         deckSize: 'standard',
-        mode: 'standard'
+        mode: 'standard',
+        turnTimerSeconds: 60
       }
     ]);
   });

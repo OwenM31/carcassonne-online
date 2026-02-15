@@ -1,4 +1,4 @@
-import type { SessionMode } from './session';
+import type { SessionMode, SessionTurnTimer } from './session';
 
 export type GameId = string;
 export type PlayerId = string;
@@ -82,10 +82,13 @@ export interface GameState {
   tileDeck: TileId[];
   tileDiscard: TileId[];
   currentTileId: TileId | null;
+  currentTileOrientation: Orientation | null;
   lastPlacedTile: PlacedTile | null;
   meeples: PlacedMeeple[];
   eventLog: GameEvent[];
   startingTileId: TileId;
+  turnTimerSeconds: SessionTurnTimer;
+  turnStartedAt: string;
   turnNumber: number;
   seed?: string;
 }
@@ -96,6 +99,7 @@ export interface GameSetup {
   players: PlayerSetup[];
   tileDeck: TileId[];
   startingTileId: TileId;
+  turnTimerSeconds?: SessionTurnTimer;
   seed?: string;
 }
 

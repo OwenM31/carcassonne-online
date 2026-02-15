@@ -8,6 +8,7 @@ import type {
   Orientation,
   SessionDeckSize,
   SessionMode,
+  SessionTurnTimer,
   ServerMessage,
   TileId
 } from '@carcassonne/shared';
@@ -59,8 +60,12 @@ export class LobbyClient {
     this.send({ type: 'list_sessions' });
   }
 
-  createSession(deckSize: SessionDeckSize = 'standard', mode: SessionMode = 'standard') {
-    this.send({ type: 'create_session', deckSize, mode });
+  createSession(
+    deckSize: SessionDeckSize = 'standard',
+    mode: SessionMode = 'standard',
+    turnTimerSeconds: SessionTurnTimer = 60
+  ) {
+    this.send({ type: 'create_session', deckSize, mode, turnTimerSeconds });
   }
 
   setSessionDeckSize(sessionId: string, deckSize: SessionDeckSize) {
@@ -71,12 +76,16 @@ export class LobbyClient {
     this.send({ type: 'set_session_mode', sessionId, mode });
   }
 
+  setSessionTurnTimer(sessionId: string, turnTimerSeconds: SessionTurnTimer) {
+    this.send({ type: 'set_session_turn_timer', sessionId, turnTimerSeconds });
+  }
+
   deleteSession(sessionId: string) {
     this.send({ type: 'delete_session', sessionId });
   }
 
-  join(sessionId: string, playerId: string, playerName: string) {
-    this.send({ type: 'join_lobby', sessionId, playerId, playerName });
+  join(sessionId: string, playerId: string, playerName: string, playerPin?: string) {
+    this.send({ type: 'join_lobby', sessionId, playerId, playerName, playerPin });
   }
 
   leave(sessionId: string, playerId: string) {

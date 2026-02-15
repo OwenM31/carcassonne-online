@@ -57,6 +57,7 @@ export const applyScoringResolution = (
 export const advanceTurn = (state: GameState): GameState => ({
   ...state,
   activePlayerIndex: (state.activePlayerIndex + 1) % state.players.length,
+  turnStartedAt: new Date().toISOString(),
   turnNumber: state.turnNumber + 1
 });
 
@@ -65,6 +66,7 @@ export const closeTurnAfterMeeplePhase = (state: GameState): GameState =>
     ...state,
     phase: 'draw_tile',
     currentTileId: null,
+    currentTileOrientation: null,
     lastPlacedTile: null
   });
 
@@ -75,6 +77,7 @@ export const toGameOverState = (state: GameState, detail: string): GameState =>
       status: 'finished',
       phase: 'game_over',
       currentTileId: null,
+      currentTileOrientation: null,
       lastPlacedTile: null
     },
     {

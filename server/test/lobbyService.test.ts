@@ -26,4 +26,21 @@ describe('InMemoryLobbyService', () => {
 
     expect(state.players).toEqual([{ id: 'p2', name: 'Grace' }]);
   });
+
+  it('validates locked game rejoin PINs', () => {
+    const service = new InMemoryLobbyService();
+    service.join('p1', 'Ada', '1234');
+    service.lockGameRejoinPins(['p1']);
+
+    expect(service.validateGameRejoin('p1', '1234')).toBe('allowed');
+    expect(service.validateGameRejoin('p1', '9999')).toBe('incorrect_passkey');
+  });
+
+  it('blocks rejoin when no PIN was set before game start', () => {
+    const service = new InMemoryLobbyService();
+    service.join('p1', 'Ada');
+    service.lockGameRejoinPins(['p1']);
+
+    expect(service.validateGameRejoin('p1', undefined)).toBe('pin_not_set');
+  });
 });
