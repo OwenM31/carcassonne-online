@@ -10,6 +10,7 @@ export const ERROR_NOT_ACTIVE = 'Only the active player can act.';
 export const ERROR_GAME_INACTIVE = 'Game is not active.';
 export const ERROR_DRAW_PHASE = 'Cannot draw a tile right now.';
 export const ERROR_PLACE_PHASE = 'Cannot place a tile right now.';
+export const ERROR_ORIENTATION_PHASE = 'Cannot change tile orientation right now.';
 export const ERROR_MEEPLE_PHASE = 'Cannot place a meeple right now.';
 export const ERROR_NO_TILE = 'No tile has been drawn.';
 export const ERROR_TILE_MISMATCH = 'Tile does not match the current draw.';

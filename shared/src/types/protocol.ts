@@ -7,6 +7,7 @@ import type {
   GameState,
   PlaceMeepleAction,
   PlaceTileAction,
+  SetTileOrientationAction,
   PlayerId,
   SkipMeepleAction
 } from './game';
@@ -44,6 +45,7 @@ export type ClientMessage =
   | { type: 'reset_sandbox_board'; sessionId: SessionId; playerId: PlayerId }
   | (DrawTileAction & { sessionId: SessionId })
   | (DrawSandboxTileAction & { sessionId: SessionId })
+  | (SetTileOrientationAction & { sessionId: SessionId })
   | (PlaceTileAction & { sessionId: SessionId })
   | (PlaceMeepleAction & { sessionId: SessionId })
   | (SkipMeepleAction & { sessionId: SessionId });

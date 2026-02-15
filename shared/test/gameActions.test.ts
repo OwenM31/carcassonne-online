@@ -70,6 +70,29 @@ describe('applyGameAction', () => {
     expect(placeResult.game.turnNumber).toBe(1);
   });
 
+  it('updates current tile orientation during the placement phase', () => {
+    const state = createGame(setup);
+    const drawResult = applyGameAction(state, { type: 'draw_tile', playerId: 'p1' });
+    if (drawResult.type !== 'success') {
+      throw new Error('Expected draw_tile to succeed.');
+    }
+
+    const initialOrientation = drawResult.game.currentTileOrientation;
+    const nextOrientation = initialOrientation === 0 ? 90 : 0;
+    const orientResult = applyGameAction(drawResult.game, {
+      type: 'set_tile_orientation',
+      playerId: 'p1',
+      orientation: nextOrientation
+    });
+
+    expect(orientResult).toMatchObject({
+      type: 'success',
+      game: {
+        currentTileOrientation: nextOrientation
+      }
+    });
+  });
+
   it('ends the game after skip when the deck is exhausted', () => {
     const state = createGame(setup);
     const drawResult = applyGameAction(state, { type: 'draw_tile', playerId: 'p1' });

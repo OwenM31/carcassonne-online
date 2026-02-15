@@ -145,6 +145,12 @@ export interface PlaceTileAction {
   orientation: Orientation;
 }
 
+export interface SetTileOrientationAction {
+  type: 'set_tile_orientation';
+  playerId: PlayerId;
+  orientation: Orientation;
+}
+
 export interface PlaceMeepleAction {
   type: 'place_meeple';
   playerId: PlayerId;
@@ -159,6 +165,7 @@ export interface SkipMeepleAction {
 export type GameAction =
   | DrawTileAction
   | DrawSandboxTileAction
+  | SetTileOrientationAction
   | PlaceTileAction
   | PlaceMeepleAction
   | SkipMeepleAction;

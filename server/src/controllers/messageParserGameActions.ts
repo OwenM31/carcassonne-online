@@ -75,5 +75,22 @@ export function parseGameActionMessage(parsed: Record<string, unknown>): ClientM
     return { type: 'skip_meeple', sessionId: parsed.sessionId, playerId: parsed.playerId };
   }
 
+  if (parsed.type === 'set_tile_orientation') {
+    if (
+      typeof parsed.sessionId !== 'string' ||
+      typeof parsed.playerId !== 'string' ||
+      !isOrientation(parsed.orientation)
+    ) {
+      return null;
+    }
+
+    return {
+      type: 'set_tile_orientation',
+      sessionId: parsed.sessionId,
+      playerId: parsed.playerId,
+      orientation: parsed.orientation
+    };
+  }
+
   return null;
 }

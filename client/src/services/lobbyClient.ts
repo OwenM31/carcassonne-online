@@ -122,6 +122,10 @@ export class LobbyClient {
     this.send({ type: 'place_tile', sessionId, playerId, tileId, position, orientation });
   }
 
+  setTileOrientation(sessionId: string, playerId: string, orientation: Orientation) {
+    this.send({ type: 'set_tile_orientation', sessionId, playerId, orientation });
+  }
+
   placeMeeple(sessionId: string, playerId: string, placement: MeeplePlacement) {
     this.send({ type: 'place_meeple', sessionId, playerId, placement });
   }

@@ -1,17 +1,16 @@
 /**
- * @description Right-side HUD for game status, scoreboard, feature counters, and event log.
+ * @description Match HUD for game status, scoreboard, feature counters, and event log.
  */
 import type { GameEvent } from '@carcassonne/shared';
 import type { GameHudState } from '../../state/gameHud';
 import { groupEventsByTurn } from '../../state/gameEvents';
-import { TileSprite } from '../atoms/TileSprite';
-
-const HUD_TILE_SIZE_REM = 7;
 
 interface GameHudProps {
   hud: GameHudState;
   eventLog: GameEvent[];
   replayTurn: number | null;
+  turnSecondsRemaining: number | null;
+  turnTimerSeconds: number;
   onSelectEventGroup: (turn: number, isMostRecent: boolean) => void;
 }
 
@@ -36,10 +35,16 @@ const formatEventTime = (createdAt?: string): string => {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 };
 
-export function GameHud({ hud, eventLog, replayTurn, onSelectEventGroup }: GameHudProps) {
+export function GameHud({
+  hud,
+  eventLog,
+  replayTurn,
+  turnSecondsRemaining,
+  turnTimerSeconds,
+  onSelectEventGroup
+}: GameHudProps) {
   const activePlayer = hud.activePlayer;
   const chipClass = activePlayer ? `hud-chip--${activePlayer.color}` : 'hud-chip--neutral';
-  const tileId = hud.currentTileId;
   const playerColorById = hud.scoreboard.reduce<Record<string, string>>((index, player) => {
     index[player.id] = player.color;
     return index;
@@ -69,22 +74,21 @@ export function GameHud({ hud, eventLog, replayTurn, onSelectEventGroup }: GameH
       </div>
 
       <div className="hud-section">
-        <p className="hud-label">Current tile</p>
-        <div className="hud-tile-slot">
-          {tileId ? <TileSprite tileId={tileId} sizeRem={HUD_TILE_SIZE_REM} /> : <p className="hud-tile-placeholder">No tile drawn yet.</p>}
-          <p className="hud-tile-id">{tileId ?? '—'}</p>
-        </div>
-      </div>
-
-      <div className="hud-section">
         <p className="hud-label">Scoreboard</p>
         <ul className="hud-list">
           {hud.scoreboard.map((entry) => (
             <li key={entry.id} className={`hud-item${entry.isActive ? ' hud-item--active' : ''}`}>
-              <span className="hud-item__name">
-                <span className={`hud-chip hud-chip--${entry.color}`} aria-hidden="true" />
-                {entry.name}
-              </span>
+              <div className="hud-item__header">
+                <span className="hud-item__name">
+                  <span className={`hud-chip hud-chip--${entry.color}`} aria-hidden="true" />
+                  {entry.name}
+                </span>
+                {entry.isActive && turnSecondsRemaining !== null ? (
+                  <span className="hud-turn-timer">
+                    {turnSecondsRemaining}s/{turnTimerSeconds}s
+                  </span>
+                ) : null}
+              </div>
               <span className="hud-item__meta">Meeples {entry.meeplesAvailable}/{entry.meeplesTotal} · Score {entry.score}</span>
             </li>
           ))}

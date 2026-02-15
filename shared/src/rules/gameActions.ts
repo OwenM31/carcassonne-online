@@ -4,6 +4,7 @@
 import type { GameAction, GameState } from '../types/game';
 import { applySkipMeepleAction, applyPlaceMeepleAction } from './gameActionMeeple';
 import { type GameActionResult } from './gameActionState';
+import { applySetTileOrientationAction } from './gameActionOrientation';
 import {
   applyDrawSandboxTileAction,
   applyDrawTileAction,
@@ -18,6 +19,8 @@ export function applyGameAction(state: GameState, action: GameAction): GameActio
       return applyDrawTileAction(state, action.playerId);
     case 'draw_sandbox_tile':
       return applyDrawSandboxTileAction(state, action);
+    case 'set_tile_orientation':
+      return applySetTileOrientationAction(state, action);
     case 'place_tile':
       return applyPlaceTileAction(state, action);
     case 'place_meeple':

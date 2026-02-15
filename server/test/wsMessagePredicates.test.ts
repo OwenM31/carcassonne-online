@@ -37,6 +37,15 @@ describe('wsMessagePredicates', () => {
 
     expect(
       requiresBoundPlayer({
+        type: 'set_tile_orientation',
+        sessionId: 'session-1',
+        playerId: 'p1',
+        orientation: 90
+      })
+    ).toBe(true);
+
+    expect(
+      requiresBoundPlayer({
         type: 'join_lobby',
         sessionId: 'session-1',
         playerId: 'p1',

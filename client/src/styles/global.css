@@ -294,13 +294,17 @@ a {
 
 .game-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+  grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr) minmax(15rem, 19rem);
   gap: 2rem;
   align-items: start;
 }
 
 .game-board {
   overflow: visible;
+}
+
+.board-stage {
+  position: relative;
 }
 
 .board-header {
@@ -557,14 +561,19 @@ button.board-tile {
 }
 
 .hud-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 0.6rem;
-  align-items: baseline;
+  display: grid;
+  gap: 0.45rem;
   padding: 0.55rem 0.65rem;
   border-radius: 0.6rem;
   background: rgba(255, 255, 255, 0.75);
   border: 0.08rem solid rgba(45, 39, 32, 0.12);
+}
+
+.hud-item__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.7rem;
 }
 
 .hud-item--active {
@@ -583,6 +592,13 @@ button.board-tile {
 .hud-item__meta {
   font-size: 0.78rem;
   color: #5a5348;
+}
+
+.hud-turn-timer {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  color: var(--color-olive);
+  white-space: nowrap;
 }
 
 .hud-events {
@@ -794,6 +810,35 @@ button.board-tile {
   color: var(--color-olive);
 }
 
+.rules-help-button {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999rem;
+  border: 0.08rem solid rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(28, 24, 20, 0.16);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  cursor: pointer;
+  backdrop-filter: blur(0.1rem);
+  box-shadow: 0 0.2rem 0.4rem rgba(20, 16, 12, 0.2);
+  transition: transform 0.18s ease, background-color 0.18s ease;
+  z-index: 4;
+}
+
+.rules-help-button:hover {
+  transform: translateY(-0.05rem);
+  background: rgba(28, 24, 20, 0.28);
+}
+
+.rules-help-button:focus-visible {
+  outline: 0.12rem solid rgba(255, 255, 255, 0.7);
+  outline-offset: 0.08rem;
+}
+
 .field {
   display: grid;
   gap: 0.6rem;
@@ -882,19 +927,13 @@ button.board-tile {
   margin: 0;
 }
 
-.placement-panel {
+.game-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
-  gap: 1.2rem 2rem;
-  padding: 1.4rem 1.6rem;
-  margin-bottom: 1.6rem;
-  border-radius: 1.2rem;
-  border: 0.08rem solid var(--color-edge);
-  background: rgba(255, 255, 255, 0.75);
-  box-shadow: var(--shadow-soft);
+  gap: 1rem;
+  align-content: start;
 }
 
-.placement-status {
+.game-controls__status {
   display: grid;
   gap: 0.6rem;
 }
@@ -926,10 +965,56 @@ button.board-tile {
 }
 
 .placement-tile-slot {
-  grid-row: 1 / span 2;
   display: grid;
   justify-items: center;
   gap: 0.4rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 0.08rem dashed rgba(54, 81, 58, 0.32);
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.rules-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+  background: rgba(22, 19, 15, 0.45);
+  z-index: 20;
+}
+
+.rules-modal {
+  width: min(34rem, 100%);
+  display: grid;
+  gap: 1rem;
+  padding: 1.8rem;
+}
+
+.rules-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rules-modal__close {
+  border: 0.08rem solid var(--color-olive);
+  border-radius: 999rem;
+  background: transparent;
+  color: var(--color-olive);
+  font: inherit;
+  padding: 0.45rem 0.95rem;
+  cursor: pointer;
+}
+
+.rules-modal__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.55rem;
+  color: #473f35;
+  font-size: 0.92rem;
 }
 
 .sandbox-tray {
@@ -1048,12 +1133,16 @@ button.board-tile {
     grid-template-columns: 1fr;
   }
 
-  .placement-panel {
-    grid-template-columns: 1fr;
+  .game-controls {
+    order: 2;
   }
 
-  .placement-tile-slot {
-    grid-row: auto;
+  .game-board {
+    order: 1;
+  }
+
+  .game-hud {
+    order: 3;
   }
 }
 

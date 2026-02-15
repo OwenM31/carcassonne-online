@@ -1,9 +1,16 @@
 /**
- * @description Game screen layout, tile placement flow, and optional meeple placement controls.
+ * @description Game screen layout, turn controls, board interactions, and replay controls.
  */
 import { useEffect, useMemo, useState } from 'react';
-import type { GameState, MeeplePlacement, Orientation, PlacementOption, TileId } from '@carcassonne/shared';
+import type {
+  GameState,
+  MeeplePlacement,
+  Orientation,
+  PlacementOption,
+  TileId
+} from '@carcassonne/shared';
 import { getLegalMeeplePlacements, getLegalTilePlacements } from '@carcassonne/shared';
+
 import { buildGameHudState } from '../../state/gameHud';
 import { useGameReplay } from '../../state/gameReplay';
 import { getStatusText } from '../../state/gameStatusText';
@@ -13,14 +20,18 @@ import { BoardView } from '../organisms/BoardView';
 import { GameHud } from '../organisms/GameHud';
 import { GamePlacementPanel } from '../organisms/GamePlacementPanel';
 import { GameReplayHotbar } from '../organisms/GameReplayHotbar';
+import { GameRulesModal } from '../organisms/GameRulesModal';
 import { SandboxTileSelector } from '../organisms/SandboxTileSelector';
+
 const ORIENTATIONS: Orientation[] = [0, 90, 180, 270];
+
 interface GameScreenProps {
   game: GameState;
   playerId: string;
   onDrawTile: () => void;
   onDrawSandboxTile: (tileId: TileId) => void;
   onPlaceTile: (tileId: TileId, placement: PlacementOption) => void;
+  onSetTileOrientation: (orientation: Orientation) => void;
   onPlaceMeeple: (placement: MeeplePlacement) => void;
   onSkipMeeple: () => void;
   onUndo: () => void;
@@ -28,12 +39,14 @@ interface GameScreenProps {
   error?: string | null;
   onExit?: () => void;
 }
+
 export function GameScreen({
   game,
   playerId,
   onDrawTile,
   onDrawSandboxTile,
   onPlaceTile,
+  onSetTileOrientation,
   onPlaceMeeple,
   onSkipMeeple,
   onUndo,
@@ -45,28 +58,34 @@ export function GameScreen({
   const viewGame = replay.viewGame;
   const hud = buildGameHudState(viewGame);
   const liveHud = buildGameHudState(game);
-  const [orientation, setOrientation] = useState<Orientation>(game.currentTileOrientation ?? 0);
   const [selectedSandboxTileId, setSelectedSandboxTileId] = useState<TileId | null>(null);
   const [clockNowMs, setClockNowMs] = useState(() => Date.now());
+  const [isRulesOpen, setRulesOpen] = useState(false);
   const isSandbox = game.mode === 'sandbox';
   const liveCurrentTileId = game.currentTileId;
   const viewCurrentTileId = viewGame.currentTileId;
+  const shownOrientation = viewGame.currentTileOrientation ?? 0;
   const isActivePlayer = replay.isCurrentView && liveHud.activePlayer?.id === playerId;
-  const canDrawStandardTile = isActivePlayer && game.phase === 'draw_tile' && !liveCurrentTileId && game.tileDeck.length > 0;
+  const canDrawStandardTile =
+    isActivePlayer && game.phase === 'draw_tile' && !liveCurrentTileId && game.tileDeck.length > 0;
   const canDrawSandboxTile = isSandbox && canDrawStandardTile && !!selectedSandboxTileId;
   const canDrawTile = isSandbox ? canDrawSandboxTile : canDrawStandardTile;
   const canPlaceTile = isActivePlayer && game.phase === 'place_tile' && !!liveCurrentTileId;
+  const canShowTilePlacements = replay.isCurrentView && game.phase === 'place_tile' && !!liveCurrentTileId;
   const canPlaceMeeple = isActivePlayer && game.phase === 'place_meeple';
   const canUndo = isActivePlayer;
   const canResetSandbox = isSandbox && isActivePlayer;
-  useEffect(() => {
-    setOrientation(viewGame.currentTileOrientation ?? 0);
-  }, [viewCurrentTileId, viewGame.currentTileOrientation, viewGame.id]);
+
   useEffect(() => {
     const intervalId = window.setInterval(() => setClockNowMs(Date.now()), 250);
     return () => window.clearInterval(intervalId);
   }, []);
-  const sandboxDeckEntries = useMemo(() => buildSandboxDeckEntries(viewGame.tileDeck), [viewGame.tileDeck]);
+
+  const sandboxDeckEntries = useMemo(
+    () => buildSandboxDeckEntries(viewGame.tileDeck),
+    [viewGame.tileDeck]
+  );
+
   useEffect(() => {
     if (!isSandbox) {
       setSelectedSandboxTileId(null);
@@ -77,29 +96,48 @@ export function GameScreen({
       setSelectedSandboxTileId(sandboxDeckEntries[0]?.tileId ?? null);
     }
   }, [isSandbox, sandboxDeckEntries, selectedSandboxTileId]);
+
   const placements = useMemo(() => {
-    if (!liveCurrentTileId || !canPlaceTile) {
+    if (!liveCurrentTileId || !canShowTilePlacements) {
       return [];
     }
-    return getLegalTilePlacements(game.board, liveCurrentTileId).filter((option) => option.orientation === orientation);
-  }, [canPlaceTile, game.board, liveCurrentTileId, orientation]);
-  const meepleOptions = useMemo(() => (canPlaceMeeple ? getLegalMeeplePlacements(game) : []), [canPlaceMeeple, game]);
+
+    return getLegalTilePlacements(game.board, liveCurrentTileId).filter(
+      (option) => option.orientation === shownOrientation
+    );
+  }, [canShowTilePlacements, game.board, liveCurrentTileId, shownOrientation]);
+
+  const meepleOptions = useMemo(
+    () => (canPlaceMeeple ? getLegalMeeplePlacements(game) : []),
+    [canPlaceMeeple, game]
+  );
+
   const statusText = replay.isCurrentView
     ? getStatusText(game, isActivePlayer, liveHud.activePlayer?.name, meepleOptions)
     : `Read-only replay after turn ${replay.replayTurn}. Use jump to current to resume play.`;
-  const turnSecondsRemaining = replay.isCurrentView
-    ? computeTurnSecondsRemaining(game, clockNowMs)
-    : null;
+
+  const turnSecondsRemaining = replay.isCurrentView ? computeTurnSecondsRemaining(game, clockNowMs) : null;
+
   const playerColorById = useMemo(
-    () => viewGame.players.reduce<Record<string, typeof viewGame.players[number]['color']>>((index, player) => {
-      index[player.id] = player.color;
-      return index;
-    }, {}),
+    () =>
+      viewGame.players.reduce<Record<string, typeof viewGame.players[number]['color']>>((index, player) => {
+        index[player.id] = player.color;
+        return index;
+      }, {}),
     [viewGame.players]
   );
+
   const handleRotate = (step: number) => {
-    setOrientation((prev) => ORIENTATIONS[(ORIENTATIONS.indexOf(prev) + step + ORIENTATIONS.length) % ORIENTATIONS.length]);
+    if (!canPlaceTile) {
+      return;
+    }
+
+    const currentIndex = ORIENTATIONS.indexOf(shownOrientation);
+    const nextOrientation =
+      ORIENTATIONS[(currentIndex + step + ORIENTATIONS.length) % ORIENTATIONS.length] ?? shownOrientation;
+    onSetTileOrientation(nextOrientation);
   };
+
   const handleDrawTile = () => {
     if (!replay.isCurrentView) {
       return;
@@ -114,11 +152,13 @@ export function GameScreen({
 
     onDrawTile();
   };
+
   const handlePlaceTile = (placement: PlacementOption) => {
     if (liveCurrentTileId && canPlaceTile) {
       onPlaceTile(liveCurrentTileId, placement);
     }
   };
+
   const handleSelectEventGroup = (turn: number, isMostRecent: boolean) => {
     if (isMostRecent) {
       replay.jumpToCurrent();
@@ -133,11 +173,25 @@ export function GameScreen({
         <div className="hero__copy">
           <p className="hero__kicker">Carcassonne Match</p>
           <h1 className="hero__title">Game {game.id}</h1>
-          <p className="hero__subtitle">Turn {viewGame.turnNumber} · {hud.phaseLabel} · Active: {hud.activePlayer?.name ?? 'Unknown'}</p>
+          <p className="hero__subtitle">
+            Turn {viewGame.turnNumber} · {hud.phaseLabel} · Active: {hud.activePlayer?.name ?? 'Unknown'}
+          </p>
         </div>
-        {onExit ? <Button type="button" variant="ghost" onClick={onExit}>Return to lobby</Button> : null}
+        {onExit ? (
+          <Button type="button" variant="ghost" onClick={onExit}>
+            Return to lobby
+          </Button>
+        ) : null}
       </header>
       <div className="game-layout">
+        <GameHud
+          hud={hud}
+          eventLog={game.eventLog}
+          replayTurn={replay.replayTurn}
+          turnSecondsRemaining={turnSecondsRemaining}
+          turnTimerSeconds={game.turnTimerSeconds}
+          onSelectEventGroup={handleSelectEventGroup}
+        />
         <section className="card game-board">
           <div className="board-header">
             <h2 className="card__title">Board</h2>
@@ -146,35 +200,27 @@ export function GameScreen({
               <span className="board-stat">Start: {viewGame.startingTileId}</span>
             </div>
           </div>
-          <GamePlacementPanel
-            isActivePlayer={isActivePlayer}
-            statusText={statusText}
-            turnSecondsRemaining={turnSecondsRemaining}
-            turnTimerSeconds={game.turnTimerSeconds}
-            canDrawTile={canDrawTile}
-            isSandbox={isSandbox}
-            canPlaceTile={canPlaceTile}
-            orientation={orientation}
-            canPlaceMeeple={canPlaceMeeple}
-            canUndo={canUndo}
-            currentTileId={viewCurrentTileId}
-            error={error}
-            onDrawTile={handleDrawTile}
-            onUndo={onUndo}
-            onRotate={handleRotate}
-            onSkipMeeple={onSkipMeeple}
-          />
-          <BoardView
-            board={viewGame.board}
-            meeples={viewGame.meeples}
-            playerColorById={playerColorById}
-            highlightTileId={viewGame.startingTileId}
-            placementOptions={replay.isCurrentView ? placements : []}
-            placementTileId={replay.isCurrentView ? liveCurrentTileId : null}
-            onPlaceTile={canPlaceTile ? handlePlaceTile : undefined}
-            meeplePlacementOptions={replay.isCurrentView && canPlaceMeeple ? meepleOptions : []}
-            onPlaceMeeple={replay.isCurrentView && canPlaceMeeple ? onPlaceMeeple : undefined}
-          />
+          <div className="board-stage">
+            <button
+              type="button"
+              className="rules-help-button"
+              aria-label="Open game rules"
+              onClick={() => setRulesOpen(true)}
+            >
+              ?
+            </button>
+            <BoardView
+              board={viewGame.board}
+              meeples={viewGame.meeples}
+              playerColorById={playerColorById}
+              highlightTileId={viewGame.startingTileId}
+              placementOptions={replay.isCurrentView ? placements : []}
+              placementTileId={replay.isCurrentView ? liveCurrentTileId : null}
+              onPlaceTile={canPlaceTile ? handlePlaceTile : undefined}
+              meeplePlacementOptions={replay.isCurrentView && canPlaceMeeple ? meepleOptions : []}
+              onPlaceMeeple={replay.isCurrentView && canPlaceMeeple ? onPlaceMeeple : undefined}
+            />
+          </div>
           <GameReplayHotbar
             replayTurn={replay.replayTurn}
             autoJumpOnLiveUpdate={replay.autoJumpOnLiveUpdate}
@@ -199,13 +245,24 @@ export function GameScreen({
             />
           ) : null}
         </section>
-        <GameHud
-          hud={hud}
-          eventLog={game.eventLog}
-          replayTurn={replay.replayTurn}
-          onSelectEventGroup={handleSelectEventGroup}
+        <GamePlacementPanel
+          isActivePlayer={isActivePlayer}
+          statusText={statusText}
+          canDrawTile={canDrawTile}
+          isSandbox={isSandbox}
+          canPlaceTile={canPlaceTile}
+          orientation={shownOrientation}
+          canPlaceMeeple={canPlaceMeeple}
+          canUndo={canUndo}
+          currentTileId={viewCurrentTileId}
+          error={error}
+          onDrawTile={handleDrawTile}
+          onUndo={onUndo}
+          onRotate={handleRotate}
+          onSkipMeeple={onSkipMeeple}
         />
       </div>
+      <GameRulesModal open={isRulesOpen} onClose={() => setRulesOpen(false)} />
     </main>
   );
 }
@@ -214,12 +271,7 @@ function computeTurnSecondsRemaining(game: GameState, nowMs: number): number | n
   if (game.status !== 'active') {
     return null;
   }
-
-  if (
-    game.phase !== 'draw_tile' &&
-    game.phase !== 'place_tile' &&
-    game.phase !== 'place_meeple'
-  ) {
+  if (game.phase !== 'draw_tile' && game.phase !== 'place_tile' && game.phase !== 'place_meeple') {
     return null;
   }
 

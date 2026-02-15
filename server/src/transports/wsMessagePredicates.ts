@@ -7,6 +7,7 @@ import type {
   DrawTileAction,
   PlaceMeepleAction,
   PlaceTileAction,
+  SetTileOrientationAction,
   SessionId,
   SkipMeepleAction
 } from '@carcassonne/shared';
@@ -22,6 +23,7 @@ export function isLobbyMessage(message: ClientMessage): boolean {
 type SessionGameAction = (
   | DrawSandboxTileAction
   | DrawTileAction
+  | SetTileOrientationAction
   | PlaceTileAction
   | PlaceMeepleAction
   | SkipMeepleAction
@@ -31,6 +33,7 @@ export function isGameAction(message: ClientMessage): message is SessionGameActi
   return (
     message.type === 'draw_tile' ||
     message.type === 'draw_sandbox_tile' ||
+    message.type === 'set_tile_orientation' ||
     message.type === 'place_tile' ||
     message.type === 'place_meeple' ||
     message.type === 'skip_meeple'

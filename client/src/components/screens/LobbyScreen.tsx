@@ -194,6 +194,9 @@ export function LobbyScreen() {
             client.placeTile(sessionId, playerId, tileId, placement.position, placement.orientation)
           )
         }
+        onSetTileOrientation={(orientation) =>
+          withSession((sessionId) => client.setTileOrientation(sessionId, playerId, orientation))
+        }
         onPlaceMeeple={(placement) =>
           withSession((sessionId) => client.placeMeeple(sessionId, playerId, placement))
         }

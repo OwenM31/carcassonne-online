@@ -144,4 +144,22 @@ describe('LobbyClient', () => {
 
     expect(messages).toEqual(['error']);
   });
+
+  it('sends set_tile_orientation messages while connected', () => {
+    const client = new LobbyClient();
+    client.connect('ws://localhost:3001', {});
+    const socket = MockWebSocket.instances[0];
+    socket.emitOpen();
+
+    client.setTileOrientation('session-1', 'p1', 180);
+
+    expect(socket.sent).toContain(
+      JSON.stringify({
+        type: 'set_tile_orientation',
+        sessionId: 'session-1',
+        playerId: 'p1',
+        orientation: 180
+      })
+    );
+  });
 });

@@ -166,6 +166,26 @@ describe('parseClientMessage', () => {
     });
   });
 
+  it('parses set_tile_orientation payloads', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'set_tile_orientation',
+          sessionId: 'session-1',
+          playerId: 'p1',
+          orientation: 270
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'set_tile_orientation',
+      sessionId: 'session-1',
+      playerId: 'p1',
+      orientation: 270
+    });
+  });
+
   it('rejects delete_session payloads without a session id', () => {
     const result = parseClientMessage(
       Buffer.from(JSON.stringify({ type: 'delete_session' }))
