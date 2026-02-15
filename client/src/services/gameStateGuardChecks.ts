@@ -111,6 +111,10 @@ export function isTurnPhase(value: unknown): value is GameState['phase'] {
   );
 }
 
+export function isSessionMode(value: unknown): value is GameState['mode'] {
+  return value === 'standard' || value === 'sandbox';
+}
+
 function isOrientation(value: unknown): value is PlacedTile['orientation'] {
   return value === 0 || value === 90 || value === 180 || value === 270;
 }

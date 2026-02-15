@@ -2,7 +2,12 @@
  * @description Lobby screen layout with session selection and controls.
  */
 import type { CSSProperties } from 'react';
-import type { LobbyPlayer, SessionDeckSize, SessionSummary } from '@carcassonne/shared';
+import type {
+  LobbyPlayer,
+  SessionDeckSize,
+  SessionMode,
+  SessionSummary
+} from '@carcassonne/shared';
 
 import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
@@ -15,10 +20,12 @@ interface LobbyPanelProps {
   onJoinSession: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
   onSetSessionDeckSize: (sessionId: string, deckSize: SessionDeckSize) => void;
+  onSetSessionMode: (sessionId: string, mode: SessionMode) => void;
   onLeaveSession: () => void;
   onStartGame: () => void;
   isConnected: boolean;
   canStartGame: boolean;
+  minimumPlayersToStart: number;
   players: LobbyPlayer[];
   sessions: SessionSummary[];
   activeSessionId: string | null;
@@ -32,10 +39,12 @@ export function LobbyPanel({
   onJoinSession,
   onDeleteSession,
   onSetSessionDeckSize,
+  onSetSessionMode,
   onLeaveSession,
   onStartGame,
   isConnected,
   canStartGame,
+  minimumPlayersToStart,
   players,
   sessions,
   activeSessionId,
@@ -80,7 +89,7 @@ export function LobbyPanel({
               </Button>
             </div>
             {activeSessionId && !canStartGame ? (
-              <p className="hint">Waiting for at least 2 players to start.</p>
+              <p className="hint">Waiting for at least {minimumPlayersToStart} player(s) to start.</p>
             ) : null}
             {error ? <p className="error">{error}</p> : null}
           </div>
@@ -100,10 +109,14 @@ export function LobbyPanel({
                   const canJoin = isConnected && !activeSessionId;
                   const canDelete = isConnected && !activeSessionId;
                   const canChangeDeckSize = isConnected && !isInProgress;
+                  const canChangeMode = isConnected && !isInProgress;
                   const statusLabel = isInProgress ? 'In progress' : 'Lobby';
                   const nextDeckSize: SessionDeckSize =
                     session.deckSize === 'small' ? 'standard' : 'small';
                   const deckLabel = session.deckSize === 'small' ? 'Small deck' : 'Standard deck';
+                  const nextMode: SessionMode =
+                    session.mode === 'sandbox' ? 'standard' : 'sandbox';
+                  const modeLabel = session.mode === 'sandbox' ? 'Sandbox mode' : 'Standard mode';
 
                   return (
                     <li
@@ -114,7 +127,7 @@ export function LobbyPanel({
                       <div className="session-info">
                         <span className="session-id">{session.id}</span>
                         <span className="session-meta">
-                          {statusLabel} · {session.playerCount} players · {deckLabel}
+                          {statusLabel} · {session.playerCount} players · {deckLabel} · {modeLabel}
                         </span>
                       </div>
                       <div className="session-actions">
@@ -126,6 +139,14 @@ export function LobbyPanel({
                           onClick={() => onSetSessionDeckSize(session.id, nextDeckSize)}
                         >
                           {session.deckSize === 'small' ? 'Use standard deck' : 'Use small deck'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={!canChangeMode}
+                          onClick={() => onSetSessionMode(session.id, nextMode)}
+                        >
+                          {session.mode === 'sandbox' ? 'Use standard mode' : 'Use sandbox mode'}
                         </Button>
                         <Button
                           type="button"

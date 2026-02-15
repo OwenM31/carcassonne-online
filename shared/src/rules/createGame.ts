@@ -28,6 +28,7 @@ export function createGame(setup: GameSetup): GameState {
 
   return {
     id: setup.gameId,
+    mode: setup.mode ?? 'standard',
     status: 'active',
     phase: 'draw_tile',
     players,

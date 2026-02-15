@@ -10,7 +10,13 @@ describe('InMemorySessionService', () => {
     service.createSession();
 
     expect(service.listSessions()).toEqual([
-      { id: 'session-1', status: 'lobby', playerCount: 0, deckSize: 'standard' }
+      {
+        id: 'session-1',
+        status: 'lobby',
+        playerCount: 0,
+        deckSize: 'standard',
+        mode: 'standard'
+      }
     ]);
   });
 
@@ -32,7 +38,8 @@ describe('InMemorySessionService', () => {
       id: 'session-2',
       status: 'in_progress',
       playerCount: 2,
-      deckSize: 'standard'
+      deckSize: 'standard',
+      mode: 'standard'
     });
   });
 
@@ -48,7 +55,13 @@ describe('InMemorySessionService', () => {
     expect(deleted).toBe(true);
     expect(missing).toBe(false);
     expect(service.listSessions()).toEqual([
-      { id: 'session-4', status: 'lobby', playerCount: 0, deckSize: 'standard' }
+      {
+        id: 'session-4',
+        status: 'lobby',
+        playerCount: 0,
+        deckSize: 'standard',
+        mode: 'standard'
+      }
     ]);
   });
 
@@ -60,7 +73,13 @@ describe('InMemorySessionService', () => {
 
     expect(result.type).toBe('success');
     expect(service.listSessions()).toEqual([
-      { id: 'session-5', status: 'lobby', playerCount: 0, deckSize: 'small' }
+      {
+        id: 'session-5',
+        status: 'lobby',
+        playerCount: 0,
+        deckSize: 'small',
+        mode: 'standard'
+      }
     ]);
   });
 
@@ -80,6 +99,43 @@ describe('InMemorySessionService', () => {
     expect(result).toEqual({
       type: 'error',
       message: 'Cannot change deck size after game start.'
+    });
+  });
+
+  it('updates session mode before game start', () => {
+    const service = new InMemorySessionService(() => 'session-7');
+    service.createSession();
+
+    const result = service.updateSessionMode('session-7', 'sandbox');
+
+    expect(result.type).toBe('success');
+    expect(service.listSessions()).toEqual([
+      {
+        id: 'session-7',
+        status: 'lobby',
+        playerCount: 0,
+        deckSize: 'standard',
+        mode: 'sandbox'
+      }
+    ]);
+  });
+
+  it('rejects mode changes after game start', () => {
+    const service = new InMemorySessionService(() => 'session-8');
+    const session = service.createSession();
+
+    session.lobbyService.join('p1', 'Ada');
+    session.lobbyService.join('p2', 'Grace');
+    session.gameService.startGame([
+      { id: 'p1', name: 'Ada' },
+      { id: 'p2', name: 'Grace' }
+    ]);
+
+    const result = service.updateSessionMode('session-8', 'sandbox');
+
+    expect(result).toEqual({
+      type: 'error',
+      message: 'Cannot change session mode after game start.'
     });
   });
 });

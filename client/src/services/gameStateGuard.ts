@@ -10,6 +10,7 @@ import {
   isPlacedTile,
   isPlayerState,
   isRecord,
+  isSessionMode,
   isTurnPhase
 } from './gameStateGuardChecks';
 
@@ -19,6 +20,10 @@ export function isGameState(value: unknown): value is GameState {
   }
 
   if (typeof value.id !== 'string') {
+    return false;
+  }
+
+  if (!isSessionMode(value.mode)) {
     return false;
   }
 

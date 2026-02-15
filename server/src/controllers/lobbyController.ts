@@ -6,6 +6,7 @@ import type {
   LobbyState,
   PlayerId,
   SessionDeckSize,
+  SessionMode,
   ServerMessage,
   SessionId
 } from '@carcassonne/shared';
@@ -22,7 +23,10 @@ export function createLobbyController(
   sessionId: SessionId,
   service: LobbyService,
   gameService: GameService,
-  getDeckSize: () => SessionDeckSize = () => 'standard'
+  getSessionConfig: () => { deckSize: SessionDeckSize; mode: SessionMode } = () => ({
+    deckSize: 'standard',
+    mode: 'standard'
+  })
 ): LobbyController {
   return {
     handleMessage(message: ClientMessage) {
@@ -69,7 +73,7 @@ export function createLobbyController(
             };
           }
 
-          const result = gameService.startGame(lobby.players, getDeckSize());
+          const result = gameService.startGame(lobby.players, getSessionConfig());
 
           if (result.type === 'error') {
             return { type: 'error', message: result.message };

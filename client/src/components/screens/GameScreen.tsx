@@ -12,19 +12,18 @@ import type {
 import { getLegalMeeplePlacements, getLegalTilePlacements } from '@carcassonne/shared';
 import { buildGameHudState } from '../../state/gameHud';
 import { getStatusText } from '../../state/gameStatusText';
-import { Badge } from '../atoms/Badge';
+import { buildSandboxDeckEntries } from '../../state/sandboxDeck';
 import { Button } from '../atoms/Button';
-import { TileSprite } from '../atoms/TileSprite';
 import { BoardView } from '../organisms/BoardView';
 import { GameHud } from '../organisms/GameHud';
-import { MeepleActions } from '../organisms/MeepleActions';
+import { GamePlacementPanel } from '../organisms/GamePlacementPanel';
+import { SandboxTileSelector } from '../organisms/SandboxTileSelector';
 const ORIENTATIONS: Orientation[] = [0, 90, 180, 270];
-const PLACEMENT_TILE_SIZE_REM = 5.5;
-
 interface GameScreenProps {
   game: GameState;
   playerId: string;
   onDrawTile: () => void;
+  onDrawSandboxTile: (tileId: TileId) => void;
   onPlaceTile: (tileId: TileId, placement: PlacementOption) => void;
   onPlaceMeeple: (placement: MeeplePlacement) => void;
   onSkipMeeple: () => void;
@@ -32,11 +31,11 @@ interface GameScreenProps {
   error?: string | null;
   onExit?: () => void;
 }
-
 export function GameScreen({
   game,
   playerId,
   onDrawTile,
+  onDrawSandboxTile,
   onPlaceTile,
   onPlaceMeeple,
   onSkipMeeple,
@@ -47,19 +46,39 @@ export function GameScreen({
   const hud = buildGameHudState(game);
   const activePlayer = hud.activePlayer;
   const [orientation, setOrientation] = useState<Orientation>(0);
+  const [selectedSandboxTileId, setSelectedSandboxTileId] = useState<TileId | null>(null);
+  const isSandbox = game.mode === 'sandbox';
   const currentTileId = game.currentTileId;
   const isActivePlayer = activePlayer?.id === playerId;
-  const canDrawTile =
+  const canDrawStandardTile =
     isActivePlayer &&
     game.phase === 'draw_tile' &&
     !currentTileId &&
     game.tileDeck.length > 0;
+  const canDrawSandboxTile =
+    isSandbox &&
+    isActivePlayer &&
+    game.phase === 'draw_tile' &&
+    !currentTileId &&
+    !!selectedSandboxTileId &&
+    game.tileDeck.length > 0;
+  const canDrawTile = isSandbox ? canDrawSandboxTile : canDrawStandardTile;
   const canPlaceTile = isActivePlayer && game.phase === 'place_tile' && !!currentTileId;
   const canPlaceMeeple = isActivePlayer && game.phase === 'place_meeple';
-
   useEffect(() => {
     setOrientation(0);
   }, [currentTileId, game.id]);
+  const sandboxDeckEntries = useMemo(() => buildSandboxDeckEntries(game.tileDeck), [game.tileDeck]);
+  useEffect(() => {
+    if (!isSandbox) {
+      setSelectedSandboxTileId(null);
+      return;
+    }
+
+    if (!selectedSandboxTileId || !sandboxDeckEntries.some((entry) => entry.tileId === selectedSandboxTileId)) {
+      setSelectedSandboxTileId(sandboxDeckEntries[0]?.tileId ?? null);
+    }
+  }, [isSandbox, sandboxDeckEntries, selectedSandboxTileId]);
   const placements = useMemo(() => {
     if (!currentTileId || !canPlaceTile) {
       return [];
@@ -69,7 +88,6 @@ export function GameScreen({
       (option) => option.orientation === orientation
     );
   }, [canPlaceTile, currentTileId, game.board, orientation]);
-
   const meepleOptions = useMemo(() => {
     if (!canPlaceMeeple) {
       return [];
@@ -89,7 +107,6 @@ export function GameScreen({
       ),
     [game.players]
   );
-
   const handleRotate = (step: number) => {
     setOrientation((prev) => {
       const index = ORIENTATIONS.indexOf(prev);
@@ -97,7 +114,6 @@ export function GameScreen({
       return ORIENTATIONS[nextIndex];
     });
   };
-
   const handlePlaceTile = (placement: PlacementOption) => {
     if (!currentTileId || !canPlaceTile) {
       return;
@@ -105,7 +121,17 @@ export function GameScreen({
 
     onPlaceTile(currentTileId, placement);
   };
+  const handleDrawTile = () => {
+    if (isSandbox) {
+      if (!selectedSandboxTileId) {
+        return;
+      }
+      onDrawSandboxTile(selectedSandboxTileId);
+      return;
+    }
 
+    onDrawTile();
+  };
   return (
     <main className="page game-page">
       <header className="hero game-hero">
@@ -122,7 +148,6 @@ export function GameScreen({
           </Button>
         ) : null}
       </header>
-
       <div className="game-layout">
         <section className="card game-board">
           <div className="board-header">
@@ -132,58 +157,21 @@ export function GameScreen({
               <span className="board-stat">Start: {game.startingTileId}</span>
             </div>
           </div>
-          <div className="placement-panel">
-            <div className="placement-status">
-              <Badge tone={isActivePlayer ? 'positive' : 'neutral'}>
-                {isActivePlayer ? 'Your turn' : 'Waiting'}
-              </Badge>
-              <p className="hint">{statusText}</p>
-            </div>
-            <div className="placement-actions">
-              <Button type="button" variant="primary" disabled={!canDrawTile} onClick={onDrawTile}>
-                Draw tile
-              </Button>
-              <Button type="button" variant="ghost" onClick={onUndo}>
-                Undo
-              </Button>
-              <div className="rotation-controls">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={!canPlaceTile}
-                  onClick={() => handleRotate(-1)}
-                >
-                  Rotate left
-                </Button>
-                <span className="rotation-value">{orientation}°</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={!canPlaceTile}
-                  onClick={() => handleRotate(1)}
-                >
-                  Rotate right
-                </Button>
-              </div>
-              <MeepleActions
-                disabled={!canPlaceMeeple}
-                onSkipMeeple={onSkipMeeple}
-              />
-            </div>
-            <div className="placement-tile-slot">
-              {currentTileId ? (
-                <TileSprite
-                  tileId={currentTileId}
-                  sizeRem={PLACEMENT_TILE_SIZE_REM}
-                  orientation={orientation}
-                />
-              ) : (
-                <p className="hud-tile-placeholder">No tile drawn.</p>
-              )}
-              <p className="hud-tile-id">{currentTileId ?? '—'}</p>
-            </div>
-            {error ? <p className="error">{error}</p> : null}
-          </div>
+          <GamePlacementPanel
+            isActivePlayer={isActivePlayer}
+            statusText={statusText}
+            canDrawTile={canDrawTile}
+            isSandbox={isSandbox}
+            canPlaceTile={canPlaceTile}
+            orientation={orientation}
+            canPlaceMeeple={canPlaceMeeple}
+            currentTileId={currentTileId}
+            error={error}
+            onDrawTile={handleDrawTile}
+            onUndo={onUndo}
+            onRotate={handleRotate}
+            onSkipMeeple={onSkipMeeple}
+          />
           <BoardView
             board={game.board}
             meeples={game.meeples}
@@ -195,8 +183,16 @@ export function GameScreen({
             meeplePlacementOptions={canPlaceMeeple ? meepleOptions : []}
             onPlaceMeeple={canPlaceMeeple ? onPlaceMeeple : undefined}
           />
+          {isSandbox ? (
+            <SandboxTileSelector
+              entries={sandboxDeckEntries}
+              selectedTileId={selectedSandboxTileId}
+              onSelectTile={setSelectedSandboxTileId}
+              onDrawSelected={handleDrawTile}
+              canDrawSelected={canDrawSandboxTile}
+            />
+          ) : null}
         </section>
-
         <GameHud hud={hud} />
       </div>
     </main>

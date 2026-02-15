@@ -8,24 +8,27 @@ import {
   type GameActionResult,
   type GameState,
   type LobbyPlayer,
-  type SessionDeckSize
+  type SessionDeckSize,
+  type SessionMode
 } from '@carcassonne/shared';
 
-import type { GameStartResult, GameService } from '../src/services/gameService';
+import type { GameStartConfig, GameStartResult, GameService } from '../src/services/gameService';
 import { createLobbyController } from '../src/controllers/lobbyController';
 import { InMemoryLobbyService } from '../src/services/lobbyService';
 
 class StubGameService implements GameService {
   resetCalls = 0;
   lastDeckSize: SessionDeckSize | null = null;
+  lastMode: SessionMode | null = null;
   private game: GameState | null;
 
   constructor(game: GameState | null = null) {
     this.game = game;
   }
 
-  startGame(players: LobbyPlayer[], deckSize: SessionDeckSize = 'standard'): GameStartResult {
-    this.lastDeckSize = deckSize;
+  startGame(players: LobbyPlayer[], config: GameStartConfig = {}): GameStartResult {
+    this.lastDeckSize = config.deckSize ?? 'standard';
+    this.lastMode = config.mode ?? 'standard';
     return { type: 'error', message: `Not implemented for ${players.length} players.` };
   }
 
@@ -141,14 +144,14 @@ describe('createLobbyController', () => {
     expect(lobbyService.getState().players).toHaveLength(0);
   });
 
-  it('starts game with the configured session deck size', () => {
+  it('starts game with the configured session options', () => {
     const lobbyService = new InMemoryLobbyService();
     const gameService = new StubGameService();
     const controller = createLobbyController(
       'session-1',
       lobbyService,
       gameService,
-      () => 'small'
+      () => ({ deckSize: 'small', mode: 'sandbox' })
     );
 
     controller.handleMessage({
@@ -171,6 +174,7 @@ describe('createLobbyController', () => {
     });
 
     expect(gameService.lastDeckSize).toBe('small');
+    expect(gameService.lastMode).toBe('sandbox');
   });
 });
 

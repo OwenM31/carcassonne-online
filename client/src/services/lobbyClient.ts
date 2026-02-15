@@ -7,6 +7,7 @@ import type {
   MeeplePlacement,
   Orientation,
   SessionDeckSize,
+  SessionMode,
   ServerMessage,
   TileId
 } from '@carcassonne/shared';
@@ -58,12 +59,16 @@ export class LobbyClient {
     this.send({ type: 'list_sessions' });
   }
 
-  createSession(deckSize: SessionDeckSize = 'standard') {
-    this.send({ type: 'create_session', deckSize });
+  createSession(deckSize: SessionDeckSize = 'standard', mode: SessionMode = 'standard') {
+    this.send({ type: 'create_session', deckSize, mode });
   }
 
   setSessionDeckSize(sessionId: string, deckSize: SessionDeckSize) {
     this.send({ type: 'set_session_deck_size', sessionId, deckSize });
+  }
+
+  setSessionMode(sessionId: string, mode: SessionMode) {
+    this.send({ type: 'set_session_mode', sessionId, mode });
   }
 
   deleteSession(sessionId: string) {
@@ -88,6 +93,10 @@ export class LobbyClient {
 
   drawTile(sessionId: string, playerId: string) {
     this.send({ type: 'draw_tile', sessionId, playerId });
+  }
+
+  drawSandboxTile(sessionId: string, playerId: string, tileId: TileId) {
+    this.send({ type: 'draw_sandbox_tile', sessionId, playerId, tileId });
   }
 
   placeTile(

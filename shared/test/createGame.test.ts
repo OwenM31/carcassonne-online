@@ -15,6 +15,7 @@ describe('createGame', () => {
 
     const state = createGame(setup);
 
+    expect(state.mode).toBe('standard');
     expect(state.status).toBe('active');
     expect(state.phase).toBe('draw_tile');
     expect(state.activePlayerIndex).toBe(0);
@@ -37,5 +38,19 @@ describe('createGame', () => {
     const state = createGame(setup);
 
     expect(state.tileDeck).toEqual(['A', 'B']);
+  });
+
+  it('uses sandbox mode when requested', () => {
+    const setup: GameSetup = {
+      gameId: 'game-3',
+      mode: 'sandbox',
+      startingTileId: 'START',
+      tileDeck: ['A', 'START', 'B'],
+      players: [{ id: 'p1', name: 'Player 1', color: 'red' }]
+    };
+
+    const state = createGame(setup);
+
+    expect(state.mode).toBe('sandbox');
   });
 });

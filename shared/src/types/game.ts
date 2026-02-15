@@ -1,3 +1,5 @@
+import type { SessionMode } from './session';
+
 export type GameId = string;
 export type PlayerId = string;
 export type TileId = string;
@@ -71,6 +73,7 @@ export type TurnPhase = 'setup' | 'draw_tile' | 'place_tile' | 'place_meeple' | 
 
 export interface GameState {
   id: GameId;
+  mode: SessionMode;
   status: GameStatus;
   phase: TurnPhase;
   players: PlayerState[];
@@ -89,6 +92,7 @@ export interface GameState {
 
 export interface GameSetup {
   gameId: GameId;
+  mode?: SessionMode;
   players: PlayerSetup[];
   tileDeck: TileId[];
   startingTileId: TileId;
@@ -123,6 +127,12 @@ export interface DrawTileAction {
   playerId: PlayerId;
 }
 
+export interface DrawSandboxTileAction {
+  type: 'draw_sandbox_tile';
+  playerId: PlayerId;
+  tileId: TileId;
+}
+
 export interface PlaceTileAction {
   type: 'place_tile';
   playerId: PlayerId;
@@ -142,4 +152,9 @@ export interface SkipMeepleAction {
   playerId: PlayerId;
 }
 
-export type GameAction = DrawTileAction | PlaceTileAction | PlaceMeepleAction | SkipMeepleAction;
+export type GameAction =
+  | DrawTileAction
+  | DrawSandboxTileAction
+  | PlaceTileAction
+  | PlaceMeepleAction
+  | SkipMeepleAction;

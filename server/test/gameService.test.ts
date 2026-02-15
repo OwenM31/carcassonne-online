@@ -67,7 +67,7 @@ describe('InMemoryGameService', () => {
 
   it('creates a game with small deck sizing when selected', () => {
     const service = new InMemoryGameService(() => 'game-small');
-    const result = service.startGame(lobbyPlayers, 'small');
+    const result = service.startGame(lobbyPlayers, { deckSize: 'small' });
 
     if (result.type !== 'success') {
       throw new Error('Expected a successful game start.');
@@ -75,6 +75,18 @@ describe('InMemoryGameService', () => {
 
     const expectedDeckLength = buildTileDeck(undefined, 'small').length - 1;
     expect(result.game.tileDeck).toHaveLength(expectedDeckLength);
+  });
+
+  it('allows single-player starts in sandbox mode', () => {
+    const service = new InMemoryGameService(() => 'game-sandbox');
+    const result = service.startGame([lobbyPlayers[0]], { mode: 'sandbox' });
+
+    if (result.type !== 'success') {
+      throw new Error('Expected sandbox game start to succeed.');
+    }
+
+    expect(result.game.mode).toBe('sandbox');
+    expect(result.game.players).toHaveLength(1);
   });
 
   it('prevents starting multiple games', () => {

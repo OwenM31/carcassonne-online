@@ -854,6 +854,71 @@ button.board-tile {
   gap: 0.4rem;
 }
 
+.sandbox-tray {
+  margin-top: 1.2rem;
+  padding: 1.1rem;
+  border-radius: 1rem;
+  border: 0.08rem solid var(--color-edge);
+  background: rgba(255, 255, 255, 0.72);
+  display: grid;
+  gap: 0.8rem;
+}
+
+.sandbox-tray__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.sandbox-tray__title {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0.04rem;
+  text-transform: uppercase;
+  color: var(--color-olive);
+}
+
+.sandbox-tray__tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.1rem, 1fr));
+  gap: 0.7rem;
+  max-height: 15rem;
+  overflow: auto;
+  padding-right: 0.3rem;
+}
+
+.sandbox-tile {
+  border: 0.08rem solid var(--color-edge);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.9);
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sandbox-tile--selected {
+  border-color: var(--color-forest);
+  box-shadow: 0 0 0 0.14rem rgba(56, 110, 78, 0.22);
+}
+
+.sandbox-tile__id {
+  font-size: 0.66rem;
+  letter-spacing: 0.06rem;
+  text-transform: uppercase;
+  color: var(--color-slate);
+}
+
+.sandbox-tile__count {
+  font-size: 0.82rem;
+  color: var(--color-olive);
+}
+
 @keyframes page-rise {
   from {
     opacity: 0;

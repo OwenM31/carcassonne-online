@@ -3,12 +3,8 @@
  */
 import type { ClientMessage } from '@carcassonne/shared';
 import type { RawData } from 'ws';
-import {
-  isCoordinate,
-  isMeeplePlacement,
-  isOrientation,
-  isRecord
-} from './messageParserPredicates';
+import { isRecord } from './messageParserPredicates';
+import { parseGameActionMessage } from './messageParserGameActions';
 
 export function parseClientMessage(raw: RawData): ClientMessage | null {
   const payload = readRawData(raw);
@@ -30,10 +26,21 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
   }
 
   if (parsed.type === 'create_session') {
-    if (parsed.deckSize !== undefined && !isSessionDeckSize(parsed.deckSize)) {
+    if (
+      (parsed.deckSize !== undefined && !isSessionDeckSize(parsed.deckSize)) ||
+      (parsed.mode !== undefined && !isSessionMode(parsed.mode))
+    ) {
       return null;
     }
-    return { type: 'create_session', deckSize: parsed.deckSize };
+
+    const message: Extract<ClientMessage, { type: 'create_session' }> = { type: 'create_session' };
+    if (parsed.deckSize !== undefined) {
+      message.deckSize = parsed.deckSize;
+    }
+    if (parsed.mode !== undefined) {
+      message.mode = parsed.mode;
+    }
+    return message;
   }
 
   if (parsed.type === 'set_session_deck_size') {
@@ -44,6 +51,17 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
       type: 'set_session_deck_size',
       sessionId: parsed.sessionId,
       deckSize: parsed.deckSize
+    };
+  }
+
+  if (parsed.type === 'set_session_mode') {
+    if (typeof parsed.sessionId !== 'string' || !isSessionMode(parsed.mode)) {
+      return null;
+    }
+    return {
+      type: 'set_session_mode',
+      sessionId: parsed.sessionId,
+      mode: parsed.mode
     };
   }
 
@@ -111,71 +129,7 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
     };
   }
 
-  if (parsed.type === 'draw_tile') {
-    if (typeof parsed.sessionId !== 'string' || typeof parsed.playerId !== 'string') {
-      return null;
-    }
-
-    return {
-      type: 'draw_tile',
-      sessionId: parsed.sessionId,
-      playerId: parsed.playerId
-    };
-  }
-
-  if (parsed.type === 'place_tile') {
-    if (
-      typeof parsed.sessionId !== 'string' ||
-      typeof parsed.playerId !== 'string' ||
-      typeof parsed.tileId !== 'string'
-    ) {
-      return null;
-    }
-
-    if (!isCoordinate(parsed.position) || !isOrientation(parsed.orientation)) {
-      return null;
-    }
-
-    return {
-      type: 'place_tile',
-      sessionId: parsed.sessionId,
-      playerId: parsed.playerId,
-      tileId: parsed.tileId,
-      position: parsed.position,
-      orientation: parsed.orientation
-    };
-  }
-
-  if (parsed.type === 'place_meeple') {
-    if (typeof parsed.sessionId !== 'string' || typeof parsed.playerId !== 'string') {
-      return null;
-    }
-
-    if (!isMeeplePlacement(parsed.placement)) {
-      return null;
-    }
-
-    return {
-      type: 'place_meeple',
-      sessionId: parsed.sessionId,
-      playerId: parsed.playerId,
-      placement: parsed.placement
-    };
-  }
-
-  if (parsed.type === 'skip_meeple') {
-    if (typeof parsed.sessionId !== 'string' || typeof parsed.playerId !== 'string') {
-      return null;
-    }
-
-    return {
-      type: 'skip_meeple',
-      sessionId: parsed.sessionId,
-      playerId: parsed.playerId
-    };
-  }
-
-  return null;
+  return parseGameActionMessage(parsed);
 }
 
 function readRawData(raw: RawData): string | null {
@@ -196,4 +150,8 @@ function readRawData(raw: RawData): string | null {
 
 function isSessionDeckSize(value: unknown): value is 'standard' | 'small' {
   return value === 'standard' || value === 'small';
+}
+
+function isSessionMode(value: unknown): value is 'standard' | 'sandbox' {
+  return value === 'standard' || value === 'sandbox';
 }

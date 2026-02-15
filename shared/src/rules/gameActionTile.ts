@@ -1,7 +1,7 @@
 /**
  * @description Draw and tile placement action handlers.
  */
-import type { GameState, PlaceTileAction } from '../types/game';
+import type { DrawSandboxTileAction, GameState, PlaceTileAction, TileId } from '../types/game';
 import { addTileToBoard } from './board';
 import { getLegalTilePlacements, isTilePlacementValid } from './placement';
 import {
@@ -12,6 +12,8 @@ import {
   ERROR_NOT_ACTIVE,
   ERROR_NO_TILE,
   ERROR_PLACE_PHASE,
+  ERROR_SANDBOX_ONLY,
+  ERROR_SANDBOX_TILE_UNAVAILABLE,
   ERROR_TILE_MISMATCH,
   advanceTurn,
   getActivePlayer,
@@ -41,44 +43,41 @@ export const applyDrawTileAction = (state: GameState, playerId: string): GameAct
   }
 
   const [nextTileId, ...remainingDeck] = state.tileDeck;
-  const placements = getLegalTilePlacements(state.board, nextTileId);
+  return drawResolvedTile(state, playerId, nextTileId, remainingDeck, 'drew');
+};
 
-  if (placements.length === 0) {
-    const discarded = withEvent(
-      {
-        ...state,
-        tileDeck: remainingDeck,
-        tileDiscard: [...state.tileDiscard, nextTileId],
-        phase: 'draw_tile'
-      },
-      {
-        turn: state.turnNumber,
-        type: 'discard_tile',
-        playerId,
-        detail: `${getActivePlayer(state)?.name ?? playerId} discarded ${nextTileId}.`
-      }
-    );
-
-    return { type: 'success', game: advanceTurn(discarded) };
+export const applyDrawSandboxTileAction = (
+  state: GameState,
+  action: DrawSandboxTileAction
+): GameActionResult => {
+  if (state.mode !== 'sandbox') {
+    return { type: 'error', message: ERROR_SANDBOX_ONLY };
+  }
+  if (state.status !== 'active') {
+    return { type: 'error', message: ERROR_GAME_INACTIVE };
+  }
+  if (getActivePlayer(state)?.id !== action.playerId) {
+    return { type: 'error', message: ERROR_NOT_ACTIVE };
+  }
+  if (state.phase !== 'draw_tile' || state.currentTileId) {
+    return { type: 'error', message: ERROR_DRAW_PHASE };
+  }
+  if (state.tileDeck.length === 0) {
+    const scored = applyScoringResolution(state, resolveFinalScoring(state));
+    return {
+      type: 'success',
+      game: toGameOverState(scored, 'Tile deck exhausted. Final scoring complete.')
+    };
   }
 
-  return {
-    type: 'success',
-    game: withEvent(
-      {
-        ...state,
-        tileDeck: remainingDeck,
-        currentTileId: nextTileId,
-        phase: 'place_tile'
-      },
-      {
-        turn: state.turnNumber,
-        type: 'draw_tile',
-        playerId,
-        detail: `${getActivePlayer(state)?.name ?? playerId} drew ${nextTileId}.`
-      }
-    )
-  };
+  const selectedIndex = state.tileDeck.indexOf(action.tileId);
+  if (selectedIndex < 0) {
+    return { type: 'error', message: ERROR_SANDBOX_TILE_UNAVAILABLE };
+  }
+
+  const remainingDeck = [...state.tileDeck];
+  remainingDeck.splice(selectedIndex, 1);
+  return drawResolvedTile(state, action.playerId, action.tileId, remainingDeck, 'selected');
 };
 
 export const applyPlaceTileAction = (
@@ -124,6 +123,53 @@ export const applyPlaceTileAction = (
         type: 'place_tile',
         playerId: action.playerId,
         detail: `${getActivePlayer(state)?.name ?? action.playerId} placed ${action.tileId} at ${action.position.x},${action.position.y}.`
+      }
+    )
+  };
+};
+
+const drawResolvedTile = (
+  state: GameState,
+  playerId: string,
+  tileId: TileId,
+  remainingDeck: TileId[],
+  drawVerb: 'drew' | 'selected'
+): GameActionResult => {
+  const placements = getLegalTilePlacements(state.board, tileId);
+
+  if (placements.length === 0) {
+    const discarded = withEvent(
+      {
+        ...state,
+        tileDeck: remainingDeck,
+        tileDiscard: [...state.tileDiscard, tileId],
+        phase: 'draw_tile'
+      },
+      {
+        turn: state.turnNumber,
+        type: 'discard_tile',
+        playerId,
+        detail: `${getActivePlayer(state)?.name ?? playerId} discarded ${tileId}.`
+      }
+    );
+
+    return { type: 'success', game: advanceTurn(discarded) };
+  }
+
+  return {
+    type: 'success',
+    game: withEvent(
+      {
+        ...state,
+        tileDeck: remainingDeck,
+        currentTileId: tileId,
+        phase: 'place_tile'
+      },
+      {
+        turn: state.turnNumber,
+        type: 'draw_tile',
+        playerId,
+        detail: `${getActivePlayer(state)?.name ?? playerId} ${drawVerb} ${tileId}.`
       }
     )
   };

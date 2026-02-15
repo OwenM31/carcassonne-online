@@ -22,6 +22,10 @@ export function getStatusText(
       return 'Deck exhausted. Waiting for final scoring.';
     }
 
+    if (game.mode === 'sandbox') {
+      return 'Select a tile from the sandbox tray to begin your turn.';
+    }
+
     return 'Draw a tile to begin your turn.';
   }
 

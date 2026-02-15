@@ -2,7 +2,7 @@
  * @description Handles lobby/session flow and routing into active games.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GameState, SessionDeckSize } from '@carcassonne/shared';
+import type { GameState, SessionDeckSize, SessionMode } from '@carcassonne/shared';
 import { LobbyPanel } from '../organisms/LobbyPanel';
 import { GameScreen } from './GameScreen';
 import { LobbyClient } from '../../services/lobbyClient';
@@ -10,9 +10,7 @@ import { startLobbyConnection } from '../../services/lobbyConnection';
 import { isPlayerInGame } from '../../state/gameSelectors';
 import { applyLobbyMessage, initialLobbyViewState } from '../../state/lobbyState';
 import { loadOrCreatePlayerId } from '../../state/playerIdentity';
-
 const DEFAULT_SERVER_URL = import.meta.env.VITE_SERVER_URL ?? 'ws://localhost:3001';
-
 export function LobbyScreen() {
   const [playerName, setPlayerName] = useState('');
   const [isConnected, setConnected] = useState(false);
@@ -39,15 +37,12 @@ export function LobbyScreen() {
     }
     callback(activeSessionId);
   };
-
   useEffect(() => {
     activeSessionRef.current = activeSessionId;
   }, [activeSessionId]);
-
   useEffect(() => {
     playerNameRef.current = playerName;
   }, [playerName]);
-
   useEffect(() => {
     const connection = startLobbyConnection({
       client,
@@ -88,7 +83,6 @@ export function LobbyScreen() {
       connection.stop();
     };
   }, [client, playerId, serverUrl]);
-
   const handleCreateSession = () => {
     if (!isConnected) {
       return;
@@ -96,7 +90,6 @@ export function LobbyScreen() {
     setViewState((prev) => ({ ...prev, error: null }));
     client.createSession();
   };
-
   const handleJoinSession = (sessionId: string) => {
     if (!isConnected) {
       return;
@@ -137,25 +130,36 @@ export function LobbyScreen() {
     if (!isConnected) {
       return;
     }
-
     client.setSessionDeckSize(sessionId, deckSize);
   };
-
+  const handleSetSessionMode = (sessionId: string, mode: SessionMode) => {
+    if (!isConnected) {
+      return;
+    }
+    client.setSessionMode(sessionId, mode);
+  };
+  const activeSession = useMemo(
+    () => viewState.sessions.find((session) => session.id === activeSessionId) ?? null,
+    [activeSessionId, viewState.sessions]
+  );
+  const minimumPlayers = activeSession?.mode === 'sandbox' ? 1 : 2;
   const canStartGame =
-    isConnected && !!activeSessionId && (viewState.lobby?.players.length ?? 0) >= 2;
+    isConnected && !!activeSessionId && (viewState.lobby?.players.length ?? 0) >= minimumPlayers;
   const handleStartGame = () => {
     if (!canStartGame || !activeSessionId) {
       return;
     }
     client.startGame(activeSessionId, playerId);
   };
-
   if (game) {
     return (
       <GameScreen
         game={game}
         playerId={playerId}
         onDrawTile={() => withSession((sessionId) => client.drawTile(sessionId, playerId))}
+        onDrawSandboxTile={(tileId) =>
+          withSession((sessionId) => client.drawSandboxTile(sessionId, playerId, tileId))
+        }
         onPlaceTile={(tileId, placement) =>
           withSession((sessionId) =>
             client.placeTile(sessionId, playerId, tileId, placement.position, placement.orientation)
@@ -171,7 +175,6 @@ export function LobbyScreen() {
       />
     );
   }
-
   return (
     <LobbyPanel
       playerName={playerName}
@@ -180,10 +183,12 @@ export function LobbyScreen() {
       onJoinSession={handleJoinSession}
       onDeleteSession={handleDeleteSession}
       onSetSessionDeckSize={handleSetSessionDeckSize}
+      onSetSessionMode={handleSetSessionMode}
       onLeaveSession={handleLeaveSession}
       onStartGame={handleStartGame}
       isConnected={isConnected}
       canStartGame={canStartGame}
+      minimumPlayersToStart={minimumPlayers}
       players={viewState.lobby?.players ?? []}
       sessions={viewState.sessions}
       activeSessionId={activeSessionId}

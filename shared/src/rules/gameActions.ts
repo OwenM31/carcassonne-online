@@ -4,7 +4,11 @@
 import type { GameAction, GameState } from '../types/game';
 import { applySkipMeepleAction, applyPlaceMeepleAction } from './gameActionMeeple';
 import { type GameActionResult } from './gameActionState';
-import { applyDrawTileAction, applyPlaceTileAction } from './gameActionTile';
+import {
+  applyDrawSandboxTileAction,
+  applyDrawTileAction,
+  applyPlaceTileAction
+} from './gameActionTile';
 
 export type { GameActionResult } from './gameActionState';
 
@@ -12,6 +16,8 @@ export function applyGameAction(state: GameState, action: GameAction): GameActio
   switch (action.type) {
     case 'draw_tile':
       return applyDrawTileAction(state, action.playerId);
+    case 'draw_sandbox_tile':
+      return applyDrawSandboxTileAction(state, action);
     case 'place_tile':
       return applyPlaceTileAction(state, action);
     case 'place_meeple':

@@ -17,6 +17,8 @@ export const ERROR_ILLEGAL_PLACEMENT = 'Tile placement is not legal.';
 export const ERROR_ILLEGAL_MEEPLE = 'Meeple placement is not legal.';
 export const ERROR_OCCUPIED_FEATURE = 'Feature already has a meeple.';
 export const ERROR_NO_MEEPLES = 'No meeples available.';
+export const ERROR_SANDBOX_ONLY = 'Sandbox tile selection is only available in sandbox mode.';
+export const ERROR_SANDBOX_TILE_UNAVAILABLE = 'Selected tile is not available in the deck.';
 
 export type GameActionResult =
   | { type: 'success'; game: GameState }

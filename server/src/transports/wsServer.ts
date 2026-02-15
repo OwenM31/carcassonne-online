@@ -3,21 +3,19 @@
  */
 import type { Server as HttpServer } from 'http';
 import { WebSocket, WebSocketServer } from 'ws';
-import type {
-  ClientMessage,
-  DrawTileAction,
-  PlaceMeepleAction,
-  PlaceTileAction,
-  ServerMessage,
-  SessionId,
-  SkipMeepleAction
-} from '@carcassonne/shared';
+import type { ServerMessage } from '@carcassonne/shared';
 
 import { createGameController } from '../controllers/gameController';
 import { createLobbyController } from '../controllers/lobbyController';
 import { parseClientMessage } from '../controllers/messageParser';
 import type { SessionService } from '../services/sessionService';
 import { SocketPresenceService } from '../services/socketPresenceService';
+import {
+  hasSessionId,
+  isGameAction,
+  isLobbyMessage,
+  shouldRefreshSessions
+} from './wsMessagePredicates';
 
 interface WsServerOptions {
   server: HttpServer;
@@ -56,7 +54,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         sessionId,
         session.lobbyService,
         session.gameService,
-        () => session.deckSize
+        () => ({ deckSize: session.deckSize, mode: session.mode })
       );
       const response = lobbyController.handleDisconnect(playerId);
       broadcast(response);
@@ -78,7 +76,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
       }
 
       if (parsed.type === 'create_session') {
-        sessionService.createSession(parsed.deckSize);
+        sessionService.createSession(parsed.deckSize, parsed.mode);
         broadcast(buildSessionListMessage(sessionService));
         return;
       }
@@ -87,6 +85,20 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         const updateResult = sessionService.updateSessionDeckSize(
           parsed.sessionId,
           parsed.deckSize
+        );
+        if (updateResult.type === 'error') {
+          sendTo(socket, { type: 'error', message: updateResult.message });
+          return;
+        }
+
+        broadcast(buildSessionListMessage(sessionService));
+        return;
+      }
+
+      if (parsed.type === 'set_session_mode') {
+        const updateResult = sessionService.updateSessionMode(
+          parsed.sessionId,
+          parsed.mode
         );
         if (updateResult.type === 'error') {
           sendTo(socket, { type: 'error', message: updateResult.message });
@@ -123,7 +135,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         parsed.sessionId,
         session.lobbyService,
         session.gameService,
-        () => session.deckSize
+        () => ({ deckSize: session.deckSize, mode: session.mode })
       );
       const gameController = createGameController(parsed.sessionId, session.gameService);
 
@@ -171,45 +183,9 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
   return wss;
 }
 
-function isLobbyMessage(message: ClientMessage): boolean {
-  return (
-    message.type === 'join_lobby' ||
-    message.type === 'leave_lobby' ||
-    message.type === 'start_game'
-  );
-}
-
-type SessionGameAction = (
-  | DrawTileAction
-  | PlaceTileAction
-  | PlaceMeepleAction
-  | SkipMeepleAction
-) & { sessionId: SessionId };
-
-function isGameAction(message: ClientMessage): message is SessionGameAction {
-  return (
-    message.type === 'draw_tile' ||
-    message.type === 'place_tile' ||
-    message.type === 'place_meeple' ||
-    message.type === 'skip_meeple'
-  );
-}
-
-function hasSessionId(message: ClientMessage): message is ClientMessage & { sessionId: SessionId } {
-  return 'sessionId' in message && typeof message.sessionId === 'string';
-}
-
 function buildSessionListMessage(service: SessionService): ServerMessage {
   return {
     type: 'session_list',
     sessions: service.listSessions()
   };
-}
-
-function shouldRefreshSessions(message: ClientMessage): boolean {
-  return (
-    message.type === 'join_lobby' ||
-    message.type === 'leave_lobby' ||
-    message.type === 'start_game'
-  );
 }

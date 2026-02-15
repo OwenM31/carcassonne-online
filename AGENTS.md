@@ -41,6 +41,7 @@ A web-based, online multiplayer clone of the Carcassonne base game.
 * **User Preferences:** Run tests (`npm test`) every turn; commit (`git commit`) on green; increment right-most app version number each commit.
 * **Current Focus:** Scoring, end-game resolution, undo support, and board-level meeple visualization.
 * **Accomplished:** [Maintain this list with task completions with most recent at the top; ocasionally condense this list]
+    * Add sandbox session mode (single-player start + manual tile picker with remaining counts) and regression coverage that undo restores score state after scoring actions
     * Add end-game polish: immediate game-over after final tile turn (no empty-deck draw), preserve meeples on board after final scoring, and add scrollable HUD event log timestamps
     * Add per-session small-deck option in lobby (ceil half by tile type), wire selection through shared protocol/server session config/game start, and align tile-catalog tests to current catalog data
     * Add global app footer with shared version constant and display version `0.1.100` across lobby/game views
