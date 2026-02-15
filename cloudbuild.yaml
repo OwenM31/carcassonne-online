@@ -71,28 +71,49 @@ steps:
           --quiet \
           $${AUTH_FLAG}
 
-        SESSION_STATE_FILE_VALUE="${_SESSION_STATE_FILE}"
-        if [[ -n "${_SESSION_STATE_BUCKET}" ]]; then
-          SESSION_STATE_FILE_VALUE="${_SESSION_STATE_MOUNT_PATH%/}/${_SESSION_STATE_FILENAME}"
+        SESSION_STATE_FILE_VALUE='${_SESSION_STATE_FILE}'
+        SESSION_STATE_BUCKET='${_SESSION_STATE_BUCKET}'
+        SESSION_STATE_MOUNT_PATH='${_SESSION_STATE_MOUNT_PATH}'
+        SESSION_STATE_FILENAME='${_SESSION_STATE_FILENAME}'
+        SESSION_STATE_VOLUME_NAME='${_SESSION_STATE_VOLUME_NAME}'
+
+        if [[ "$${SESSION_STATE_FILE_VALUE}" == '${_SESSION_STATE_FILE}' ]]; then
+          SESSION_STATE_FILE_VALUE=""
+        fi
+        if [[ "$${SESSION_STATE_BUCKET}" == '${_SESSION_STATE_BUCKET}' ]]; then
+          SESSION_STATE_BUCKET=""
+        fi
+        if [[ "$${SESSION_STATE_MOUNT_PATH}" == '${_SESSION_STATE_MOUNT_PATH}' || -z "$${SESSION_STATE_MOUNT_PATH}" ]]; then
+          SESSION_STATE_MOUNT_PATH="/mnt/session-state"
+        fi
+        if [[ "$${SESSION_STATE_FILENAME}" == '${_SESSION_STATE_FILENAME}' || -z "$${SESSION_STATE_FILENAME}" ]]; then
+          SESSION_STATE_FILENAME="sessions.json"
+        fi
+        if [[ "$${SESSION_STATE_VOLUME_NAME}" == '${_SESSION_STATE_VOLUME_NAME}' || -z "$${SESSION_STATE_VOLUME_NAME}" ]]; then
+          SESSION_STATE_VOLUME_NAME="session-state"
+        fi
+
+        if [[ -n "$${SESSION_STATE_BUCKET}" ]]; then
+          SESSION_STATE_FILE_VALUE="$${SESSION_STATE_MOUNT_PATH%/}/$${SESSION_STATE_FILENAME}"
 
           gcloud run services update "${_SERVER_SERVICE}" \
             --platform managed \
             --region "${_REGION}" \
-            --remove-volume-mount "${_SESSION_STATE_MOUNT_PATH}" \
+            --remove-volume-mount "$${SESSION_STATE_MOUNT_PATH}" \
             --quiet || true
 
           gcloud run services update "${_SERVER_SERVICE}" \
             --platform managed \
             --region "${_REGION}" \
-            --remove-volume "${_SESSION_STATE_VOLUME_NAME}" \
+            --remove-volume "$${SESSION_STATE_VOLUME_NAME}" \
             --quiet || true
 
           gcloud run services update "${_SERVER_SERVICE}" \
             --platform managed \
             --region "${_REGION}" \
             --execution-environment gen2 \
-            --add-volume "name=${_SESSION_STATE_VOLUME_NAME},type=cloud-storage,bucket=${_SESSION_STATE_BUCKET}" \
-            --add-volume-mount "volume=${_SESSION_STATE_VOLUME_NAME},mount-path=${_SESSION_STATE_MOUNT_PATH}" \
+            --add-volume "name=$${SESSION_STATE_VOLUME_NAME},type=cloud-storage,bucket=$${SESSION_STATE_BUCKET}" \
+            --add-volume-mount "volume=$${SESSION_STATE_VOLUME_NAME},mount-path=$${SESSION_STATE_MOUNT_PATH}" \
             --quiet
         fi
 
