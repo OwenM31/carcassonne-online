@@ -35,6 +35,10 @@ Create a Cloud Build trigger that points to `cloudbuild.yaml` on your deployment
 - `_SERVER_MIN_INSTANCES` (default `1`)
 - `_SERVER_MAX_INSTANCES` (default `1`)
 - `_SESSION_STATE_FILE` (default empty; when set, pipeline writes this to `SESSION_STATE_FILE` on server service)
+- `_SESSION_STATE_BUCKET` (default empty; when set, pipeline configures Cloud Storage volume mount)
+- `_SESSION_STATE_MOUNT_PATH` (default `/mnt/session-state`)
+- `_SESSION_STATE_FILENAME` (default `sessions.json`)
+- `_SESSION_STATE_VOLUME_NAME` (default `session-state`)
 
 ## Session Persistence
 
@@ -42,4 +46,5 @@ The server now supports durable session snapshots via `SESSION_STATE_FILE`.
 
 - If unset, sessions remain in-memory only.
 - If set, the server loads snapshot state on boot and persists lobby/game changes after each successful mutation.
-- For real failover across instances, point `SESSION_STATE_FILE` to a shared durable mount path (single local disk paths only protect same-instance restarts).
+- If `_SESSION_STATE_BUCKET` is set, the pipeline mounts that bucket into Cloud Run and sets `SESSION_STATE_FILE` to `${_SESSION_STATE_MOUNT_PATH}/${_SESSION_STATE_FILENAME}` automatically.
+- For real failover across instances, use `_SESSION_STATE_BUCKET` (single local disk paths only protect same-instance restarts).

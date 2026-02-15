@@ -41,6 +41,7 @@ A web-based, online multiplayer clone of the Carcassonne base game.
 * **User Preferences:** Run tests (`npm test`) every turn; commit (`git commit`) on green; increment right-most app version number each commit.
 * **Current Focus:** Gameplay QoL, replay ergonomics, and realtime disconnect/reconnect hardening.
 * **Accomplished:** [Maintain this list with task completions with most recent at the top; ocasionally condense this list]
+    * Add Cloud Build support for bucket-backed Cloud Run session-state volume mounts (`_SESSION_STATE_BUCKET` and mount/path substitutions) with automatic `SESSION_STATE_FILE` wiring
     * Wire Cloud Build server deploy to optionally set `SESSION_STATE_FILE` via `_SESSION_STATE_FILE` substitution for production rollout control
     * Add durable session snapshot persistence with boot restore (`SESSION_STATE_FILE`) so lobby/game state survives server restarts and can support shared-mount failover setups
     * Harden disconnect handling with server heartbeat ping/pong cleanup, socket-bound player action authorization, reconnect queue retention ordering, and lobby session-player ID privacy
