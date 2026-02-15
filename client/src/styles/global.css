@@ -414,12 +414,21 @@ button.board-tile {
   padding: 0;
   background: transparent;
   font: inherit;
+  justify-self: start;
+  align-self: start;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-left: calc(var(--meeple-x) - 0.6rem);
+  margin-top: calc(var(--meeple-y) - 0.6rem);
+  overflow: visible;
   pointer-events: auto;
   cursor: pointer;
   z-index: 3;
 }
 
 .board-meeple-target::after {
+  left: 50%;
+  top: 50%;
   width: 1.05rem;
   height: 1.05rem;
   border: 0.1rem dashed rgba(194, 112, 63, 0.95);
@@ -428,6 +437,9 @@ button.board-tile {
 }
 
 .board-meeple-target .board-meeple__role {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, 0.9rem);
   color: #fff7ea;
   background: rgba(194, 112, 63, 0.92);
 }

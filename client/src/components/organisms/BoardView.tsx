@@ -140,8 +140,8 @@ export function BoardView({
             const markerStyle = {
               gridColumn: grid.column,
               gridRow: grid.row,
-              '--meeple-x': `${anchor.xPercent}%`,
-              '--meeple-y': `${anchor.yPercent}%`
+              '--meeple-x': `calc(var(--tile-size) * ${anchor.xPercent} / 100)`,
+              '--meeple-y': `calc(var(--tile-size) * ${anchor.yPercent} / 100)`
             } as CSSProperties;
             const role = getMeepleRole(option.featureType);
 
