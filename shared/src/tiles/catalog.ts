@@ -217,9 +217,9 @@ export const TILE_CATALOG: TileCatalogEntry[] = [
     startingTileCandidate: false,
     features: {
       edges: edges(CITY, CITY, FARM, CITY),
-      cities: [city(['N', 'E', 'W'])],
+      cities: [city(['E', 'W'])],
       roads: [],
-      farms: [farm(['SW', 'SE'])],
+      farms: [farm(['NW', 'NE']), farm(['SW', 'SE'])],
       monastery: false
     }
   },
@@ -231,9 +231,9 @@ export const TILE_CATALOG: TileCatalogEntry[] = [
     startingTileCandidate: false,
     features: {
       edges: edges(CITY, FARM, CITY, FARM),
-      cities: [city(['N']), city(['S'], 1)],
+      cities: [city(['E']), city(['W'], 1)],
       roads: [],
-      farms: [farm(['NW', 'NE', 'SE', 'SW'])],
+      farms: [farm(['NW', 'NE']), farm(['SE', 'SW'])],
       monastery: false
     }
   },
@@ -316,7 +316,7 @@ export const TILE_CATALOG: TileCatalogEntry[] = [
     features: {
       edges: edges(CITY, ROAD, ROAD, ROAD),
       cities: [city(['N'])],
-      roads: [road(['W', 'E', 'S'])],
+      roads: [road(['W']), road(['E']), road(['S'])],
       farms: [farm(['NW', 'NE']), farm(['SW']), farm(['SE'])],
       monastery: false
     }
