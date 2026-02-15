@@ -10,9 +10,11 @@ export interface GameReplayState {
   viewGame: GameState;
   replayTurn: number | null;
   isCurrentView: boolean;
+  autoJumpOnLiveUpdate: boolean;
   canStepBackward: boolean;
   canStepForward: boolean;
   canJumpCurrent: boolean;
+  setAutoJumpOnLiveUpdate: (enabled: boolean) => void;
   jumpToCurrent: () => void;
   stepBackward: () => void;
   stepForward: () => void;
@@ -75,16 +77,34 @@ function getNextTurn(turns: number[], currentTurn: number | null): number | null
   return null;
 }
 
+export function getLiveUpdateToken(game: GameState): string {
+  return [
+    game.id,
+    game.turnNumber,
+    game.phase,
+    game.status,
+    game.eventLog.length,
+    game.tileDeck.length,
+    game.tileDiscard.length,
+    game.currentTileId ?? '-',
+    game.meeples.length
+  ].join(':');
+}
+
 export function useGameReplay(game: GameState): GameReplayState {
   const [snapshots, setSnapshots] = useState<CompletedTurnSnapshots>({});
   const [replayTurn, setReplayTurn] = useState<number | null>(null);
+  const [autoJumpOnLiveUpdate, setAutoJumpOnLiveUpdate] = useState(false);
   const gameIdRef = useRef(game.id);
+  const liveUpdateToken = getLiveUpdateToken(game);
+  const liveUpdateTokenRef = useRef(liveUpdateToken);
 
   useEffect(() => {
     if (gameIdRef.current !== game.id) {
       gameIdRef.current = game.id;
       setSnapshots({});
       setReplayTurn(null);
+      setAutoJumpOnLiveUpdate(false);
       return;
     }
 
@@ -102,6 +122,19 @@ export function useGameReplay(game: GameState): GameReplayState {
     }
   }, [replayTurn, snapshots]);
 
+  useEffect(() => {
+    const previousToken = liveUpdateTokenRef.current;
+    liveUpdateTokenRef.current = liveUpdateToken;
+
+    if (previousToken === liveUpdateToken) {
+      return;
+    }
+
+    if (autoJumpOnLiveUpdate && replayTurn !== null) {
+      setReplayTurn(null);
+    }
+  }, [autoJumpOnLiveUpdate, liveUpdateToken, replayTurn]);
+
   const completedTurns = useMemo(() => getSortedCompletedTurns(snapshots), [snapshots]);
   const viewGame = replayTurn === null ? game : snapshots[replayTurn] ?? game;
   const previousTurn = getPreviousTurn(completedTurns, replayTurn);
@@ -111,9 +144,11 @@ export function useGameReplay(game: GameState): GameReplayState {
     viewGame,
     replayTurn,
     isCurrentView: replayTurn === null,
+    autoJumpOnLiveUpdate,
     canStepBackward: previousTurn !== null && previousTurn !== replayTurn,
     canStepForward: replayTurn !== null,
     canJumpCurrent: replayTurn !== null,
+    setAutoJumpOnLiveUpdate,
     jumpToCurrent: () => setReplayTurn(null),
     stepBackward: () => {
       if (previousTurn !== null && previousTurn !== replayTurn) {

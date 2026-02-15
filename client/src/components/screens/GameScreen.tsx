@@ -165,11 +165,13 @@ export function GameScreen({
           />
           <GameReplayHotbar
             replayTurn={replay.replayTurn}
+            autoJumpOnLiveUpdate={replay.autoJumpOnLiveUpdate}
             canStepBackward={replay.canStepBackward}
             canJumpCurrent={replay.canJumpCurrent}
             canStepForward={replay.canStepForward}
             showSandboxReset={isSandbox}
             canResetSandbox={canResetSandbox}
+            onToggleAutoJumpOnLiveUpdate={replay.setAutoJumpOnLiveUpdate}
             onStepBackward={replay.stepBackward}
             onJumpCurrent={replay.jumpToCurrent}
             onStepForward={replay.stepForward}

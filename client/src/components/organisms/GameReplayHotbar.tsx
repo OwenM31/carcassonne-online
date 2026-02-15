@@ -5,11 +5,13 @@ import { Button } from '../atoms/Button';
 
 interface GameReplayHotbarProps {
   replayTurn: number | null;
+  autoJumpOnLiveUpdate: boolean;
   canStepBackward: boolean;
   canJumpCurrent: boolean;
   canStepForward: boolean;
   showSandboxReset: boolean;
   canResetSandbox: boolean;
+  onToggleAutoJumpOnLiveUpdate: (enabled: boolean) => void;
   onStepBackward: () => void;
   onJumpCurrent: () => void;
   onStepForward: () => void;
@@ -18,11 +20,13 @@ interface GameReplayHotbarProps {
 
 export function GameReplayHotbar({
   replayTurn,
+  autoJumpOnLiveUpdate,
   canStepBackward,
   canJumpCurrent,
   canStepForward,
   showSandboxReset,
   canResetSandbox,
+  onToggleAutoJumpOnLiveUpdate,
   onStepBackward,
   onJumpCurrent,
   onStepForward,
@@ -49,6 +53,14 @@ export function GameReplayHotbar({
           </Button>
         ) : null}
       </div>
+      <label className="replay-hotbar__toggle">
+        <input
+          type="checkbox"
+          checked={autoJumpOnLiveUpdate}
+          onChange={(event) => onToggleAutoJumpOnLiveUpdate(event.target.checked)}
+        />
+        auto-jump to current on live update
+      </label>
     </div>
   );
 }

@@ -3,7 +3,11 @@
  */
 import { buildTileDeck, createGame, getStartingTileCandidates } from '@carcassonne/shared';
 
-import { getCompletedTurnFromState, getSortedCompletedTurns } from '../src/state/gameReplay';
+import {
+  getCompletedTurnFromState,
+  getLiveUpdateToken,
+  getSortedCompletedTurns
+} from '../src/state/gameReplay';
 
 function createFixtureGame(gameId: string) {
   const [startingTileId] = getStartingTileCandidates();
@@ -43,5 +47,15 @@ describe('gameReplay helpers', () => {
     });
 
     expect(turns).toEqual([2, 5, 9]);
+  });
+
+  it('changes live-update token when state advances', () => {
+    const game = createFixtureGame('game-replay-3');
+    const tokenBefore = getLiveUpdateToken(game);
+
+    game.turnNumber = 2;
+    game.eventLog.push({ turn: 2, type: 'draw_tile', detail: 'drew tile' });
+
+    expect(getLiveUpdateToken(game)).not.toBe(tokenBefore);
   });
 });
