@@ -48,6 +48,10 @@ class StubGameService implements GameService {
   undo(): GameActionResult {
     return { type: 'error', message: 'Not implemented.' };
   }
+
+  resetSandboxBoard(): GameActionResult {
+    return { type: 'error', message: 'Not implemented.' };
+  }
 }
 
 describe('createLobbyController', () => {

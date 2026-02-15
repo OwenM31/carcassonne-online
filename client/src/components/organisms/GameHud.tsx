@@ -1,14 +1,18 @@
 /**
  * @description Right-side HUD for game status, scoreboard, feature counters, and event log.
  */
-import { useEffect, useRef } from 'react';
+import type { GameEvent } from '@carcassonne/shared';
 import type { GameHudState } from '../../state/gameHud';
+import { groupEventsByTurn } from '../../state/gameEvents';
 import { TileSprite } from '../atoms/TileSprite';
 
 const HUD_TILE_SIZE_REM = 7;
 
 interface GameHudProps {
   hud: GameHudState;
+  eventLog: GameEvent[];
+  replayTurn: number | null;
+  onSelectEventGroup: (turn: number, isMostRecent: boolean) => void;
 }
 
 const labelForFeature = (featureType: string) => {
@@ -29,31 +33,18 @@ const formatEventTime = (createdAt?: string): string => {
     return '--:--:--';
   }
 
-  return date.toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit'
-  });
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 };
 
-export function GameHud({ hud }: GameHudProps) {
+export function GameHud({ hud, eventLog, replayTurn, onSelectEventGroup }: GameHudProps) {
   const activePlayer = hud.activePlayer;
   const chipClass = activePlayer ? `hud-chip--${activePlayer.color}` : 'hud-chip--neutral';
   const tileId = hud.currentTileId;
-  const eventListRef = useRef<HTMLUListElement | null>(null);
   const playerColorById = hud.scoreboard.reduce<Record<string, string>>((index, player) => {
     index[player.id] = player.color;
     return index;
   }, {});
-
-  useEffect(() => {
-    const list = eventListRef.current;
-    if (!list) {
-      return;
-    }
-
-    list.scrollTop = list.scrollHeight;
-  }, [hud.eventLog]);
+  const eventGroups = groupEventsByTurn(eventLog);
 
   return (
     <aside className="card game-hud">
@@ -80,11 +71,7 @@ export function GameHud({ hud }: GameHudProps) {
       <div className="hud-section">
         <p className="hud-label">Current tile</p>
         <div className="hud-tile-slot">
-          {tileId ? (
-            <TileSprite tileId={tileId} sizeRem={HUD_TILE_SIZE_REM} />
-          ) : (
-            <p className="hud-tile-placeholder">No tile drawn yet.</p>
-          )}
+          {tileId ? <TileSprite tileId={tileId} sizeRem={HUD_TILE_SIZE_REM} /> : <p className="hud-tile-placeholder">No tile drawn yet.</p>}
           <p className="hud-tile-id">{tileId ?? '—'}</p>
         </div>
       </div>
@@ -98,9 +85,7 @@ export function GameHud({ hud }: GameHudProps) {
                 <span className={`hud-chip hud-chip--${entry.color}`} aria-hidden="true" />
                 {entry.name}
               </span>
-              <span className="hud-item__meta">
-                Meeples {entry.meeplesAvailable}/{entry.meeplesTotal} · Score {entry.score}
-              </span>
+              <span className="hud-item__meta">Meeples {entry.meeplesAvailable}/{entry.meeplesTotal} · Score {entry.score}</span>
             </li>
           ))}
         </ul>
@@ -111,15 +96,11 @@ export function GameHud({ hud }: GameHudProps) {
         <ul className="hud-list hud-list--tight">
           <li className="hud-item">
             <span className="hud-item__name">{labelForFeature('city')}</span>
-            <span className="hud-item__meta">
-              {hud.featureCounter.cities.closed} closed / {hud.featureCounter.cities.open} open
-            </span>
+            <span className="hud-item__meta">{hud.featureCounter.cities.closed} closed / {hud.featureCounter.cities.open} open</span>
           </li>
           <li className="hud-item">
             <span className="hud-item__name">{labelForFeature('road')}</span>
-            <span className="hud-item__meta">
-              {hud.featureCounter.roads.closed} closed / {hud.featureCounter.roads.open} open
-            </span>
+            <span className="hud-item__meta">{hud.featureCounter.roads.closed} closed / {hud.featureCounter.roads.open} open</span>
           </li>
           <li className="hud-item">
             <span className="hud-item__name">{labelForFeature('monastery')}</span>
@@ -134,18 +115,31 @@ export function GameHud({ hud }: GameHudProps) {
 
       <div className="hud-section">
         <p className="hud-label">Event log</p>
-        <ul ref={eventListRef} className="hud-events">
-          {hud.eventLog.map((entry, index) => (
-            <li
-              key={`${entry.turn}-${entry.type}-${index}`}
-              className={`hud-event ${
-                entry.playerId ? `hud-event--${playerColorById[entry.playerId] ?? 'neutral'}` : 'hud-event--neutral'
-              }`}
-            >
-              <span className="hud-event__time">{formatEventTime(entry.createdAt)}</span>
-              <span className="hud-event__text">{entry.detail}</span>
-            </li>
-          ))}
+        <ul className="hud-events">
+          {eventGroups.map((group, index) => {
+            const isMostRecent = index === 0;
+            const isSelected = replayTurn !== null && replayTurn === group.turn;
+
+            return (
+              <li key={`turn-${group.turn}`} className="hud-event-group-item">
+                <button
+                  type="button"
+                  className={`hud-event-group${isSelected ? ' hud-event-group--selected' : ''}`}
+                  onClick={() => onSelectEventGroup(group.turn, isMostRecent)}
+                >
+                  {group.events.map((entry, eventIndex) => (
+                    <span
+                      key={`${entry.turn}-${entry.type}-${eventIndex}`}
+                      className={`hud-event ${entry.playerId ? `hud-event--${playerColorById[entry.playerId] ?? 'neutral'}` : 'hud-event--neutral'}`}
+                    >
+                      <span className="hud-event__time">{formatEventTime(entry.createdAt)}</span>
+                      <span className="hud-event__text">{entry.detail}</span>
+                    </span>
+                  ))}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </aside>

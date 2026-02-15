@@ -170,6 +170,9 @@ export function LobbyScreen() {
         }
         onSkipMeeple={() => withSession((sessionId) => client.skipMeeple(sessionId, playerId))}
         onUndo={() => withSession((sessionId) => client.undoTurn(sessionId, playerId))}
+        onResetSandboxBoard={() =>
+          withSession((sessionId) => client.resetSandboxBoard(sessionId, playerId))
+        }
         onExit={handleLeaveSession}
         error={gameError}
       />

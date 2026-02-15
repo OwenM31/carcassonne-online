@@ -80,6 +80,24 @@ describe('parseClientMessage', () => {
     expect(result).toEqual({ type: 'delete_session', sessionId: 'session-1' });
   });
 
+  it('parses reset_sandbox_board payloads', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'reset_sandbox_board',
+          sessionId: 'session-1',
+          playerId: 'p1'
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'reset_sandbox_board',
+      sessionId: 'session-1',
+      playerId: 'p1'
+    });
+  });
+
   it('parses draw_sandbox_tile payloads', () => {
     const result = parseClientMessage(
       Buffer.from(

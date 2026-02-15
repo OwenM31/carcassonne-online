@@ -32,6 +32,7 @@ export interface GameService {
   reset(): void;
   applyAction(action: GameAction): GameActionResult;
   undo(): GameActionResult;
+  resetSandboxBoard(playerId: string): GameActionResult;
 }
 
 type GameIdFactory = () => string;
@@ -42,6 +43,7 @@ const defaultGameIdFactory: GameIdFactory = () =>
 export class InMemoryGameService implements GameService {
   private game: GameState | null = null;
   private history: GameState[] = [];
+  private startConfig: Required<GameStartConfig> | null = null;
   private gameIdFactory: GameIdFactory;
 
   constructor(gameIdFactory: GameIdFactory = defaultGameIdFactory) {
@@ -89,6 +91,7 @@ export class InMemoryGameService implements GameService {
 
     this.game = game;
     this.history = [];
+    this.startConfig = { deckSize, mode };
 
     return { type: 'success', game };
   }
@@ -100,6 +103,7 @@ export class InMemoryGameService implements GameService {
   reset() {
     this.game = null;
     this.history = [];
+    this.startConfig = null;
   }
 
   applyAction(action: GameAction): GameActionResult {
@@ -129,5 +133,43 @@ export class InMemoryGameService implements GameService {
 
     this.game = previous;
     return { type: 'success', game: previous };
+  }
+
+  resetSandboxBoard(playerId: string): GameActionResult {
+    if (!this.game) {
+      return { type: 'error', message: 'No active game.' };
+    }
+
+    if (this.game.mode !== 'sandbox') {
+      return { type: 'error', message: 'Sandbox board reset is only available in sandbox mode.' };
+    }
+
+    const activePlayer = this.game.players[this.game.activePlayerIndex];
+    if (!activePlayer || activePlayer.id !== playerId) {
+      return { type: 'error', message: 'Only the active player can act.' };
+    }
+
+    const startingTiles = getStartingTileCandidates();
+    const startingTileId = startingTiles[0];
+    if (!startingTileId) {
+      return { type: 'error', message: 'No starting tile configured.' };
+    }
+
+    const deckSize = this.startConfig?.deckSize ?? 'standard';
+    const resetGame = createGame({
+      gameId: this.game.id,
+      mode: 'sandbox',
+      players: this.game.players.map((player) => ({
+        id: player.id,
+        name: player.name,
+        color: player.color
+      })),
+      tileDeck: shuffleTileDeck(buildTileDeck(undefined, deckSize)),
+      startingTileId
+    });
+
+    this.game = resetGame;
+    this.history = [];
+    return { type: 'success', game: resetGame };
   }
 }

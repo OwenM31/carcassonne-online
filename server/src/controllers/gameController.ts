@@ -7,6 +7,7 @@ import type { GameService } from '../services/gameService';
 export interface GameController {
   handleAction(action: GameAction): ServerMessage;
   handleUndo(playerId: string): ServerMessage;
+  handleSandboxReset(playerId: string): ServerMessage;
 }
 
 export function createGameController(
@@ -25,6 +26,15 @@ export function createGameController(
     },
     handleUndo(_playerId: string) {
       const result = gameService.undo();
+
+      if (result.type === 'error') {
+        return { type: 'error', message: result.message };
+      }
+
+      return { type: 'game_state', sessionId, game: result.game };
+    },
+    handleSandboxReset(playerId: string) {
+      const result = gameService.resetSandboxBoard(playerId);
 
       if (result.type === 'error') {
         return { type: 'error', message: result.message };

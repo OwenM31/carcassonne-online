@@ -188,4 +188,59 @@ describe('InMemoryGameService', () => {
       message: 'Nothing to undo.'
     });
   });
+
+  it('resets sandbox boards with a refilled deck', () => {
+    const service = new InMemoryGameService(() => 'game-9');
+    const start = service.startGame(lobbyPlayers, { deckSize: 'small', mode: 'sandbox' });
+
+    if (start.type !== 'success') {
+      throw new Error('Expected sandbox game start to succeed.');
+    }
+
+    const tileId = start.game.tileDeck[0];
+    if (!tileId) {
+      throw new Error('Expected at least one tile in deck.');
+    }
+
+    const draw = service.applyAction({ type: 'draw_sandbox_tile', playerId: 'p1', tileId });
+    if (draw.type !== 'success') {
+      throw new Error('Expected draw_sandbox_tile to succeed.');
+    }
+
+    const reset = service.resetSandboxBoard('p1');
+    if (reset.type !== 'success') {
+      throw new Error('Expected sandbox reset to succeed.');
+    }
+
+    expect(reset.game.turnNumber).toBe(1);
+    expect(Object.keys(reset.game.board.tiles)).toHaveLength(1);
+    expect(reset.game.tileDeck).toHaveLength(buildTileDeck(undefined, 'small').length - 1);
+    expect(service.undo()).toEqual({ type: 'error', message: 'Nothing to undo.' });
+  });
+
+  it('rejects sandbox reset in standard mode', () => {
+    const service = new InMemoryGameService(() => 'game-10');
+    const start = service.startGame(lobbyPlayers);
+    if (start.type !== 'success') {
+      throw new Error('Expected standard game start to succeed.');
+    }
+
+    expect(service.resetSandboxBoard('p1')).toEqual({
+      type: 'error',
+      message: 'Sandbox board reset is only available in sandbox mode.'
+    });
+  });
+
+  it('rejects sandbox reset from non-active players', () => {
+    const service = new InMemoryGameService(() => 'game-11');
+    const start = service.startGame(lobbyPlayers, { mode: 'sandbox' });
+    if (start.type !== 'success') {
+      throw new Error('Expected sandbox game start to succeed.');
+    }
+
+    expect(service.resetSandboxBoard('p2')).toEqual({
+      type: 'error',
+      message: 'Only the active player can act.'
+    });
+  });
 });

@@ -17,6 +17,7 @@ interface GamePlacementPanelProps {
   canPlaceTile: boolean;
   orientation: Orientation;
   canPlaceMeeple: boolean;
+  canUndo: boolean;
   currentTileId: TileId | null;
   error?: string | null;
   onDrawTile: () => void;
@@ -33,6 +34,7 @@ export function GamePlacementPanel({
   canPlaceTile,
   orientation,
   canPlaceMeeple,
+  canUndo,
   currentTileId,
   error,
   onDrawTile,
@@ -52,7 +54,7 @@ export function GamePlacementPanel({
         <Button type="button" variant="primary" disabled={!canDrawTile} onClick={onDrawTile}>
           {isSandbox ? 'Draw selected tile' : 'Draw tile'}
         </Button>
-        <Button type="button" variant="ghost" onClick={onUndo}>
+        <Button type="button" variant="ghost" disabled={!canUndo} onClick={onUndo}>
           Undo
         </Button>
         <div className="rotation-controls">

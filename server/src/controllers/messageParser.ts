@@ -129,6 +129,18 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
     };
   }
 
+  if (parsed.type === 'reset_sandbox_board') {
+    if (typeof parsed.sessionId !== 'string' || typeof parsed.playerId !== 'string') {
+      return null;
+    }
+
+    return {
+      type: 'reset_sandbox_board',
+      sessionId: parsed.sessionId,
+      playerId: parsed.playerId
+    };
+  }
+
   return parseGameActionMessage(parsed);
 }
 

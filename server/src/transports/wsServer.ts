@@ -144,6 +144,8 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         response = lobbyController.handleMessage(parsed);
       } else if (parsed.type === 'undo_turn') {
         response = gameController.handleUndo(parsed.playerId);
+      } else if (parsed.type === 'reset_sandbox_board') {
+        response = gameController.handleSandboxReset(parsed.playerId);
       } else if (isGameAction(parsed)) {
         response = gameController.handleAction(parsed);
       } else {

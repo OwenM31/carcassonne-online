@@ -91,6 +91,10 @@ export class LobbyClient {
     this.send({ type: 'undo_turn', sessionId, playerId });
   }
 
+  resetSandboxBoard(sessionId: string, playerId: string) {
+    this.send({ type: 'reset_sandbox_board', sessionId, playerId });
+  }
+
   drawTile(sessionId: string, playerId: string) {
     this.send({ type: 'draw_tile', sessionId, playerId });
   }
