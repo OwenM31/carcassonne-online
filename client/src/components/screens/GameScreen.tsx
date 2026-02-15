@@ -202,25 +202,35 @@ export function GameScreen({
               <span className="board-stat">Start: {viewGame.startingTileId}</span>
             </div>
           </div>
-          <div className="board-stage">
-            <button
-              type="button"
-              className="rules-help-button"
-              aria-label="Open game rules"
-              onClick={() => setRulesOpen(true)}
-            >
-              ?
-            </button>
-            <BoardView
-              board={viewGame.board}
-              meeples={viewGame.meeples}
-              playerColorById={playerColorById}
-              highlightTileId={viewGame.startingTileId}
-              placementOptions={replay.isCurrentView ? placements : []}
-              placementTileId={replay.isCurrentView ? liveCurrentTileId : null}
-              onPlaceTile={canPlaceTile ? handlePlaceTile : undefined}
-              meeplePlacementOptions={replay.isCurrentView && canPlaceMeeple ? meepleOptions : []}
-              onPlaceMeeple={replay.isCurrentView && canPlaceMeeple ? onPlaceMeeple : undefined}
+          <div className="game-board__stage-layout">
+            <div className="board-stage">
+              <BoardView
+                board={viewGame.board}
+                meeples={viewGame.meeples}
+                playerColorById={playerColorById}
+                highlightTileId={viewGame.startingTileId}
+                placementOptions={replay.isCurrentView ? placements : []}
+                placementTileId={replay.isCurrentView ? liveCurrentTileId : null}
+                onPlaceTile={canPlaceTile ? handlePlaceTile : undefined}
+                meeplePlacementOptions={replay.isCurrentView && canPlaceMeeple ? meepleOptions : []}
+                onPlaceMeeple={replay.isCurrentView && canPlaceMeeple ? onPlaceMeeple : undefined}
+                onOpenRules={() => setRulesOpen(true)}
+              />
+            </div>
+            <GamePlacementPanel
+              isActivePlayer={isActivePlayer}
+              statusText={statusText}
+              canDrawTile={canDrawTile}
+              canPlaceTile={canPlaceTile}
+              orientation={shownOrientation}
+              canPlaceMeeple={canPlaceMeeple}
+              canUndo={canUndo}
+              currentTileId={viewCurrentTileId}
+              error={error}
+              onDrawTile={handleDrawTile}
+              onUndo={onUndo}
+              onRotate={handleRotate}
+              onSkipMeeple={onSkipMeeple}
             />
           </div>
           <GameReplayHotbar
@@ -238,22 +248,6 @@ export function GameScreen({
             onResetSandbox={onResetSandboxBoard}
           />
         </section>
-        <GamePlacementPanel
-          isActivePlayer={isActivePlayer}
-          statusText={statusText}
-          canDrawTile={canDrawTile}
-          isSandbox={isSandbox}
-          canPlaceTile={canPlaceTile}
-          orientation={shownOrientation}
-          canPlaceMeeple={canPlaceMeeple}
-          canUndo={canUndo}
-          currentTileId={viewCurrentTileId}
-          error={error}
-          onDrawTile={handleDrawTile}
-          onUndo={onUndo}
-          onRotate={handleRotate}
-          onSkipMeeple={onSkipMeeple}
-        />
       </div>
       {isSandbox ? (
         <section className="sandbox-footer">
