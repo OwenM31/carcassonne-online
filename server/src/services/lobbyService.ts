@@ -9,6 +9,12 @@ export interface LobbyService {
 export class InMemoryLobbyService implements LobbyService {
   private players = new Map<PlayerId, { id: PlayerId; name: string }>();
 
+  constructor(initialState: LobbyState | null = null) {
+    initialState?.players.forEach((player) => {
+      this.players.set(player.id, { id: player.id, name: player.name });
+    });
+  }
+
   join(playerId: PlayerId, playerName: string): LobbyState {
     this.players.set(playerId, { id: playerId, name: playerName });
     return this.getState();

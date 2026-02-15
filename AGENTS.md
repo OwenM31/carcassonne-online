@@ -41,6 +41,7 @@ A web-based, online multiplayer clone of the Carcassonne base game.
 * **User Preferences:** Run tests (`npm test`) every turn; commit (`git commit`) on green; increment right-most app version number each commit.
 * **Current Focus:** Gameplay QoL, replay ergonomics, and realtime disconnect/reconnect hardening.
 * **Accomplished:** [Maintain this list with task completions with most recent at the top; ocasionally condense this list]
+    * Add durable session snapshot persistence with boot restore (`SESSION_STATE_FILE`) so lobby/game state survives server restarts and can support shared-mount failover setups
     * Harden disconnect handling with server heartbeat ping/pong cleanup, socket-bound player action authorization, reconnect queue retention ordering, and lobby session-player ID privacy
     * Add optional replay hotbar toggle to auto-jump back to current board when live game updates arrive during read-only rewind
     * Add sandbox board reset/refill action and cross-mode read-only turn replay with board hotbar controls plus click-to-rewind event-turn grouping

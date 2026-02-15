@@ -13,6 +13,10 @@ import type { GameService } from './gameService';
 import type { LobbyService } from './lobbyService';
 import { InMemoryGameService } from './gameService';
 import { InMemoryLobbyService } from './lobbyService';
+import type {
+  PersistedSessionSnapshot,
+  SessionPersistenceService
+} from './sessionPersistenceService';
 
 export interface SessionRecord {
   id: SessionId;
@@ -40,6 +44,7 @@ export interface SessionService {
   getSession(sessionId: SessionId): SessionRecord | null;
   listSessions(): SessionSummary[];
   deleteSession(sessionId: SessionId): boolean;
+  persist(): void;
 }
 
 type SessionIdFactory = () => SessionId;
@@ -60,13 +65,17 @@ export class InMemorySessionService implements SessionService {
   private sessions = new Map<SessionId, SessionRecord>();
   private idFactory: SessionIdFactory;
   private sessionFactory: SessionFactory;
+  private persistence: SessionPersistenceService | null;
 
   constructor(
     idFactory: SessionIdFactory = defaultSessionIdFactory,
-    sessionFactory: SessionFactory = defaultSessionFactory
+    sessionFactory: SessionFactory = defaultSessionFactory,
+    persistence: SessionPersistenceService | null = null
   ) {
     this.idFactory = idFactory;
     this.sessionFactory = sessionFactory;
+    this.persistence = persistence;
+    this.restorePersistedSessions();
   }
 
   createSession(
@@ -76,6 +85,7 @@ export class InMemorySessionService implements SessionService {
     const id = this.idFactory();
     const session = this.sessionFactory(id, deckSize, mode);
     this.sessions.set(id, session);
+    this.persist();
     return session;
   }
 
@@ -93,6 +103,7 @@ export class InMemorySessionService implements SessionService {
     }
 
     session.deckSize = deckSize;
+    this.persist();
     return { type: 'success', session };
   }
 
@@ -107,6 +118,7 @@ export class InMemorySessionService implements SessionService {
     }
 
     session.mode = mode;
+    this.persist();
     return { type: 'success', session };
   }
 
@@ -121,7 +133,32 @@ export class InMemorySessionService implements SessionService {
   }
 
   deleteSession(sessionId: SessionId): boolean {
-    return this.sessions.delete(sessionId);
+    const deleted = this.sessions.delete(sessionId);
+    if (deleted) {
+      this.persist();
+    }
+    return deleted;
+  }
+
+  persist(): void {
+    if (!this.persistence) {
+      return;
+    }
+
+    const snapshots = Array.from(this.sessions.values()).map((session) =>
+      toSnapshot(session)
+    );
+    this.persistence.saveSessions(snapshots);
+  }
+
+  private restorePersistedSessions(): void {
+    if (!this.persistence) {
+      return;
+    }
+
+    this.persistence.loadSessions().forEach((snapshot) => {
+      this.sessions.set(snapshot.id, fromSnapshot(snapshot));
+    });
   }
 }
 
@@ -137,5 +174,25 @@ function buildSummary(session: SessionRecord): SessionSummary {
     players: lobby.players.map((player) => ({ name: player.name })),
     deckSize: session.deckSize,
     mode: session.mode
+  };
+}
+
+function toSnapshot(session: SessionRecord): PersistedSessionSnapshot {
+  return {
+    id: session.id,
+    deckSize: session.deckSize,
+    mode: session.mode,
+    lobby: session.lobbyService.getState(),
+    game: session.gameService.getSnapshot()
+  };
+}
+
+function fromSnapshot(snapshot: PersistedSessionSnapshot): SessionRecord {
+  return {
+    id: snapshot.id,
+    deckSize: snapshot.deckSize,
+    mode: snapshot.mode,
+    lobbyService: new InMemoryLobbyService(snapshot.lobby),
+    gameService: new InMemoryGameService(undefined, snapshot.game)
   };
 }

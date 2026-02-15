@@ -59,6 +59,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         () => ({ deckSize: session.deckSize, mode: session.mode })
       );
       const response = lobbyController.handleDisconnect(playerId);
+      sessionService.persist();
       broadcast(response);
       broadcast(buildSessionListMessage(sessionService));
     }
@@ -155,6 +156,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         sendTo(socket, response);
         return;
       }
+      sessionService.persist();
       if (parsed.type === 'join_lobby') {
         presenceService.bind(socket, parsed.sessionId, parsed.playerId);
       }

@@ -14,7 +14,10 @@ import {
   getStartingTileCandidates,
   shuffleTileDeck
 } from '@carcassonne/shared';
-
+import {
+  cloneGameServiceSnapshot,
+  type GameServiceSnapshot
+} from './gameServiceSnapshot';
 const PLAYER_COLORS: PlayerColor[] = ['red', 'blue', 'green', 'yellow', 'black'];
 
 export type GameStartResult =
@@ -29,6 +32,7 @@ export interface GameStartConfig {
 export interface GameService {
   startGame(players: LobbyPlayer[], config?: GameStartConfig): GameStartResult;
   getGame(): GameState | null;
+  getSnapshot(): GameServiceSnapshot;
   reset(): void;
   applyAction(action: GameAction): GameActionResult;
   undo(): GameActionResult;
@@ -46,8 +50,14 @@ export class InMemoryGameService implements GameService {
   private startConfig: Required<GameStartConfig> | null = null;
   private gameIdFactory: GameIdFactory;
 
-  constructor(gameIdFactory: GameIdFactory = defaultGameIdFactory) {
+  constructor(
+    gameIdFactory: GameIdFactory = defaultGameIdFactory,
+    snapshot: GameServiceSnapshot | null = null
+  ) {
     this.gameIdFactory = gameIdFactory;
+    if (snapshot) {
+      this.hydrate(snapshot);
+    }
   }
 
   startGame(players: LobbyPlayer[], config: GameStartConfig = {}): GameStartResult {
@@ -98,6 +108,14 @@ export class InMemoryGameService implements GameService {
 
   getGame(): GameState | null {
     return this.game;
+  }
+
+  getSnapshot(): GameServiceSnapshot {
+    return cloneGameServiceSnapshot({
+      game: this.game,
+      history: this.history,
+      startConfig: this.startConfig
+    });
   }
 
   reset() {
@@ -171,5 +189,12 @@ export class InMemoryGameService implements GameService {
     this.game = resetGame;
     this.history = [];
     return { type: 'success', game: resetGame };
+  }
+
+  private hydrate(snapshot: GameServiceSnapshot): void {
+    const next = cloneGameServiceSnapshot(snapshot);
+    this.game = next.game;
+    this.history = next.history;
+    this.startConfig = next.startConfig;
   }
 }

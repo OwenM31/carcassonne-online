@@ -5,14 +5,15 @@ import {
   buildTileDeck,
   createGame,
   getStartingTileCandidates,
-  type GameActionResult,
   type GameState,
   type LobbyPlayer,
   type SessionDeckSize,
-  type SessionMode
+  type SessionMode,
+  type GameActionResult,
 } from '@carcassonne/shared';
 
 import type { GameStartConfig, GameStartResult, GameService } from '../src/services/gameService';
+import type { GameServiceSnapshot } from '../src/services/gameServiceSnapshot';
 import { createLobbyController } from '../src/controllers/lobbyController';
 import { InMemoryLobbyService } from '../src/services/lobbyService';
 
@@ -34,6 +35,10 @@ class StubGameService implements GameService {
 
   getGame() {
     return this.game;
+  }
+
+  getSnapshot(): GameServiceSnapshot {
+    return { game: this.game, history: [], startConfig: null };
   }
 
   reset() {

@@ -34,3 +34,11 @@ Create a Cloud Build trigger that points to `cloudbuild.yaml` on your deployment
 - `_SERVER_TIMEOUT` (default `3600`)
 - `_SERVER_MIN_INSTANCES` (default `1`)
 - `_SERVER_MAX_INSTANCES` (default `1`)
+
+## Session Persistence
+
+The server now supports durable session snapshots via `SESSION_STATE_FILE`.
+
+- If unset, sessions remain in-memory only.
+- If set, the server loads snapshot state on boot and persists lobby/game changes after each successful mutation.
+- For real failover across instances, point `SESSION_STATE_FILE` to a shared durable mount path (single local disk paths only protect same-instance restarts).
