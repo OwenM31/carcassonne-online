@@ -34,6 +34,7 @@ Create a Cloud Build trigger that points to `cloudbuild.yaml` on your deployment
 - `_SERVER_TIMEOUT` (default `3600`)
 - `_SERVER_MIN_INSTANCES` (default `1`)
 - `_SERVER_MAX_INSTANCES` (default `1`)
+- `_SESSION_STATE_FILE` (default empty; when set, pipeline writes this to `SESSION_STATE_FILE` on server service)
 
 ## Session Persistence
 

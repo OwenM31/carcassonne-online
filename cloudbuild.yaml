@@ -12,6 +12,7 @@ substitutions:
   _SERVER_TIMEOUT: "3600"
   _SERVER_MIN_INSTANCES: "1"
   _SERVER_MAX_INSTANCES: "1"
+  _SESSION_STATE_FILE: ""
 
 steps:
   - id: install
@@ -65,6 +66,14 @@ steps:
           --max-instances "${_SERVER_MAX_INSTANCES}" \
           --quiet \
           $${AUTH_FLAG}
+
+        if [[ -n "${_SESSION_STATE_FILE}" ]]; then
+          gcloud run services update "${_SERVER_SERVICE}" \
+            --platform managed \
+            --region "${_REGION}" \
+            --update-env-vars "SESSION_STATE_FILE=${_SESSION_STATE_FILE}" \
+            --quiet
+        fi
 
   - id: resolve-server-ws-url
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
