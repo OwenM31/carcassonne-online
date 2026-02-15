@@ -35,6 +35,29 @@ body {
   background-attachment: fixed;
 }
 
+.app-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+}
+
+.app-content {
+  min-height: 0;
+}
+
+.app-footer {
+  margin: 0 auto;
+  width: min(72rem, 100%);
+  padding: 0.8rem 2.5rem 1.4rem;
+}
+
+.app-footer__text {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #5a5348;
+  text-align: right;
+}
+
 a {
   color: inherit;
 }
@@ -852,6 +875,10 @@ button.board-tile {
 }
 
 @media (max-width: 52rem) {
+  .app-footer {
+    padding: 0.6rem 1.5rem 1.1rem;
+  }
+
   .page {
     padding: 3rem 1.5rem 4rem;
   }

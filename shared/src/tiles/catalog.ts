@@ -216,7 +216,7 @@ export const TILE_CATALOG: TileCatalogEntry[] = [
     source: { sheet: TILE_SHEET, row: 2, col: 4 },
     startingTileCandidate: false,
     features: {
-      edges: edges(FARM, CITY, FARM, CITY),
+      edges: edges(CITY, CITY, FARM, CITY),
       cities: [city(['N', 'E', 'W'])],
       roads: [],
       farms: [farm(['SW', 'SE'])],
@@ -230,7 +230,7 @@ export const TILE_CATALOG: TileCatalogEntry[] = [
     source: { sheet: TILE_SHEET, row: 2, col: 5 },
     startingTileCandidate: false,
     features: {
-      edges: edges(FARM, CITY, FARM, CITY),
+      edges: edges(CITY, FARM, CITY, FARM),
       cities: [city(['N']), city(['S'], 1)],
       roads: [],
       farms: [farm(['NW', 'NE', 'SE', 'SW'])],
