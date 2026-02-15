@@ -32,8 +32,27 @@ describe('applyGameAction', () => {
 
     expect(result.game.phase).toBe('place_tile');
     expect(result.game.currentTileId).toBe('T_R1C1');
-    expect([0, 90, 180, 270]).toContain(result.game.currentTileOrientation);
+    expect(result.game.currentTileOrientation).toBe(0);
     expect(result.game.tileDeck).toHaveLength(0);
+  });
+
+  it('keeps random draw orientation for non-uniform edge tiles', () => {
+    const state = createGame({
+      ...setup,
+      tileDeck: ['T_R1C2']
+    });
+    const randomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.74);
+
+    const result = applyGameAction(state, { type: 'draw_tile', playerId: 'p1' });
+
+    randomSpy.mockRestore();
+
+    if (result.type !== 'success') {
+      throw new Error('Expected draw_tile to succeed.');
+    }
+
+    expect(result.game.currentTileId).toBe('T_R1C2');
+    expect(result.game.currentTileOrientation).toBe(180);
   });
 
   it('places the drawn tile and advances the turn', () => {

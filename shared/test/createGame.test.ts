@@ -71,4 +71,19 @@ describe('createGame', () => {
 
     expect(state.turnTimerSeconds).toBe(90);
   });
+
+  it('supports unlimited turn timer when configured', () => {
+    const setup: GameSetup = {
+      gameId: 'game-5',
+      mode: 'sandbox',
+      startingTileId: 'START',
+      tileDeck: ['A', 'START', 'B'],
+      turnTimerSeconds: 0,
+      players: [{ id: 'p1', name: 'Player 1', color: 'red' }]
+    };
+
+    const state = createGame(setup);
+
+    expect(state.turnTimerSeconds).toBe(0);
+  });
 });

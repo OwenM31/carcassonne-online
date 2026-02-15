@@ -119,7 +119,8 @@ function isSessionSummary(value: unknown): value is SessionSummary {
     ) &&
     (value.deckSize === 'standard' || value.deckSize === 'small') &&
     (value.mode === 'standard' || value.mode === 'sandbox') &&
-    (value.turnTimerSeconds === 30 ||
+    (value.turnTimerSeconds === 0 ||
+      value.turnTimerSeconds === 30 ||
       value.turnTimerSeconds === 60 ||
       value.turnTimerSeconds === 90)
   );

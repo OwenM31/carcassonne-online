@@ -1,7 +1,7 @@
 /**
  * @description Parses incoming WebSocket messages into typed client actions.
  */
-import type { ClientMessage } from '@carcassonne/shared';
+import type { ClientMessage, SessionTurnTimer } from '@carcassonne/shared';
 import type { RawData } from 'ws';
 import { isRecord } from './messageParserPredicates';
 import { parseGameActionMessage } from './messageParserGameActions';
@@ -189,6 +189,6 @@ function isSessionMode(value: unknown): value is 'standard' | 'sandbox' {
   return value === 'standard' || value === 'sandbox';
 }
 
-function isSessionTurnTimer(value: unknown): value is 30 | 60 | 90 {
-  return value === 30 || value === 60 || value === 90;
+function isSessionTurnTimer(value: unknown): value is SessionTurnTimer {
+  return value === 0 || value === 30 || value === 60 || value === 90;
 }

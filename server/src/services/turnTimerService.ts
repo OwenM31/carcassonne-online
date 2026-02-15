@@ -40,6 +40,10 @@ export class TurnTimerService {
       this.clearSession(sessionId);
       return;
     }
+    if (game.turnTimerSeconds === 0) {
+      this.clearSession(sessionId);
+      return;
+    }
 
     const turnKey = buildTurnKey(game.turnNumber, game.activePlayerIndex, game.turnStartedAt);
     const activePlayerPresent = isActivePlayerPresent(session);

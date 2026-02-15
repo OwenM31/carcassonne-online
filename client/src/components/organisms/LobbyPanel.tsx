@@ -137,6 +137,8 @@ export function LobbyPanel({
                       ? 60
                       : session.turnTimerSeconds === 60
                         ? 90
+                        : session.turnTimerSeconds === 90
+                          ? 0
                         : 30;
 
                   return (
@@ -148,7 +150,7 @@ export function LobbyPanel({
                       <div className="session-info">
                         <span className="session-id">{session.id}</span>
                         <span className="session-meta">
-                          {statusLabel} · {session.playerCount} players · {deckLabel} · {modeLabel} · Timer {session.turnTimerSeconds}s
+                          {statusLabel} · {session.playerCount} players · {deckLabel} · {modeLabel} · Timer {formatTurnTimer(session.turnTimerSeconds)}
                         </span>
                         <ul className="session-players-list">
                           {session.players.length === 0 ? (
@@ -189,7 +191,7 @@ export function LobbyPanel({
                           disabled={!canChangeTurnTimer}
                           onClick={() => onSetSessionTurnTimer(session.id, nextTurnTimer)}
                         >
-                          Timer {session.turnTimerSeconds}s
+                          Timer {formatTurnTimer(session.turnTimerSeconds)}
                         </Button>
                         <Button
                           type="button"
@@ -218,4 +220,8 @@ export function LobbyPanel({
       </section>
     </main>
   );
+}
+
+function formatTurnTimer(turnTimerSeconds: SessionTurnTimer): string {
+  return turnTimerSeconds === 0 ? 'Unlimited' : `${turnTimerSeconds}s`;
 }

@@ -1,7 +1,7 @@
 /**
  * @description Match HUD for game status, scoreboard, feature counters, and event log.
  */
-import type { GameEvent } from '@carcassonne/shared';
+import type { GameEvent, SessionTurnTimer } from '@carcassonne/shared';
 import type { GameHudState } from '../../state/gameHud';
 import { groupEventsByTurn } from '../../state/gameEvents';
 
@@ -9,8 +9,9 @@ interface GameHudProps {
   hud: GameHudState;
   eventLog: GameEvent[];
   replayTurn: number | null;
+  showTurnTimer: boolean;
   turnSecondsRemaining: number | null;
-  turnTimerSeconds: number;
+  turnTimerSeconds: SessionTurnTimer;
   onSelectEventGroup: (turn: number, isMostRecent: boolean) => void;
 }
 
@@ -39,6 +40,7 @@ export function GameHud({
   hud,
   eventLog,
   replayTurn,
+  showTurnTimer,
   turnSecondsRemaining,
   turnTimerSeconds,
   onSelectEventGroup
@@ -50,6 +52,12 @@ export function GameHud({
     return index;
   }, {});
   const eventGroups = groupEventsByTurn(eventLog);
+  const activeTurnTimerLabel =
+    turnTimerSeconds === 0
+      ? 'Unlimited'
+      : turnSecondsRemaining !== null
+        ? `${turnSecondsRemaining}s/${turnTimerSeconds}s`
+        : null;
 
   return (
     <aside className="card game-hud">
@@ -83,9 +91,9 @@ export function GameHud({
                   <span className={`hud-chip hud-chip--${entry.color}`} aria-hidden="true" />
                   {entry.name}
                 </span>
-                {entry.isActive && turnSecondsRemaining !== null ? (
+                {entry.isActive && showTurnTimer && activeTurnTimerLabel !== null ? (
                   <span className="hud-turn-timer">
-                    {turnSecondsRemaining}s/{turnTimerSeconds}s
+                    {activeTurnTimerLabel}
                   </span>
                 ) : null}
               </div>

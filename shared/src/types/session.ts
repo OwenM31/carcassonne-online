@@ -5,7 +5,7 @@ export type SessionId = string;
 export type SessionStatus = 'lobby' | 'in_progress';
 export type SessionDeckSize = 'standard' | 'small';
 export type SessionMode = 'standard' | 'sandbox';
-export type SessionTurnTimer = 30 | 60 | 90;
+export type SessionTurnTimer = 0 | 30 | 60 | 90;
 
 export interface SessionPlayerSummary {
   name: string;

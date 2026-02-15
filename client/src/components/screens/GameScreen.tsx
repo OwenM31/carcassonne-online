@@ -116,6 +116,7 @@ export function GameScreen({
     ? getStatusText(game, isActivePlayer, liveHud.activePlayer?.name, meepleOptions)
     : `Read-only replay after turn ${replay.replayTurn}. Use jump to current to resume play.`;
 
+  const showTurnTimer = replay.isCurrentView && isTurnTimerVisible(game);
   const turnSecondsRemaining = replay.isCurrentView ? computeTurnSecondsRemaining(game, clockNowMs) : null;
 
   const playerColorById = useMemo(
@@ -188,6 +189,7 @@ export function GameScreen({
           hud={hud}
           eventLog={game.eventLog}
           replayTurn={replay.replayTurn}
+          showTurnTimer={showTurnTimer}
           turnSecondsRemaining={turnSecondsRemaining}
           turnTimerSeconds={game.turnTimerSeconds}
           onSelectEventGroup={handleSelectEventGroup}
@@ -268,10 +270,10 @@ export function GameScreen({
 }
 
 function computeTurnSecondsRemaining(game: GameState, nowMs: number): number | null {
-  if (game.status !== 'active') {
+  if (!isTurnTimerVisible(game)) {
     return null;
   }
-  if (game.phase !== 'draw_tile' && game.phase !== 'place_tile' && game.phase !== 'place_meeple') {
+  if (game.turnTimerSeconds === 0) {
     return null;
   }
 
@@ -282,4 +284,11 @@ function computeTurnSecondsRemaining(game: GameState, nowMs: number): number | n
 
   const deadlineMs = turnStartMs + game.turnTimerSeconds * 1000;
   return Math.max(0, Math.ceil((deadlineMs - nowMs) / 1000));
+}
+
+function isTurnTimerVisible(game: GameState): boolean {
+  return (
+    game.status === 'active' &&
+    (game.phase === 'draw_tile' || game.phase === 'place_tile' || game.phase === 'place_meeple')
+  );
 }

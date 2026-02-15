@@ -2,6 +2,7 @@
  * @description Draw and tile placement action handlers.
  */
 import type { DrawSandboxTileAction, GameState, PlaceTileAction, TileId } from '../types/game';
+import { TILE_CATALOG } from '../tiles';
 import { addTileToBoard } from './board';
 import { getLegalTilePlacements, isTilePlacementValid } from './placement';
 import {
@@ -165,7 +166,7 @@ const drawResolvedTile = (
         ...state,
         tileDeck: remainingDeck,
         currentTileId: tileId,
-        currentTileOrientation: randomOrientation(),
+        currentTileOrientation: getDrawOrientation(tileId),
         phase: 'place_tile'
       },
       {
@@ -181,4 +182,14 @@ const drawResolvedTile = (
 const randomOrientation = (): 0 | 90 | 180 | 270 => {
   const orientations = [0, 90, 180, 270] as const;
   return orientations[Math.floor(Math.random() * orientations.length)];
+};
+
+const getDrawOrientation = (tileId: TileId): 0 | 90 | 180 | 270 => {
+  const tile = TILE_CATALOG.find((entry) => entry.id === tileId);
+  if (!tile) {
+    return randomOrientation();
+  }
+
+  const { N, E, S, W } = tile.features.edges;
+  return N === E && E === S && S === W ? 0 : randomOrientation();
 };

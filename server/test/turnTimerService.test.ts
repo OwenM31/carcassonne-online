@@ -4,7 +4,8 @@
 import {
   createGame,
   getStartingTileCandidates,
-  type SessionSummary
+  type SessionSummary,
+  type SessionTurnTimer
 } from '@carcassonne/shared';
 
 import { InMemoryGameService } from '../src/services/gameService';
@@ -94,9 +95,26 @@ describe('TurnTimerService', () => {
     expect(persist).toHaveBeenCalled();
     expect(broadcast).toHaveBeenCalledTimes(1);
   });
+
+  it('does not auto-play when the session timer is unlimited', () => {
+    const session = buildSandboxSession(true, 0);
+    const persist = jest.fn();
+    const sessionService = buildSessionService(session, persist);
+    const broadcast = jest.fn();
+    const service = new TurnTimerService({ sessionService, broadcast });
+
+    service.syncSession(session.id);
+    jest.advanceTimersByTime(300_000);
+
+    expect(persist).not.toHaveBeenCalled();
+    expect(broadcast).toHaveBeenCalledTimes(0);
+  });
 });
 
-function buildSandboxSession(includeActivePlayerInLobby: boolean): SessionRecord {
+function buildSandboxSession(
+  includeActivePlayerInLobby: boolean,
+  turnTimerSeconds: SessionTurnTimer = 30
+): SessionRecord {
   const startingTileId = getStartingTileCandidates()[0];
   if (!startingTileId) {
     throw new Error('Expected a configured starting tile.');
@@ -108,12 +126,12 @@ function buildSandboxSession(includeActivePlayerInLobby: boolean): SessionRecord
     players: [{ id: 'p1', name: 'Ada', color: 'red' }],
     tileDeck: ['T_R1C1'],
     startingTileId,
-    turnTimerSeconds: 30
+    turnTimerSeconds
   });
   const gameService = new InMemoryGameService(() => 'game-timeout', {
     game,
     history: [],
-    startConfig: { deckSize: 'standard', mode: 'sandbox', turnTimerSeconds: 30 }
+    startConfig: { deckSize: 'standard', mode: 'sandbox', turnTimerSeconds }
   });
 
   const lobbyService = new InMemoryLobbyService();
@@ -125,7 +143,7 @@ function buildSandboxSession(includeActivePlayerInLobby: boolean): SessionRecord
     id: 'session-1',
     deckSize: 'standard',
     mode: 'sandbox',
-    turnTimerSeconds: 30,
+    turnTimerSeconds,
     lobbyService,
     gameService
   };

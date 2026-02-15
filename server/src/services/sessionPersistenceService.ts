@@ -116,7 +116,7 @@ function isSessionMode(value: unknown): value is SessionMode {
 }
 
 function isSessionTurnTimer(value: unknown): value is SessionTurnTimer {
-  return value === 30 || value === 60 || value === 90;
+  return value === 0 || value === 30 || value === 60 || value === 90;
 }
 
 function isLobbyState(value: unknown): value is LobbyState {

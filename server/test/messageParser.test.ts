@@ -28,6 +28,14 @@ describe('parseClientMessage', () => {
     expect(result).toEqual({ type: 'create_session', turnTimerSeconds: 90 });
   });
 
+  it('parses create_session payloads with unlimited turn timer', () => {
+    const result = parseClientMessage(
+      Buffer.from(JSON.stringify({ type: 'create_session', turnTimerSeconds: 0 }))
+    );
+
+    expect(result).toEqual({ type: 'create_session', turnTimerSeconds: 0 });
+  });
+
   it('rejects create_session payloads with invalid deck size', () => {
     const result = parseClientMessage(
       Buffer.from(JSON.stringify({ type: 'create_session', deckSize: 'tiny' }))
@@ -95,6 +103,24 @@ describe('parseClientMessage', () => {
       type: 'set_session_turn_timer',
       sessionId: 'session-1',
       turnTimerSeconds: 30
+    });
+  });
+
+  it('parses set_session_turn_timer payloads with unlimited timer', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'set_session_turn_timer',
+          sessionId: 'session-1',
+          turnTimerSeconds: 0
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'set_session_turn_timer',
+      sessionId: 'session-1',
+      turnTimerSeconds: 0
     });
   });
 

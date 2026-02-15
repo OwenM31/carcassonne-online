@@ -172,6 +172,26 @@ describe('InMemorySessionService', () => {
     ]);
   });
 
+  it('updates session turn timer to unlimited before game start', () => {
+    const service = new InMemorySessionService(() => 'session-9b');
+    service.createSession();
+
+    const result = service.updateSessionTurnTimer('session-9b', 0);
+
+    expect(result.type).toBe('success');
+    expect(service.listSessions()).toEqual([
+      {
+        id: 'session-9b',
+        status: 'lobby',
+        playerCount: 0,
+        players: [],
+        deckSize: 'standard',
+        mode: 'standard',
+        turnTimerSeconds: 0
+      }
+    ]);
+  });
+
   it('rejects turn timer changes after game start', () => {
     const service = new InMemorySessionService(() => 'session-10');
     const session = service.createSession();
