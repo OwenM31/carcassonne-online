@@ -51,6 +51,15 @@ export class SocketPresenceService {
     return null;
   }
 
+  isBoundTo(socket: WebSocket, sessionId: SessionId, playerId: string): boolean {
+    const identity = this.sessionBySocket.get(socket);
+    if (!identity) {
+      return false;
+    }
+
+    return identity.sessionId === sessionId && identity.playerId === playerId;
+  }
+
   scheduleGracefulDisconnect(socket: WebSocket): void {
     const identity = this.unbind(socket);
     if (!identity) {

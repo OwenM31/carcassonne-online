@@ -40,8 +40,8 @@ describe('InMemorySessionService', () => {
       status: 'in_progress',
       playerCount: 2,
       players: [
-        { id: 'p1', name: 'Ada' },
-        { id: 'p2', name: 'Grace' }
+        { name: 'Ada' },
+        { name: 'Grace' }
       ],
       deckSize: 'standard',
       mode: 'standard'

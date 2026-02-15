@@ -130,10 +130,12 @@ export function LobbyPanel({
                           {session.players.length === 0 ? (
                             <li className="session-players-empty">No players joined yet.</li>
                           ) : (
-                            session.players.map((player) => (
-                              <li key={player.id} className="session-player-item">
+                            session.players.map((player, playerIndex) => (
+                              <li
+                                key={`${session.id}-player-${playerIndex}`}
+                                className="session-player-item"
+                              >
                                 <span className="players-name">{player.name}</span>
-                                <span className="players-id">#{player.id.slice(0, 6)}</span>
                               </li>
                             ))
                           )}

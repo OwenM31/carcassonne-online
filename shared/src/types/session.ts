@@ -7,7 +7,6 @@ export type SessionDeckSize = 'standard' | 'small';
 export type SessionMode = 'standard' | 'sandbox';
 
 export interface SessionPlayerSummary {
-  id: string;
   name: string;
 }
 

@@ -41,6 +41,17 @@ export function hasSessionId(message: ClientMessage): message is ClientMessage &
   return 'sessionId' in message && typeof message.sessionId === 'string';
 }
 
+export function hasPlayerId(message: ClientMessage): message is ClientMessage & { playerId: string } {
+  return 'playerId' in message && typeof message.playerId === 'string';
+}
+
+export function requiresBoundPlayer(message: ClientMessage): message is ClientMessage & {
+  sessionId: SessionId;
+  playerId: string;
+} {
+  return hasSessionId(message) && hasPlayerId(message) && message.type !== 'join_lobby';
+}
+
 export function shouldRefreshSessions(message: ClientMessage): boolean {
   return (
     message.type === 'join_lobby' ||

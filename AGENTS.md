@@ -39,8 +39,9 @@ A web-based, online multiplayer clone of the Carcassonne base game.
 ## 5. Project Memory (Agent to maintain)
 
 * **User Preferences:** Run tests (`npm test`) every turn; commit (`git commit`) on green; increment right-most app version number each commit.
-* **Current Focus:** Scoring, end-game resolution, undo support, and board-level meeple visualization.
+* **Current Focus:** Gameplay QoL, replay ergonomics, and realtime disconnect/reconnect hardening.
 * **Accomplished:** [Maintain this list with task completions with most recent at the top; ocasionally condense this list]
+    * Harden disconnect handling with server heartbeat ping/pong cleanup, socket-bound player action authorization, reconnect queue retention ordering, and lobby session-player ID privacy
     * Add optional replay hotbar toggle to auto-jump back to current board when live game updates arrive during read-only rewind
     * Add sandbox board reset/refill action and cross-mode read-only turn replay with board hotbar controls plus click-to-rewind event-turn grouping
     * Show joined player names directly under each session card in the lobby and remove separate global lobby player list

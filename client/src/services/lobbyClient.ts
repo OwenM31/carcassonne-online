@@ -27,14 +27,14 @@ export class LobbyClient {
   private handlers: LobbyClientHandlers | null = null;
 
   connect(url: string, handlers: LobbyClientHandlers) {
-    this.disconnect();
+    this.closeSocket(false);
     this.handlers = handlers;
     const socket = new WebSocket(url);
     this.socket = socket;
 
     socket.addEventListener('open', () => {
-      this.flushPending();
       handlers.onOpen?.();
+      this.flushPending();
     });
 
     socket.addEventListener('close', () => {
@@ -122,11 +122,7 @@ export class LobbyClient {
   }
 
   disconnect() {
-    if (this.socket) {
-      this.socket.close();
-    }
-    this.socket = null;
-    this.pending = [];
+    this.closeSocket(true);
   }
 
   private send(message: ClientMessage) {
@@ -147,5 +143,16 @@ export class LobbyClient {
       this.socket?.send(JSON.stringify(message));
     });
     this.pending = [];
+  }
+
+  private closeSocket(clearPending: boolean) {
+    if (this.socket && this.socket.readyState !== WebSocket.CLOSED) {
+      this.socket.close();
+    }
+
+    this.socket = null;
+    if (clearPending) {
+      this.pending = [];
+    }
   }
 }

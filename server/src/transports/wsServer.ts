@@ -8,14 +8,17 @@ import type { ServerMessage } from '@carcassonne/shared';
 import { createGameController } from '../controllers/gameController';
 import { createLobbyController } from '../controllers/lobbyController';
 import { parseClientMessage } from '../controllers/messageParser';
+import { SocketHeartbeatService } from '../services/socketHeartbeatService';
 import type { SessionService } from '../services/sessionService';
 import { SocketPresenceService } from '../services/socketPresenceService';
 import {
   hasSessionId,
+  requiresBoundPlayer,
   isGameAction,
   isLobbyMessage,
   shouldRefreshSessions
 } from './wsMessagePredicates';
+import { buildSessionListMessage, readDurationMs } from './wsServerSupport';
 
 interface WsServerOptions {
   server: HttpServer;
@@ -24,8 +27,8 @@ interface WsServerOptions {
 
 export function createWsServer({ server, sessionService }: WsServerOptions) {
   const wss = new WebSocketServer({ server });
-  const disconnectGraceMs = Number(process.env.DISCONNECT_GRACE_MS ?? 90_000);
-
+  const disconnectGraceMs = readDurationMs(process.env.DISCONNECT_GRACE_MS, 90_000);
+  const heartbeatIntervalMs = readDurationMs(process.env.HEARTBEAT_INTERVAL_MS, 30_000);
   const broadcast = (message: ServerMessage) => {
     const payload = JSON.stringify(message);
     for (const client of wss.clients) {
@@ -36,11 +39,10 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
   };
 
   const sendTo = (socket: WebSocket, message: ServerMessage) => {
-    if (socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify(message));
-    }
-  };
-
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify(message));
+      }
+    };
   const presenceService = new SocketPresenceService(
     disconnectGraceMs,
     (sessionId, playerId) => {
@@ -61,26 +63,25 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
       broadcast(buildSessionListMessage(sessionService));
     }
   );
-
+  const heartbeatService = new SocketHeartbeatService();
+  heartbeatService.start(heartbeatIntervalMs);
   wss.on('connection', (socket) => {
+    heartbeatService.register(socket);
     socket.on('message', (raw) => {
       const parsed = parseClientMessage(raw);
       if (!parsed) {
         sendTo(socket, { type: 'error', message: 'Invalid message.' });
         return;
       }
-
       if (parsed.type === 'list_sessions') {
         sendTo(socket, buildSessionListMessage(sessionService));
         return;
       }
-
       if (parsed.type === 'create_session') {
         sessionService.createSession(parsed.deckSize, parsed.mode);
         broadcast(buildSessionListMessage(sessionService));
         return;
       }
-
       if (parsed.type === 'set_session_deck_size') {
         const updateResult = sessionService.updateSessionDeckSize(
           parsed.sessionId,
@@ -90,11 +91,9 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
           sendTo(socket, { type: 'error', message: updateResult.message });
           return;
         }
-
         broadcast(buildSessionListMessage(sessionService));
         return;
       }
-
       if (parsed.type === 'set_session_mode') {
         const updateResult = sessionService.updateSessionMode(
           parsed.sessionId,
@@ -104,33 +103,27 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
           sendTo(socket, { type: 'error', message: updateResult.message });
           return;
         }
-
         broadcast(buildSessionListMessage(sessionService));
         return;
       }
-
       if (parsed.type === 'delete_session') {
         const deleted = sessionService.deleteSession(parsed.sessionId);
         if (!deleted) {
           sendTo(socket, { type: 'error', message: 'Session not found.' });
           return;
         }
-
         broadcast(buildSessionListMessage(sessionService));
         return;
       }
-
       if (!hasSessionId(parsed)) {
         sendTo(socket, { type: 'error', message: 'Session id is required.' });
         return;
       }
-
       const session = sessionService.getSession(parsed.sessionId);
       if (!session) {
         sendTo(socket, { type: 'error', message: 'Session not found.' });
         return;
       }
-
       const lobbyController = createLobbyController(
         parsed.sessionId,
         session.lobbyService,
@@ -138,7 +131,13 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         () => ({ deckSize: session.deckSize, mode: session.mode })
       );
       const gameController = createGameController(parsed.sessionId, session.gameService);
-
+      if (
+        requiresBoundPlayer(parsed) &&
+        !presenceService.isBoundTo(socket, parsed.sessionId, parsed.playerId)
+      ) {
+        sendTo(socket, { type: 'error', message: 'Rejoin the session before acting.' });
+        return;
+      }
       let response: ServerMessage;
       if (isLobbyMessage(parsed)) {
         response = lobbyController.handleMessage(parsed);
@@ -156,38 +155,28 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         sendTo(socket, response);
         return;
       }
-
       if (parsed.type === 'join_lobby') {
         presenceService.bind(socket, parsed.sessionId, parsed.playerId);
       }
-
       if (parsed.type === 'leave_lobby') {
         presenceService.clearPendingDisconnect(parsed.sessionId, parsed.playerId);
         presenceService.unbind(socket);
       }
-
       broadcast(response);
-
       if (shouldRefreshSessions(parsed)) {
         broadcast(buildSessionListMessage(sessionService));
       }
     });
 
     socket.on('close', () => {
+      heartbeatService.unregister(socket);
       presenceService.scheduleGracefulDisconnect(socket);
     });
   });
 
   wss.on('close', () => {
+    heartbeatService.dispose();
     presenceService.dispose();
   });
-
   return wss;
-}
-
-function buildSessionListMessage(service: SessionService): ServerMessage {
-  return {
-    type: 'session_list',
-    sessions: service.listSessions()
-  };
 }
