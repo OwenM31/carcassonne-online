@@ -48,6 +48,7 @@ describe('applyLobbyMessage', () => {
           id: 'session-1',
           status: 'lobby',
           playerCount: 0,
+          players: [],
           deckSize: 'standard',
           mode: 'standard'
         }
@@ -59,6 +60,7 @@ describe('applyLobbyMessage', () => {
         id: 'session-1',
         status: 'lobby',
         playerCount: 0,
+        players: [],
         deckSize: 'standard',
         mode: 'standard'
       }

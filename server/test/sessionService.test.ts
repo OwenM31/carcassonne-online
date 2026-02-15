@@ -14,6 +14,7 @@ describe('InMemorySessionService', () => {
         id: 'session-1',
         status: 'lobby',
         playerCount: 0,
+        players: [],
         deckSize: 'standard',
         mode: 'standard'
       }
@@ -38,6 +39,10 @@ describe('InMemorySessionService', () => {
       id: 'session-2',
       status: 'in_progress',
       playerCount: 2,
+      players: [
+        { id: 'p1', name: 'Ada' },
+        { id: 'p2', name: 'Grace' }
+      ],
       deckSize: 'standard',
       mode: 'standard'
     });
@@ -59,6 +64,7 @@ describe('InMemorySessionService', () => {
         id: 'session-4',
         status: 'lobby',
         playerCount: 0,
+        players: [],
         deckSize: 'standard',
         mode: 'standard'
       }
@@ -77,6 +83,7 @@ describe('InMemorySessionService', () => {
         id: 'session-5',
         status: 'lobby',
         playerCount: 0,
+        players: [],
         deckSize: 'small',
         mode: 'standard'
       }
@@ -114,6 +121,7 @@ describe('InMemorySessionService', () => {
         id: 'session-7',
         status: 'lobby',
         playerCount: 0,
+        players: [],
         deckSize: 'standard',
         mode: 'sandbox'
       }

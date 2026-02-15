@@ -6,10 +6,16 @@ export type SessionStatus = 'lobby' | 'in_progress';
 export type SessionDeckSize = 'standard' | 'small';
 export type SessionMode = 'standard' | 'sandbox';
 
+export interface SessionPlayerSummary {
+  id: string;
+  name: string;
+}
+
 export interface SessionSummary {
   id: SessionId;
   status: SessionStatus;
   playerCount: number;
+  players: SessionPlayerSummary[];
   deckSize: SessionDeckSize;
   mode: SessionMode;
 }

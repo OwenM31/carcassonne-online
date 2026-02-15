@@ -189,7 +189,6 @@ export function LobbyScreen() {
       isConnected={isConnected}
       canStartGame={canStartGame}
       minimumPlayersToStart={minimumPlayers}
-      players={viewState.lobby?.players ?? []}
       sessions={viewState.sessions}
       activeSessionId={activeSessionId}
       error={viewState.error}

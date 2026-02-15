@@ -134,6 +134,7 @@ function buildSummary(session: SessionRecord): SessionSummary {
     id: session.id,
     status,
     playerCount: lobby.players.length,
+    players: lobby.players.map((player) => ({ id: player.id, name: player.name })),
     deckSize: session.deckSize,
     mode: session.mode
   };

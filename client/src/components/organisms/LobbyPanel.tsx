@@ -3,7 +3,6 @@
  */
 import type { CSSProperties } from 'react';
 import type {
-  LobbyPlayer,
   SessionDeckSize,
   SessionMode,
   SessionSummary
@@ -26,7 +25,6 @@ interface LobbyPanelProps {
   isConnected: boolean;
   canStartGame: boolean;
   minimumPlayersToStart: number;
-  players: LobbyPlayer[];
   sessions: SessionSummary[];
   activeSessionId: string | null;
   error: string | null;
@@ -45,7 +43,6 @@ export function LobbyPanel({
   isConnected,
   canStartGame,
   minimumPlayersToStart,
-  players,
   sessions,
   activeSessionId,
   error
@@ -129,6 +126,18 @@ export function LobbyPanel({
                         <span className="session-meta">
                           {statusLabel} · {session.playerCount} players · {deckLabel} · {modeLabel}
                         </span>
+                        <ul className="session-players-list">
+                          {session.players.length === 0 ? (
+                            <li className="session-players-empty">No players joined yet.</li>
+                          ) : (
+                            session.players.map((player) => (
+                              <li key={player.id} className="session-player-item">
+                                <span className="players-name">{player.name}</span>
+                                <span className="players-id">#{player.id.slice(0, 6)}</span>
+                              </li>
+                            ))
+                          )}
+                        </ul>
                       </div>
                       <div className="session-actions">
                         <Badge tone={isInProgress ? 'warning' : 'neutral'}>{statusLabel}</Badge>
@@ -171,28 +180,6 @@ export function LobbyPanel({
               )}
             </ul>
           </div>
-        </div>
-        <div className="lobby-players">
-          <div className="players-header">
-            <h2 className="card__title">Players</h2>
-            <span className="players-count">{players.length} joined</span>
-          </div>
-          <ul className="players-list">
-            {players.length === 0 ? (
-              <li className="players-empty">No one here yet. Be the first.</li>
-            ) : (
-              players.map((player, index) => (
-                <li
-                  key={player.id}
-                  className="players-item"
-                  style={{ '--stagger': `${index * 0.08}s` } as CSSProperties}
-                >
-                  <span className="players-name">{player.name}</span>
-                  <span className="players-id">#{player.id.slice(0, 6)}</span>
-                </li>
-              ))
-            )}
-          </ul>
         </div>
       </section>
     </main>

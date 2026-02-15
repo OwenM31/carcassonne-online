@@ -198,7 +198,7 @@ a {
 
 .session-item {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1.2rem;
   padding: 1.1rem 1.2rem;
@@ -228,6 +228,26 @@ a {
 .session-meta {
   font-size: 0.85rem;
   color: var(--color-olive);
+}
+
+.session-players-list {
+  list-style: none;
+  margin: 0.65rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.session-player-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.session-players-empty {
+  color: #6b6257;
+  font-size: 0.85rem;
 }
 
 .players-id {

@@ -111,6 +111,13 @@ function isSessionSummary(value: unknown): value is SessionSummary {
     typeof value.status === 'string' &&
     (value.status === 'lobby' || value.status === 'in_progress') &&
     typeof value.playerCount === 'number' &&
+    Array.isArray(value.players) &&
+    value.players.every(
+      (player) =>
+        isRecord(player) &&
+        typeof player.id === 'string' &&
+        typeof player.name === 'string'
+    ) &&
     (value.deckSize === 'standard' || value.deckSize === 'small') &&
     (value.mode === 'standard' || value.mode === 'sandbox')
   );
