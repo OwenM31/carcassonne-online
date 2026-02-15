@@ -58,4 +58,28 @@ describe('FileSessionPersistenceService', () => {
     const restored = new InMemorySessionService(() => 'session-next', undefined, persistence);
     expect(restored.listSessions()).toEqual([]);
   });
+
+  it('persists configured AI seats', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'carc-session-'));
+    const stateFile = path.join(tempDir, 'sessions.json');
+    const persistence = new FileSessionPersistenceService(stateFile);
+    const service = new InMemorySessionService(() => 'session-3', undefined, persistence);
+
+    service.createSession();
+    service.addAiPlayer('session-3', 'randy');
+    service.persist();
+
+    const restored = new InMemorySessionService(() => 'session-next', undefined, persistence);
+    expect(restored.listSessions()).toEqual([
+      {
+        id: 'session-3',
+        status: 'lobby',
+        playerCount: 1,
+        players: [{ name: 'RANDY', isAi: true, aiProfile: 'randy' }],
+        deckSize: 'standard',
+        mode: 'standard',
+        turnTimerSeconds: 60
+      }
+    ]);
+  });
 });

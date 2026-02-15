@@ -16,7 +16,8 @@ export function isLobbyMessage(message: ClientMessage): boolean {
   return (
     message.type === 'join_lobby' ||
     message.type === 'leave_lobby' ||
-    message.type === 'start_game'
+    message.type === 'start_game' ||
+    message.type === 'add_ai_player'
   );
 }
 
@@ -59,6 +60,7 @@ export function shouldRefreshSessions(message: ClientMessage): boolean {
   return (
     message.type === 'join_lobby' ||
     message.type === 'leave_lobby' ||
-    message.type === 'start_game'
+    message.type === 'start_game' ||
+    message.type === 'add_ai_player'
   );
 }

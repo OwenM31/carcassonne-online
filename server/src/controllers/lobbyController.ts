@@ -3,8 +3,10 @@
  */
 import type {
   ClientMessage,
+  GameState,
   LobbyState,
   PlayerId,
+  SessionAiProfile,
   SessionDeckSize,
   SessionMode,
   SessionTurnTimer,
@@ -20,6 +22,12 @@ export interface LobbyController {
   handleDisconnect(playerId: PlayerId): ServerMessage;
 }
 
+type AddAiPlayerResult =
+  | { type: 'success'; lobby: LobbyState }
+  | { type: 'error'; message: string };
+type AddAiPlayer = (aiProfile: SessionAiProfile) => AddAiPlayerResult;
+type IsAiPlayer = (playerId: PlayerId) => boolean;
+
 export function createLobbyController(
   sessionId: SessionId,
   service: LobbyService,
@@ -32,12 +40,29 @@ export function createLobbyController(
     deckSize: 'standard',
     mode: 'standard',
     turnTimerSeconds: 60
-  })
+  }),
+  addAiPlayer: AddAiPlayer = () => ({
+    type: 'error',
+    message: 'Adding AI players is not available.'
+  }),
+  isAiPlayer: IsAiPlayer = () => false
 ): LobbyController {
   return {
     handleMessage(message: ClientMessage) {
       switch (message.type) {
+        case 'add_ai_player': {
+          const result = addAiPlayer(message.aiProfile ?? 'randy');
+          if (result.type === 'error') {
+            return { type: 'error', message: result.message };
+          }
+
+          return { type: 'lobby_state', sessionId, lobby: result.lobby };
+        }
         case 'join_lobby': {
+          if (isAiPlayer(message.playerId)) {
+            return { type: 'error', message: 'AI seats cannot be joined manually.' };
+          }
+
           const trimmedName = message.playerName.trim();
           if (!trimmedName) {
             return { type: 'error', message: 'Player name is required.' };
@@ -127,19 +152,23 @@ export function createLobbyController(
 }
 
 function shouldResetGame(lobby: LobbyState, gameService: GameService): boolean {
-  if (lobby.players.length === 0) {
-    return true;
-  }
-
   const game = gameService.getGame();
   if (!game) {
+    return lobby.players.length === 0;
+  }
+
+  if (game.status === 'active') {
     return false;
+  }
+
+  if (lobby.players.length === 0) {
+    return true;
   }
 
   const lobbyPlayerIds = new Set(lobby.players.map((player) => player.id));
   return !game.players.some((player) => lobbyPlayerIds.has(player.id));
 }
 
-function isPlayerInGame(game: { players: Array<{ id: PlayerId }> }, playerId: PlayerId) {
+function isPlayerInGame(game: Pick<GameState, 'players'>, playerId: PlayerId) {
   return game.players.some((player) => player.id === playerId);
 }

@@ -104,7 +104,21 @@ describe('createLobbyController', () => {
     expect(gameService.resetCalls).toBe(1);
   });
 
-  it('resets the game when no active game players remain in the lobby', () => {
+  it('does not reset an active game when players disconnect', () => {
+    const lobbyService = new InMemoryLobbyService();
+    lobbyService.join('p1', 'Ada', '1234');
+    lobbyService.join('p2', 'Grace', '5678');
+    lobbyService.lockGameRejoinPins(['p1', 'p2']);
+    const gameService = new StubGameService(createTestGame());
+    const controller = createLobbyController('session-1', lobbyService, gameService);
+
+    controller.handleDisconnect('p1');
+    controller.handleDisconnect('p2');
+
+    expect(gameService.resetCalls).toBe(0);
+  });
+
+  it('keeps active games running when game players leave the lobby', () => {
     const lobbyService = new InMemoryLobbyService();
     lobbyService.join('p1', 'Ada', '1234');
     lobbyService.join('p2', 'Grace', '5678');
@@ -120,7 +134,7 @@ describe('createLobbyController', () => {
 
     controller.handleMessage({ type: 'leave_lobby', sessionId: 'session-1', playerId: 'p2' });
 
-    expect(gameService.resetCalls).toBe(1);
+    expect(gameService.resetCalls).toBe(0);
   });
 
   it('rejects new players when a game is in progress', () => {
@@ -229,6 +243,58 @@ describe('createLobbyController', () => {
     });
 
     expect(response.type).toBe('game_state');
+  });
+
+  it('adds AI seats through lobby actions', () => {
+    const lobbyService = new InMemoryLobbyService();
+    const gameService = new StubGameService();
+    const addAiPlayer = jest.fn(() => ({
+      type: 'success' as const,
+      lobby: {
+        players: [
+          { id: 'ai-randy-1', name: 'RANDY' }
+        ]
+      }
+    }));
+    const controller = createLobbyController(
+      'session-1',
+      lobbyService,
+      gameService,
+      undefined,
+      addAiPlayer
+    );
+
+    const response = controller.handleMessage({
+      type: 'add_ai_player',
+      sessionId: 'session-1'
+    });
+
+    expect(addAiPlayer).toHaveBeenCalledWith('randy');
+    expect(response).toEqual({
+      type: 'lobby_state',
+      sessionId: 'session-1',
+      lobby: { players: [{ id: 'ai-randy-1', name: 'RANDY' }] }
+    });
+  });
+
+  it('rejects manual joins for AI seats', () => {
+    const controller = createLobbyController(
+      'session-1',
+      new InMemoryLobbyService(),
+      new StubGameService(),
+      undefined,
+      undefined,
+      (playerId) => playerId.startsWith('ai-randy-')
+    );
+
+    const response = controller.handleMessage({
+      type: 'join_lobby',
+      sessionId: 'session-1',
+      playerId: 'ai-randy-1',
+      playerName: 'Attempt'
+    });
+
+    expect(response).toEqual({ type: 'error', message: 'AI seats cannot be joined manually.' });
   });
 });
 

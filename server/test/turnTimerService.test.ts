@@ -109,11 +109,37 @@ describe('TurnTimerService', () => {
     expect(persist).not.toHaveBeenCalled();
     expect(broadcast).toHaveBeenCalledTimes(0);
   });
+
+  it('auto-plays unlimited turns for configured AI seats', () => {
+    const session = buildSandboxSession(true, 0, true);
+    const persist = jest.fn();
+    const sessionService = buildSessionService(session, persist);
+    const broadcast = jest.fn();
+    const service = new TurnTimerService({ sessionService, broadcast });
+
+    service.syncSession(session.id);
+    jest.runOnlyPendingTimers();
+
+    expect(persist).toHaveBeenCalled();
+    expect(broadcast).toHaveBeenCalledTimes(1);
+    const message = broadcast.mock.calls[0][0] as {
+      type: string;
+      game: { eventLog: Array<{ type: string }> };
+    };
+    expect(message.game.eventLog.some((entry) => entry.type === 'draw_tile')).toBe(true);
+    expect(message.game.eventLog.some((entry) => entry.type === 'place_tile')).toBe(true);
+    expect(
+      message.game.eventLog.some(
+        (entry) => entry.type === 'place_meeple' || entry.type === 'skip_meeple'
+      )
+    ).toBe(true);
+  });
 });
 
 function buildSandboxSession(
   includeActivePlayerInLobby: boolean,
-  turnTimerSeconds: SessionTurnTimer = 30
+  turnTimerSeconds: SessionTurnTimer = 30,
+  markActivePlayerAsAi = false
 ): SessionRecord {
   const startingTileId = getStartingTileCandidates()[0];
   if (!startingTileId) {
@@ -144,6 +170,7 @@ function buildSandboxSession(
     deckSize: 'standard',
     mode: 'sandbox',
     turnTimerSeconds,
+    aiPlayerIds: markActivePlayerAsAi ? new Set(['p1']) : new Set(),
     lobbyService,
     gameService
   };
@@ -165,6 +192,8 @@ function buildSessionService(session: SessionRecord, persist: () => void): Sessi
     updateSessionDeckSize: () => ({ type: 'success', session }),
     updateSessionMode: () => ({ type: 'success', session }),
     updateSessionTurnTimer: () => ({ type: 'success', session }),
+    addAiPlayer: () => ({ type: 'success', session }),
+    isAiPlayer: (_sessionId: string, playerId: string) => session.aiPlayerIds.has(playerId),
     getSession: (sessionId: string) => (sessionId === session.id ? session : null),
     listSessions: () => [summary],
     deleteSession: () => false,

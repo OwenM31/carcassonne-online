@@ -3,6 +3,7 @@
  */
 import type { CSSProperties } from 'react';
 import type {
+  SessionAiProfile,
   SessionDeckSize,
   SessionMode,
   SessionSummary,
@@ -24,6 +25,7 @@ interface LobbyPanelProps {
   onSetSessionDeckSize: (sessionId: string, deckSize: SessionDeckSize) => void;
   onSetSessionMode: (sessionId: string, mode: SessionMode) => void;
   onSetSessionTurnTimer: (sessionId: string, turnTimerSeconds: SessionTurnTimer) => void;
+  onAddAiPlayer: (sessionId: string, aiProfile: SessionAiProfile) => void;
   onLeaveSession: () => void;
   onStartGame: () => void;
   isConnected: boolean;
@@ -45,6 +47,7 @@ export function LobbyPanel({
   onSetSessionDeckSize,
   onSetSessionMode,
   onSetSessionTurnTimer,
+  onAddAiPlayer,
   onLeaveSession,
   onStartGame,
   isConnected,
@@ -125,6 +128,7 @@ export function LobbyPanel({
                   const canChangeDeckSize = isConnected && !isInProgress;
                   const canChangeMode = isConnected && !isInProgress;
                   const canChangeTurnTimer = isConnected && !isInProgress;
+                  const canAddAiPlayer = isConnected && !isInProgress && session.playerCount < 5;
                   const statusLabel = isInProgress ? 'In progress' : 'Lobby';
                   const nextDeckSize: SessionDeckSize =
                     session.deckSize === 'small' ? 'standard' : 'small';
@@ -162,6 +166,7 @@ export function LobbyPanel({
                                 className="session-player-item"
                               >
                                 <span className="players-name">{player.name}</span>
+                                {player.isAi ? <span className="players-id">AI</span> : null}
                               </li>
                             ))
                           )}
@@ -184,6 +189,14 @@ export function LobbyPanel({
                           onClick={() => onSetSessionMode(session.id, nextMode)}
                         >
                           {session.mode === 'sandbox' ? 'Use standard mode' : 'Use sandbox mode'}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={!canAddAiPlayer}
+                          onClick={() => onAddAiPlayer(session.id, 'randy')}
+                        >
+                          Add RANDY
                         </Button>
                         <Button
                           type="button"

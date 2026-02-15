@@ -62,7 +62,19 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
           deckSize: session.deckSize,
           mode: session.mode,
           turnTimerSeconds: session.turnTimerSeconds
-        })
+        }),
+        (aiProfile) => {
+          const addResult = sessionService.addAiPlayer(sessionId, aiProfile);
+          if (addResult.type === 'error') {
+            return addResult;
+          }
+
+          return {
+            type: 'success',
+            lobby: addResult.session.lobbyService.getState()
+          };
+        },
+        (playerId) => sessionService.isAiPlayer(sessionId, playerId)
       );
       const response = lobbyController.handleDisconnect(playerId);
       sessionService.persist();
@@ -154,7 +166,19 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
           deckSize: session.deckSize,
           mode: session.mode,
           turnTimerSeconds: session.turnTimerSeconds
-        })
+        }),
+        (aiProfile) => {
+          const addResult = sessionService.addAiPlayer(parsed.sessionId, aiProfile);
+          if (addResult.type === 'error') {
+            return addResult;
+          }
+
+          return {
+            type: 'success',
+            lobby: addResult.session.lobbyService.getState()
+          };
+        },
+        (playerId) => sessionService.isAiPlayer(parsed.sessionId, playerId)
       );
       const gameController = createGameController(parsed.sessionId, session.gameService);
       if (

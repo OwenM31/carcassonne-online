@@ -6,6 +6,7 @@ import type {
   Coordinate,
   MeeplePlacement,
   Orientation,
+  SessionAiProfile,
   SessionDeckSize,
   SessionMode,
   SessionTurnTimer,
@@ -78,6 +79,10 @@ export class LobbyClient {
 
   setSessionTurnTimer(sessionId: string, turnTimerSeconds: SessionTurnTimer) {
     this.send({ type: 'set_session_turn_timer', sessionId, turnTimerSeconds });
+  }
+
+  addAiPlayer(sessionId: string, aiProfile: SessionAiProfile = 'randy') {
+    this.send({ type: 'add_ai_player', sessionId, aiProfile });
   }
 
   deleteSession(sessionId: string) {

@@ -52,6 +52,14 @@ describe('wsMessagePredicates', () => {
         playerName: 'Ada'
       })
     ).toBe(false);
+
+    expect(
+      requiresBoundPlayer({
+        type: 'add_ai_player',
+        sessionId: 'session-1',
+        aiProfile: 'randy'
+      })
+    ).toBe(false);
   });
 
   it('refreshes session list for lobby membership changes', () => {
@@ -71,5 +79,13 @@ describe('wsMessagePredicates', () => {
         playerId: 'p1'
       })
     ).toBe(false);
+
+    expect(
+      shouldRefreshSessions({
+        type: 'add_ai_player',
+        sessionId: 'session-1',
+        aiProfile: 'randy'
+      })
+    ).toBe(true);
   });
 });

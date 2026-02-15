@@ -14,6 +14,7 @@ import type {
 import type { LobbyState } from './lobby';
 import type {
   SessionDeckSize,
+  SessionAiProfile,
   SessionId,
   SessionMode,
   SessionSummary,
@@ -31,6 +32,7 @@ export type ClientMessage =
   | { type: 'set_session_deck_size'; sessionId: SessionId; deckSize: SessionDeckSize }
   | { type: 'set_session_mode'; sessionId: SessionId; mode: SessionMode }
   | { type: 'set_session_turn_timer'; sessionId: SessionId; turnTimerSeconds: SessionTurnTimer }
+  | { type: 'add_ai_player'; sessionId: SessionId; aiProfile?: SessionAiProfile }
   | { type: 'delete_session'; sessionId: SessionId }
   | {
       type: 'join_lobby';

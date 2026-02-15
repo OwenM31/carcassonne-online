@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   GameState,
+  SessionAiProfile,
   SessionDeckSize,
   SessionMode,
   SessionTurnTimer
@@ -167,6 +168,13 @@ export function LobbyScreen() {
     }
     client.setSessionTurnTimer(sessionId, turnTimerSeconds);
   };
+  const handleAddAiPlayer = (sessionId: string, aiProfile: SessionAiProfile) => {
+    if (!isConnected) {
+      return;
+    }
+
+    client.addAiPlayer(sessionId, aiProfile);
+  };
   const activeSession = useMemo(
     () => viewState.sessions.find((session) => session.id === activeSessionId) ?? null,
     [activeSessionId, viewState.sessions]
@@ -222,6 +230,7 @@ export function LobbyScreen() {
       onSetSessionDeckSize={handleSetSessionDeckSize}
       onSetSessionMode={handleSetSessionMode}
       onSetSessionTurnTimer={handleSetSessionTurnTimer}
+      onAddAiPlayer={handleAddAiPlayer}
       onLeaveSession={handleLeaveSession}
       onStartGame={handleStartGame}
       isConnected={isConnected}

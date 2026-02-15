@@ -124,6 +124,24 @@ describe('parseClientMessage', () => {
     });
   });
 
+  it('parses add_ai_player payloads', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'add_ai_player',
+          sessionId: 'session-1',
+          aiProfile: 'randy'
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'add_ai_player',
+      sessionId: 'session-1',
+      aiProfile: 'randy'
+    });
+  });
+
   it('parses join_lobby payloads with optional PIN', () => {
     const result = parseClientMessage(
       Buffer.from(
@@ -227,6 +245,20 @@ describe('parseClientMessage', () => {
           type: 'set_session_turn_timer',
           sessionId: 'session-1',
           turnTimerSeconds: 45
+        })
+      )
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it('rejects invalid AI profile values', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'add_ai_player',
+          sessionId: 'session-1',
+          aiProfile: 'expert'
         })
       )
     );

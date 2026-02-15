@@ -6,9 +6,12 @@ export type SessionStatus = 'lobby' | 'in_progress';
 export type SessionDeckSize = 'standard' | 'small';
 export type SessionMode = 'standard' | 'sandbox';
 export type SessionTurnTimer = 0 | 30 | 60 | 90;
+export type SessionAiProfile = 'randy';
 
 export interface SessionPlayerSummary {
   name: string;
+  isAi?: boolean;
+  aiProfile?: SessionAiProfile;
 }
 
 export interface SessionSummary {

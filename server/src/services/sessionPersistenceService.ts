@@ -18,6 +18,7 @@ export interface PersistedSessionSnapshot {
   deckSize: SessionDeckSize;
   mode: SessionMode;
   turnTimerSeconds: SessionTurnTimer;
+  aiPlayerIds: string[];
   lobby: LobbyState;
   lobbyPinHashes: Record<string, string | null>;
   gameRejoinPinHashes: Record<string, string | null>;
@@ -81,6 +82,7 @@ function decodeSnapshots(value: unknown): PersistedSessionSnapshot[] {
     const gameRejoinPinHashes = isNullableStringRecord(entry.gameRejoinPinHashes)
       ? entry.gameRejoinPinHashes
       : {};
+    const aiPlayerIds = isStringArray(entry.aiPlayerIds) ? entry.aiPlayerIds : [];
 
     if (
       typeof entry.id !== 'string' ||
@@ -97,6 +99,7 @@ function decodeSnapshots(value: unknown): PersistedSessionSnapshot[] {
       deckSize: entry.deckSize,
       mode: entry.mode,
       turnTimerSeconds,
+      aiPlayerIds,
       lobby: entry.lobby,
       lobbyPinHashes,
       gameRejoinPinHashes,
@@ -165,4 +168,8 @@ function isNullableStringRecord(value: unknown): value is Record<string, string 
   }
 
   return Object.values(value).every((entry) => entry === null || typeof entry === 'string');
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
 }

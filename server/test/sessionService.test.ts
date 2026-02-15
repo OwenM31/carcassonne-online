@@ -210,4 +210,47 @@ describe('InMemorySessionService', () => {
       message: 'Cannot change turn timer after game start.'
     });
   });
+
+  it('adds RANDY players before game start and labels them in summaries', () => {
+    const service = new InMemorySessionService(() => 'session-11');
+    service.createSession();
+
+    const first = service.addAiPlayer('session-11', 'randy');
+    const second = service.addAiPlayer('session-11', 'randy');
+
+    expect(first.type).toBe('success');
+    expect(second.type).toBe('success');
+    expect(service.listSessions()).toEqual([
+      {
+        id: 'session-11',
+        status: 'lobby',
+        playerCount: 2,
+        players: [
+          { name: 'RANDY', isAi: true, aiProfile: 'randy' },
+          { name: 'RANDY 2', isAi: true, aiProfile: 'randy' }
+        ],
+        deckSize: 'standard',
+        mode: 'standard',
+        turnTimerSeconds: 60
+      }
+    ]);
+  });
+
+  it('rejects AI additions after game start', () => {
+    const service = new InMemorySessionService(() => 'session-12');
+    const session = service.createSession();
+
+    session.lobbyService.join('p1', 'Ada');
+    session.lobbyService.join('p2', 'Grace');
+    session.gameService.startGame([
+      { id: 'p1', name: 'Ada' },
+      { id: 'p2', name: 'Grace' }
+    ]);
+
+    const result = service.addAiPlayer('session-12', 'randy');
+    expect(result).toEqual({
+      type: 'error',
+      message: 'Cannot add AI players after game start.'
+    });
+  });
 });

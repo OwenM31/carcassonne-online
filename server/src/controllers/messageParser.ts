@@ -1,7 +1,7 @@
 /**
  * @description Parses incoming WebSocket messages into typed client actions.
  */
-import type { ClientMessage, SessionTurnTimer } from '@carcassonne/shared';
+import type { ClientMessage, SessionAiProfile, SessionTurnTimer } from '@carcassonne/shared';
 import type { RawData } from 'ws';
 import { isRecord } from './messageParserPredicates';
 import { parseGameActionMessage } from './messageParserGameActions';
@@ -81,6 +81,21 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
       type: 'set_session_turn_timer',
       sessionId: parsed.sessionId,
       turnTimerSeconds: parsed.turnTimerSeconds
+    };
+  }
+
+  if (parsed.type === 'add_ai_player') {
+    if (
+      typeof parsed.sessionId !== 'string' ||
+      (parsed.aiProfile !== undefined && !isSessionAiProfile(parsed.aiProfile))
+    ) {
+      return null;
+    }
+
+    return {
+      type: 'add_ai_player',
+      sessionId: parsed.sessionId,
+      aiProfile: parsed.aiProfile
     };
   }
 
@@ -191,4 +206,8 @@ function isSessionMode(value: unknown): value is 'standard' | 'sandbox' {
 
 function isSessionTurnTimer(value: unknown): value is SessionTurnTimer {
   return value === 0 || value === 30 || value === 60 || value === 90;
+}
+
+function isSessionAiProfile(value: unknown): value is SessionAiProfile {
+  return value === 'randy';
 }

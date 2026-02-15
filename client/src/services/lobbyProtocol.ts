@@ -115,7 +115,9 @@ function isSessionSummary(value: unknown): value is SessionSummary {
     value.players.every(
       (player) =>
         isRecord(player) &&
-        typeof player.name === 'string'
+        typeof player.name === 'string' &&
+        (player.isAi === undefined || typeof player.isAi === 'boolean') &&
+        (player.aiProfile === undefined || player.aiProfile === 'randy')
     ) &&
     (value.deckSize === 'standard' || value.deckSize === 'small') &&
     (value.mode === 'standard' || value.mode === 'sandbox') &&

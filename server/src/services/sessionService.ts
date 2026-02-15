@@ -2,6 +2,8 @@
  * @description In-memory registry for lobby/game sessions.
  */
 import type {
+  PlayerId,
+  SessionAiProfile,
   SessionDeckSize,
   SessionId,
   SessionMode,
@@ -24,6 +26,7 @@ export interface SessionRecord {
   deckSize: SessionDeckSize;
   mode: SessionMode;
   turnTimerSeconds: SessionTurnTimer;
+  aiPlayerIds: Set<PlayerId>;
   lobbyService: LobbyService;
   gameService: GameService;
 }
@@ -37,6 +40,10 @@ export type SessionModeUpdateResult =
   | { type: 'error'; message: string };
 
 export type SessionTurnTimerUpdateResult =
+  | { type: 'success'; session: SessionRecord }
+  | { type: 'error'; message: string };
+
+export type SessionAiPlayerAddResult =
   | { type: 'success'; session: SessionRecord }
   | { type: 'error'; message: string };
 
@@ -55,6 +62,11 @@ export interface SessionService {
     sessionId: SessionId,
     turnTimerSeconds: SessionTurnTimer
   ): SessionTurnTimerUpdateResult;
+  addAiPlayer(
+    sessionId: SessionId,
+    aiProfile?: SessionAiProfile
+  ): SessionAiPlayerAddResult;
+  isAiPlayer(sessionId: SessionId, playerId: PlayerId): boolean;
   getSession(sessionId: SessionId): SessionRecord | null;
   listSessions(): SessionSummary[];
   deleteSession(sessionId: SessionId): boolean;
@@ -71,12 +83,18 @@ type SessionFactory = (
 
 const defaultSessionIdFactory: SessionIdFactory = () =>
   `session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+const MAX_PLAYERS = 5;
+const DEFAULT_AI_PROFILE: SessionAiProfile = 'randy';
+const AI_DISPLAY_NAME: Record<SessionAiProfile, string> = {
+  randy: 'RANDY'
+};
 
 const defaultSessionFactory: SessionFactory = (id, deckSize, mode, turnTimerSeconds) => ({
   id,
   deckSize,
   mode,
   turnTimerSeconds,
+  aiPlayerIds: new Set<PlayerId>(),
   lobbyService: new InMemoryLobbyService(),
   gameService: new InMemoryGameService()
 });
@@ -161,6 +179,42 @@ export class InMemorySessionService implements SessionService {
     return { type: 'success', session };
   }
 
+  addAiPlayer(
+    sessionId: SessionId,
+    aiProfile: SessionAiProfile = DEFAULT_AI_PROFILE
+  ): SessionAiPlayerAddResult {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return { type: 'error', message: 'Session not found.' };
+    }
+
+    if (session.gameService.getGame()) {
+      return { type: 'error', message: 'Cannot add AI players after game start.' };
+    }
+
+    const lobby = session.lobbyService.getState();
+    if (lobby.players.length >= MAX_PLAYERS) {
+      return { type: 'error', message: `Only ${MAX_PLAYERS} players are supported.` };
+    }
+
+    const nextSeatNumber = countAiSeats(session, aiProfile) + 1;
+    const playerId = `ai-${aiProfile}-${nextSeatNumber}`;
+    const playerName = formatAiName(aiProfile, nextSeatNumber);
+    session.lobbyService.join(playerId, playerName);
+    session.aiPlayerIds.add(playerId);
+    this.persist();
+    return { type: 'success', session };
+  }
+
+  isAiPlayer(sessionId: SessionId, playerId: PlayerId): boolean {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return false;
+    }
+
+    return session.aiPlayerIds.has(playerId);
+  }
+
   getSession(sessionId: SessionId): SessionRecord | null {
     return this.sessions.get(sessionId) ?? null;
   }
@@ -210,7 +264,19 @@ function buildSummary(session: SessionRecord): SessionSummary {
     id: session.id,
     status,
     playerCount: lobby.players.length,
-    players: lobby.players.map((player) => ({ name: player.name })),
+    players: lobby.players.map((player) => {
+      const isAi = session.aiPlayerIds.has(player.id);
+      if (!isAi) {
+        return { name: player.name };
+      }
+
+      const aiProfile = inferAiProfile(player.id);
+      return {
+        name: player.name,
+        isAi: true,
+        ...(aiProfile ? { aiProfile } : {})
+      };
+    }),
     deckSize: session.deckSize,
     mode: session.mode,
     turnTimerSeconds: session.turnTimerSeconds
@@ -223,6 +289,7 @@ function toSnapshot(session: SessionRecord): PersistedSessionSnapshot {
     deckSize: session.deckSize,
     mode: session.mode,
     turnTimerSeconds: session.turnTimerSeconds,
+    aiPlayerIds: Array.from(session.aiPlayerIds.values()),
     lobby: session.lobbyService.getState(),
     lobbyPinHashes: session.lobbyService.getPlayerPinHashes(),
     gameRejoinPinHashes: session.lobbyService.getGameRejoinPinHashes(),
@@ -236,6 +303,7 @@ function fromSnapshot(snapshot: PersistedSessionSnapshot): SessionRecord {
     deckSize: snapshot.deckSize,
     mode: snapshot.mode,
     turnTimerSeconds: snapshot.turnTimerSeconds,
+    aiPlayerIds: new Set(snapshot.aiPlayerIds),
     lobbyService: new InMemoryLobbyService(
       snapshot.lobby,
       snapshot.lobbyPinHashes,
@@ -243,4 +311,22 @@ function fromSnapshot(snapshot: PersistedSessionSnapshot): SessionRecord {
     ),
     gameService: new InMemoryGameService(undefined, snapshot.game)
   };
+}
+
+function countAiSeats(session: SessionRecord, aiProfile: SessionAiProfile): number {
+  const prefix = `ai-${aiProfile}-`;
+  return Array.from(session.aiPlayerIds).filter((playerId) => playerId.startsWith(prefix)).length;
+}
+
+function inferAiProfile(playerId: PlayerId): SessionAiProfile | undefined {
+  if (playerId.startsWith('ai-randy-')) {
+    return 'randy';
+  }
+
+  return undefined;
+}
+
+function formatAiName(aiProfile: SessionAiProfile, seatNumber: number): string {
+  const label = AI_DISPLAY_NAME[aiProfile] ?? aiProfile.toUpperCase();
+  return seatNumber === 1 ? label : `${label} ${seatNumber}`;
 }
