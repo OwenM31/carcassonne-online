@@ -6,7 +6,8 @@ export type SessionStatus = 'lobby' | 'in_progress';
 export type SessionDeckSize = 'standard' | 'small';
 export type SessionMode = 'standard' | 'sandbox';
 export type SessionTurnTimer = 0 | 30 | 60 | 90;
-export type SessionAiProfile = 'randy';
+export type SessionAiProfile = 'randy' | 'martin';
+export type SessionTakeoverBot = SessionAiProfile;
 
 export interface SessionPlayerSummary {
   name: string;
@@ -22,4 +23,5 @@ export interface SessionSummary {
   deckSize: SessionDeckSize;
   mode: SessionMode;
   turnTimerSeconds: SessionTurnTimer;
+  takeoverBot: SessionTakeoverBot;
 }

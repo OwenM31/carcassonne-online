@@ -18,6 +18,7 @@ import type {
   SessionId,
   SessionMode,
   SessionSummary,
+  SessionTakeoverBot,
   SessionTurnTimer
 } from './session';
 
@@ -32,6 +33,7 @@ export type ClientMessage =
   | { type: 'set_session_deck_size'; sessionId: SessionId; deckSize: SessionDeckSize }
   | { type: 'set_session_mode'; sessionId: SessionId; mode: SessionMode }
   | { type: 'set_session_turn_timer'; sessionId: SessionId; turnTimerSeconds: SessionTurnTimer }
+  | { type: 'set_session_takeover_bot'; sessionId: SessionId; takeoverBot: SessionTakeoverBot }
   | { type: 'add_ai_player'; sessionId: SessionId; aiProfile?: SessionAiProfile }
   | { type: 'delete_session'; sessionId: SessionId }
   | {

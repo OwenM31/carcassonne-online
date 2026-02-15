@@ -124,6 +124,24 @@ describe('parseClientMessage', () => {
     });
   });
 
+  it('parses set_session_takeover_bot payloads', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'set_session_takeover_bot',
+          sessionId: 'session-1',
+          takeoverBot: 'martin'
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'set_session_takeover_bot',
+      sessionId: 'session-1',
+      takeoverBot: 'martin'
+    });
+  });
+
   it('parses add_ai_player payloads', () => {
     const result = parseClientMessage(
       Buffer.from(
@@ -139,6 +157,24 @@ describe('parseClientMessage', () => {
       type: 'add_ai_player',
       sessionId: 'session-1',
       aiProfile: 'randy'
+    });
+  });
+
+  it('parses add_ai_player payloads for MARTIN', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'add_ai_player',
+          sessionId: 'session-1',
+          aiProfile: 'martin'
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'add_ai_player',
+      sessionId: 'session-1',
+      aiProfile: 'martin'
     });
   });
 
@@ -259,6 +295,20 @@ describe('parseClientMessage', () => {
           type: 'add_ai_player',
           sessionId: 'session-1',
           aiProfile: 'expert'
+        })
+      )
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it('rejects invalid takeover bot values', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'set_session_takeover_bot',
+          sessionId: 'session-1',
+          takeoverBot: 'expert'
         })
       )
     );

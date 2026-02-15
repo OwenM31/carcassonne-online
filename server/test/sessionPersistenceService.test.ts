@@ -38,7 +38,8 @@ describe('FileSessionPersistenceService', () => {
       players: [{ name: 'Ada' }, { name: 'Grace' }],
       deckSize: 'small',
       mode: 'sandbox',
-      turnTimerSeconds: 90
+      turnTimerSeconds: 90,
+      takeoverBot: 'randy'
     });
 
     const restoredSession = restored.getSession('session-1');
@@ -59,14 +60,15 @@ describe('FileSessionPersistenceService', () => {
     expect(restored.listSessions()).toEqual([]);
   });
 
-  it('persists configured AI seats', () => {
+  it('persists configured AI seats and takeover bot', () => {
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'carc-session-'));
     const stateFile = path.join(tempDir, 'sessions.json');
     const persistence = new FileSessionPersistenceService(stateFile);
     const service = new InMemorySessionService(() => 'session-3', undefined, persistence);
 
     service.createSession();
-    service.addAiPlayer('session-3', 'randy');
+    service.addAiPlayer('session-3', 'martin');
+    service.updateSessionTakeoverBot('session-3', 'martin');
     service.persist();
 
     const restored = new InMemorySessionService(() => 'session-next', undefined, persistence);
@@ -75,10 +77,11 @@ describe('FileSessionPersistenceService', () => {
         id: 'session-3',
         status: 'lobby',
         playerCount: 1,
-        players: [{ name: 'RANDY', isAi: true, aiProfile: 'randy' }],
+        players: [{ name: 'MARTIN', isAi: true, aiProfile: 'martin' }],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 60
+        turnTimerSeconds: 60,
+        takeoverBot: 'martin'
       }
     ]);
   });

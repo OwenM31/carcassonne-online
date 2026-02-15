@@ -7,6 +7,7 @@ import type {
   SessionAiProfile,
   SessionDeckSize,
   SessionMode,
+  SessionTakeoverBot,
   SessionTurnTimer
 } from '@carcassonne/shared';
 import { LobbyPanel } from '../organisms/LobbyPanel';
@@ -168,6 +169,15 @@ export function LobbyScreen() {
     }
     client.setSessionTurnTimer(sessionId, turnTimerSeconds);
   };
+  const handleSetSessionTakeoverBot = (
+    sessionId: string,
+    takeoverBot: SessionTakeoverBot
+  ) => {
+    if (!isConnected) {
+      return;
+    }
+    client.setSessionTakeoverBot(sessionId, takeoverBot);
+  };
   const handleAddAiPlayer = (sessionId: string, aiProfile: SessionAiProfile) => {
     if (!isConnected) {
       return;
@@ -230,6 +240,7 @@ export function LobbyScreen() {
       onSetSessionDeckSize={handleSetSessionDeckSize}
       onSetSessionMode={handleSetSessionMode}
       onSetSessionTurnTimer={handleSetSessionTurnTimer}
+      onSetSessionTakeoverBot={handleSetSessionTakeoverBot}
       onAddAiPlayer={handleAddAiPlayer}
       onLeaveSession={handleLeaveSession}
       onStartGame={handleStartGame}

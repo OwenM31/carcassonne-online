@@ -4,6 +4,7 @@
 import {
   createGame,
   getStartingTileCandidates,
+  type SessionTakeoverBot,
   type SessionSummary,
   type SessionTurnTimer
 } from '@carcassonne/shared';
@@ -56,6 +57,23 @@ describe('TurnTimerService', () => {
 
     expect(persist).toHaveBeenCalled();
     expect(broadcast).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses MARTIN takeover strategy for disconnected human players', () => {
+    const session = buildSandboxSession(false, 30, { takeoverBot: 'martin' });
+    const persist = jest.fn();
+    const sessionService = buildSessionService(session, persist);
+    const broadcast = jest.fn();
+    const service = new TurnTimerService({ sessionService, broadcast });
+
+    service.syncSession(session.id);
+    jest.runOnlyPendingTimers();
+
+    const message = broadcast.mock.calls[0][0] as {
+      type: string;
+      game: { eventLog: Array<{ type: string }> };
+    };
+    expect(message.game.eventLog.some((entry) => entry.type === 'place_meeple')).toBe(true);
   });
 
   it('reschedules to immediate timeout when the active player leaves mid-turn', () => {
@@ -111,7 +129,7 @@ describe('TurnTimerService', () => {
   });
 
   it('auto-plays unlimited turns for configured AI seats', () => {
-    const session = buildSandboxSession(true, 0, true);
+    const session = buildSandboxSession(true, 0, { aiPlayerId: 'ai-randy-1' });
     const persist = jest.fn();
     const sessionService = buildSessionService(session, persist);
     const broadcast = jest.fn();
@@ -134,22 +152,46 @@ describe('TurnTimerService', () => {
       )
     ).toBe(true);
   });
+
+  it('uses the configured AI seat profile over takeover fallback', () => {
+    const session = buildSandboxSession(true, 0, {
+      aiPlayerId: 'ai-martin-1',
+      takeoverBot: 'randy'
+    });
+    const persist = jest.fn();
+    const sessionService = buildSessionService(session, persist);
+    const broadcast = jest.fn();
+    const service = new TurnTimerService({ sessionService, broadcast });
+
+    service.syncSession(session.id);
+    jest.runOnlyPendingTimers();
+
+    const message = broadcast.mock.calls[0][0] as {
+      type: string;
+      game: { eventLog: Array<{ type: string }> };
+    };
+    expect(message.game.eventLog.some((entry) => entry.type === 'place_meeple')).toBe(true);
+  });
 });
 
 function buildSandboxSession(
   includeActivePlayerInLobby: boolean,
   turnTimerSeconds: SessionTurnTimer = 30,
-  markActivePlayerAsAi = false
+  options: {
+    aiPlayerId?: string;
+    takeoverBot?: SessionTakeoverBot;
+  } = {}
 ): SessionRecord {
   const startingTileId = getStartingTileCandidates()[0];
   if (!startingTileId) {
     throw new Error('Expected a configured starting tile.');
   }
 
+  const activePlayerId = options.aiPlayerId ?? 'p1';
   const game = createGame({
     gameId: 'game-timeout',
     mode: 'sandbox',
-    players: [{ id: 'p1', name: 'Ada', color: 'red' }],
+    players: [{ id: activePlayerId, name: 'Ada', color: 'red' }],
     tileDeck: ['T_R1C1'],
     startingTileId,
     turnTimerSeconds
@@ -162,7 +204,7 @@ function buildSandboxSession(
 
   const lobbyService = new InMemoryLobbyService();
   if (includeActivePlayerInLobby) {
-    lobbyService.join('p1', 'Ada');
+    lobbyService.join(activePlayerId, 'Ada');
   }
 
   return {
@@ -170,7 +212,8 @@ function buildSandboxSession(
     deckSize: 'standard',
     mode: 'sandbox',
     turnTimerSeconds,
-    aiPlayerIds: markActivePlayerAsAi ? new Set(['p1']) : new Set(),
+    takeoverBot: options.takeoverBot ?? 'randy',
+    aiPlayerIds: options.aiPlayerId ? new Set([options.aiPlayerId]) : new Set(),
     lobbyService,
     gameService
   };
@@ -184,7 +227,8 @@ function buildSessionService(session: SessionRecord, persist: () => void): Sessi
     players: [{ name: 'Ada' }],
     deckSize: session.deckSize,
     mode: session.mode,
-    turnTimerSeconds: session.turnTimerSeconds
+    turnTimerSeconds: session.turnTimerSeconds,
+    takeoverBot: session.takeoverBot
   };
 
   return {
@@ -192,6 +236,7 @@ function buildSessionService(session: SessionRecord, persist: () => void): Sessi
     updateSessionDeckSize: () => ({ type: 'success', session }),
     updateSessionMode: () => ({ type: 'success', session }),
     updateSessionTurnTimer: () => ({ type: 'success', session }),
+    updateSessionTakeoverBot: () => ({ type: 'success', session }),
     addAiPlayer: () => ({ type: 'success', session }),
     isAiPlayer: (_sessionId: string, playerId: string) => session.aiPlayerIds.has(playerId),
     getSession: (sessionId: string) => (sessionId === session.id ? session : null),

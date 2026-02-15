@@ -1,11 +1,12 @@
 /**
  * @description Lobby screen layout with session selection and controls.
  */
-import type { CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import type {
   SessionAiProfile,
   SessionDeckSize,
   SessionMode,
+  SessionTakeoverBot,
   SessionSummary,
   SessionTurnTimer
 } from '@carcassonne/shared';
@@ -25,6 +26,7 @@ interface LobbyPanelProps {
   onSetSessionDeckSize: (sessionId: string, deckSize: SessionDeckSize) => void;
   onSetSessionMode: (sessionId: string, mode: SessionMode) => void;
   onSetSessionTurnTimer: (sessionId: string, turnTimerSeconds: SessionTurnTimer) => void;
+  onSetSessionTakeoverBot: (sessionId: string, takeoverBot: SessionTakeoverBot) => void;
   onAddAiPlayer: (sessionId: string, aiProfile: SessionAiProfile) => void;
   onLeaveSession: () => void;
   onStartGame: () => void;
@@ -47,6 +49,7 @@ export function LobbyPanel({
   onSetSessionDeckSize,
   onSetSessionMode,
   onSetSessionTurnTimer,
+  onSetSessionTakeoverBot,
   onAddAiPlayer,
   onLeaveSession,
   onStartGame,
@@ -59,6 +62,9 @@ export function LobbyPanel({
 }: LobbyPanelProps) {
   const canLeaveSession = !!activeSessionId;
   const isNameLocked = !!activeSessionId;
+  const [selectedAiProfileBySession, setSelectedAiProfileBySession] = useState<
+    Record<string, SessionAiProfile>
+  >({});
 
   return (
     <main className="page">
@@ -128,6 +134,7 @@ export function LobbyPanel({
                   const canChangeDeckSize = isConnected && !isInProgress;
                   const canChangeMode = isConnected && !isInProgress;
                   const canChangeTurnTimer = isConnected && !isInProgress;
+                  const canChangeTakeoverBot = isConnected && !isInProgress;
                   const canAddAiPlayer = isConnected && !isInProgress && session.playerCount < 5;
                   const statusLabel = isInProgress ? 'In progress' : 'Lobby';
                   const nextDeckSize: SessionDeckSize =
@@ -136,6 +143,12 @@ export function LobbyPanel({
                   const nextMode: SessionMode =
                     session.mode === 'sandbox' ? 'standard' : 'sandbox';
                   const modeLabel = session.mode === 'sandbox' ? 'Sandbox mode' : 'Standard mode';
+                  const selectedAiProfile =
+                    selectedAiProfileBySession[session.id] ?? 'randy';
+                  const nextSelectedAiProfile: SessionAiProfile =
+                    selectedAiProfile === 'randy' ? 'martin' : 'randy';
+                  const nextTakeoverBot: SessionTakeoverBot =
+                    session.takeoverBot === 'randy' ? 'martin' : 'randy';
                   const nextTurnTimer: SessionTurnTimer =
                     session.turnTimerSeconds === 30
                       ? 60
@@ -154,7 +167,7 @@ export function LobbyPanel({
                       <div className="session-info">
                         <span className="session-id">{session.id}</span>
                         <span className="session-meta">
-                          {statusLabel} · {session.playerCount} players · {deckLabel} · {modeLabel} · Timer {formatTurnTimer(session.turnTimerSeconds)}
+                          {statusLabel} · {session.playerCount} players · {deckLabel} · {modeLabel} · Timer {formatTurnTimer(session.turnTimerSeconds)} · Takeover {formatAiProfile(session.takeoverBot)}
                         </span>
                         <ul className="session-players-list">
                           {session.players.length === 0 ? (
@@ -194,9 +207,30 @@ export function LobbyPanel({
                           type="button"
                           variant="ghost"
                           disabled={!canAddAiPlayer}
-                          onClick={() => onAddAiPlayer(session.id, 'randy')}
+                          onClick={() =>
+                            setSelectedAiProfileBySession((current) => ({
+                              ...current,
+                              [session.id]: nextSelectedAiProfile
+                            }))
+                          }
                         >
-                          Add RANDY
+                          AI {formatAiProfile(selectedAiProfile)}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={!canAddAiPlayer}
+                          onClick={() => onAddAiPlayer(session.id, selectedAiProfile)}
+                        >
+                          Add AI
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={!canChangeTakeoverBot}
+                          onClick={() => onSetSessionTakeoverBot(session.id, nextTakeoverBot)}
+                        >
+                          Takeover {formatAiProfile(session.takeoverBot)}
                         </Button>
                         <Button
                           type="button"
@@ -237,4 +271,8 @@ export function LobbyPanel({
 
 function formatTurnTimer(turnTimerSeconds: SessionTurnTimer): string {
   return turnTimerSeconds === 0 ? 'Unlimited' : `${turnTimerSeconds}s`;
+}
+
+function formatAiProfile(aiProfile: SessionAiProfile | SessionTakeoverBot): string {
+  return aiProfile.toUpperCase();
 }

@@ -8,6 +8,7 @@ import type {
   SessionDeckSize,
   SessionId,
   SessionMode,
+  SessionTakeoverBot,
   SessionTurnTimer
 } from '@carcassonne/shared';
 
@@ -18,6 +19,7 @@ export interface PersistedSessionSnapshot {
   deckSize: SessionDeckSize;
   mode: SessionMode;
   turnTimerSeconds: SessionTurnTimer;
+  takeoverBot: SessionTakeoverBot;
   aiPlayerIds: string[];
   lobby: LobbyState;
   lobbyPinHashes: Record<string, string | null>;
@@ -76,6 +78,9 @@ function decodeSnapshots(value: unknown): PersistedSessionSnapshot[] {
     const turnTimerSeconds = isSessionTurnTimer(entry.turnTimerSeconds)
       ? entry.turnTimerSeconds
       : 60;
+    const takeoverBot = isSessionTakeoverBot(entry.takeoverBot)
+      ? entry.takeoverBot
+      : 'randy';
     const lobbyPinHashes = isNullableStringRecord(entry.lobbyPinHashes)
       ? entry.lobbyPinHashes
       : {};
@@ -99,6 +104,7 @@ function decodeSnapshots(value: unknown): PersistedSessionSnapshot[] {
       deckSize: entry.deckSize,
       mode: entry.mode,
       turnTimerSeconds,
+      takeoverBot,
       aiPlayerIds,
       lobby: entry.lobby,
       lobbyPinHashes,
@@ -120,6 +126,10 @@ function isSessionMode(value: unknown): value is SessionMode {
 
 function isSessionTurnTimer(value: unknown): value is SessionTurnTimer {
   return value === 0 || value === 30 || value === 60 || value === 90;
+}
+
+function isSessionTakeoverBot(value: unknown): value is SessionTakeoverBot {
+  return value === 'randy' || value === 'martin';
 }
 
 function isLobbyState(value: unknown): value is LobbyState {

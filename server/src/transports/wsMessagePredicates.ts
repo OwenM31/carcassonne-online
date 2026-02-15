@@ -61,6 +61,7 @@ export function shouldRefreshSessions(message: ClientMessage): boolean {
     message.type === 'join_lobby' ||
     message.type === 'leave_lobby' ||
     message.type === 'start_game' ||
-    message.type === 'add_ai_player'
+    message.type === 'add_ai_player' ||
+    message.type === 'set_session_takeover_bot'
   );
 }

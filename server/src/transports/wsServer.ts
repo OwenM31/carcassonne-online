@@ -139,6 +139,18 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         broadcast(buildSessionListMessage(sessionService));
         return;
       }
+      if (parsed.type === 'set_session_takeover_bot') {
+        const updateResult = sessionService.updateSessionTakeoverBot(
+          parsed.sessionId,
+          parsed.takeoverBot
+        );
+        if (updateResult.type === 'error') {
+          sendTo(socket, { type: 'error', message: updateResult.message });
+          return;
+        }
+        broadcast(buildSessionListMessage(sessionService));
+        return;
+      }
       if (parsed.type === 'delete_session') {
         const deleted = sessionService.deleteSession(parsed.sessionId);
         if (!deleted) {

@@ -51,7 +51,8 @@ describe('applyLobbyMessage', () => {
           players: [],
           deckSize: 'standard',
           mode: 'standard',
-          turnTimerSeconds: 60
+          turnTimerSeconds: 60,
+          takeoverBot: 'randy'
         }
       ]
     }, null);
@@ -64,7 +65,8 @@ describe('applyLobbyMessage', () => {
         players: [],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 60
+        turnTimerSeconds: 60,
+        takeoverBot: 'randy'
       }
     ]);
   });

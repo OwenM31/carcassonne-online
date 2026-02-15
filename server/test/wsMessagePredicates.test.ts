@@ -60,6 +60,14 @@ describe('wsMessagePredicates', () => {
         aiProfile: 'randy'
       })
     ).toBe(false);
+
+    expect(
+      requiresBoundPlayer({
+        type: 'set_session_takeover_bot',
+        sessionId: 'session-1',
+        takeoverBot: 'martin'
+      })
+    ).toBe(false);
   });
 
   it('refreshes session list for lobby membership changes', () => {
@@ -85,6 +93,14 @@ describe('wsMessagePredicates', () => {
         type: 'add_ai_player',
         sessionId: 'session-1',
         aiProfile: 'randy'
+      })
+    ).toBe(true);
+
+    expect(
+      shouldRefreshSessions({
+        type: 'set_session_takeover_bot',
+        sessionId: 'session-1',
+        takeoverBot: 'martin'
       })
     ).toBe(true);
   });

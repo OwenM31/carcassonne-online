@@ -1,7 +1,12 @@
 /**
  * @description Parses incoming WebSocket messages into typed client actions.
  */
-import type { ClientMessage, SessionAiProfile, SessionTurnTimer } from '@carcassonne/shared';
+import type {
+  ClientMessage,
+  SessionAiProfile,
+  SessionTakeoverBot,
+  SessionTurnTimer
+} from '@carcassonne/shared';
 import type { RawData } from 'ws';
 import { isRecord } from './messageParserPredicates';
 import { parseGameActionMessage } from './messageParserGameActions';
@@ -81,6 +86,20 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
       type: 'set_session_turn_timer',
       sessionId: parsed.sessionId,
       turnTimerSeconds: parsed.turnTimerSeconds
+    };
+  }
+
+  if (parsed.type === 'set_session_takeover_bot') {
+    if (
+      typeof parsed.sessionId !== 'string' ||
+      !isSessionTakeoverBot(parsed.takeoverBot)
+    ) {
+      return null;
+    }
+    return {
+      type: 'set_session_takeover_bot',
+      sessionId: parsed.sessionId,
+      takeoverBot: parsed.takeoverBot
     };
   }
 
@@ -209,5 +228,9 @@ function isSessionTurnTimer(value: unknown): value is SessionTurnTimer {
 }
 
 function isSessionAiProfile(value: unknown): value is SessionAiProfile {
-  return value === 'randy';
+  return value === 'randy' || value === 'martin';
+}
+
+function isSessionTakeoverBot(value: unknown): value is SessionTakeoverBot {
+  return value === 'randy' || value === 'martin';
 }

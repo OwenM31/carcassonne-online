@@ -17,7 +17,8 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 60
+        turnTimerSeconds: 60,
+        takeoverBot: 'randy'
       }
     ]);
   });
@@ -46,7 +47,8 @@ describe('InMemorySessionService', () => {
       ],
       deckSize: 'standard',
       mode: 'standard',
-      turnTimerSeconds: 60
+      turnTimerSeconds: 60,
+      takeoverBot: 'randy'
     });
   });
 
@@ -69,7 +71,8 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 60
+        turnTimerSeconds: 60,
+        takeoverBot: 'randy'
       }
     ]);
   });
@@ -89,7 +92,8 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'small',
         mode: 'standard',
-        turnTimerSeconds: 60
+        turnTimerSeconds: 60,
+        takeoverBot: 'randy'
       }
     ]);
   });
@@ -128,7 +132,8 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'standard',
         mode: 'sandbox',
-        turnTimerSeconds: 60
+        turnTimerSeconds: 60,
+        takeoverBot: 'randy'
       }
     ]);
   });
@@ -167,7 +172,8 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 90
+        turnTimerSeconds: 90,
+        takeoverBot: 'randy'
       }
     ]);
   });
@@ -187,7 +193,8 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 0
+        turnTimerSeconds: 0,
+        takeoverBot: 'randy'
       }
     ]);
   });
@@ -231,7 +238,55 @@ describe('InMemorySessionService', () => {
         ],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 60
+        turnTimerSeconds: 60,
+        takeoverBot: 'randy'
+      }
+    ]);
+  });
+
+  it('adds MARTIN players before game start and labels them in summaries', () => {
+    const service = new InMemorySessionService(() => 'session-11b');
+    service.createSession();
+
+    const first = service.addAiPlayer('session-11b', 'martin');
+    const second = service.addAiPlayer('session-11b', 'martin');
+
+    expect(first.type).toBe('success');
+    expect(second.type).toBe('success');
+    expect(service.listSessions()).toEqual([
+      {
+        id: 'session-11b',
+        status: 'lobby',
+        playerCount: 2,
+        players: [
+          { name: 'MARTIN', isAi: true, aiProfile: 'martin' },
+          { name: 'MARTIN 2', isAi: true, aiProfile: 'martin' }
+        ],
+        deckSize: 'standard',
+        mode: 'standard',
+        turnTimerSeconds: 60,
+        takeoverBot: 'randy'
+      }
+    ]);
+  });
+
+  it('updates takeover bot before game start', () => {
+    const service = new InMemorySessionService(() => 'session-11c');
+    service.createSession();
+
+    const result = service.updateSessionTakeoverBot('session-11c', 'martin');
+
+    expect(result.type).toBe('success');
+    expect(service.listSessions()).toEqual([
+      {
+        id: 'session-11c',
+        status: 'lobby',
+        playerCount: 0,
+        players: [],
+        deckSize: 'standard',
+        mode: 'standard',
+        turnTimerSeconds: 60,
+        takeoverBot: 'martin'
       }
     ]);
   });
@@ -251,6 +306,24 @@ describe('InMemorySessionService', () => {
     expect(result).toEqual({
       type: 'error',
       message: 'Cannot add AI players after game start.'
+    });
+  });
+
+  it('rejects takeover bot changes after game start', () => {
+    const service = new InMemorySessionService(() => 'session-13');
+    const session = service.createSession();
+
+    session.lobbyService.join('p1', 'Ada');
+    session.lobbyService.join('p2', 'Grace');
+    session.gameService.startGame([
+      { id: 'p1', name: 'Ada' },
+      { id: 'p2', name: 'Grace' }
+    ]);
+
+    const result = service.updateSessionTakeoverBot('session-13', 'martin');
+    expect(result).toEqual({
+      type: 'error',
+      message: 'Cannot change takeover bot after game start.'
     });
   });
 });

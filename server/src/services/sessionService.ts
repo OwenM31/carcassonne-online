@@ -9,6 +9,7 @@ import type {
   SessionMode,
   SessionSummary,
   SessionStatus,
+  SessionTakeoverBot,
   SessionTurnTimer
 } from '@carcassonne/shared';
 
@@ -26,6 +27,7 @@ export interface SessionRecord {
   deckSize: SessionDeckSize;
   mode: SessionMode;
   turnTimerSeconds: SessionTurnTimer;
+  takeoverBot: SessionTakeoverBot;
   aiPlayerIds: Set<PlayerId>;
   lobbyService: LobbyService;
   gameService: GameService;
@@ -40,6 +42,10 @@ export type SessionModeUpdateResult =
   | { type: 'error'; message: string };
 
 export type SessionTurnTimerUpdateResult =
+  | { type: 'success'; session: SessionRecord }
+  | { type: 'error'; message: string };
+
+export type SessionTakeoverBotUpdateResult =
   | { type: 'success'; session: SessionRecord }
   | { type: 'error'; message: string };
 
@@ -62,6 +68,10 @@ export interface SessionService {
     sessionId: SessionId,
     turnTimerSeconds: SessionTurnTimer
   ): SessionTurnTimerUpdateResult;
+  updateSessionTakeoverBot(
+    sessionId: SessionId,
+    takeoverBot: SessionTakeoverBot
+  ): SessionTakeoverBotUpdateResult;
   addAiPlayer(
     sessionId: SessionId,
     aiProfile?: SessionAiProfile
@@ -86,7 +96,8 @@ const defaultSessionIdFactory: SessionIdFactory = () =>
 const MAX_PLAYERS = 5;
 const DEFAULT_AI_PROFILE: SessionAiProfile = 'randy';
 const AI_DISPLAY_NAME: Record<SessionAiProfile, string> = {
-  randy: 'RANDY'
+  randy: 'RANDY',
+  martin: 'MARTIN'
 };
 
 const defaultSessionFactory: SessionFactory = (id, deckSize, mode, turnTimerSeconds) => ({
@@ -94,6 +105,7 @@ const defaultSessionFactory: SessionFactory = (id, deckSize, mode, turnTimerSeco
   deckSize,
   mode,
   turnTimerSeconds,
+  takeoverBot: DEFAULT_AI_PROFILE,
   aiPlayerIds: new Set<PlayerId>(),
   lobbyService: new InMemoryLobbyService(),
   gameService: new InMemoryGameService()
@@ -175,6 +187,24 @@ export class InMemorySessionService implements SessionService {
     }
 
     session.turnTimerSeconds = turnTimerSeconds;
+    this.persist();
+    return { type: 'success', session };
+  }
+
+  updateSessionTakeoverBot(
+    sessionId: SessionId,
+    takeoverBot: SessionTakeoverBot
+  ): SessionTakeoverBotUpdateResult {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return { type: 'error', message: 'Session not found.' };
+    }
+
+    if (session.gameService.getGame()) {
+      return { type: 'error', message: 'Cannot change takeover bot after game start.' };
+    }
+
+    session.takeoverBot = takeoverBot;
     this.persist();
     return { type: 'success', session };
   }
@@ -279,7 +309,8 @@ function buildSummary(session: SessionRecord): SessionSummary {
     }),
     deckSize: session.deckSize,
     mode: session.mode,
-    turnTimerSeconds: session.turnTimerSeconds
+    turnTimerSeconds: session.turnTimerSeconds,
+    takeoverBot: session.takeoverBot
   };
 }
 
@@ -289,6 +320,7 @@ function toSnapshot(session: SessionRecord): PersistedSessionSnapshot {
     deckSize: session.deckSize,
     mode: session.mode,
     turnTimerSeconds: session.turnTimerSeconds,
+    takeoverBot: session.takeoverBot,
     aiPlayerIds: Array.from(session.aiPlayerIds.values()),
     lobby: session.lobbyService.getState(),
     lobbyPinHashes: session.lobbyService.getPlayerPinHashes(),
@@ -303,6 +335,7 @@ function fromSnapshot(snapshot: PersistedSessionSnapshot): SessionRecord {
     deckSize: snapshot.deckSize,
     mode: snapshot.mode,
     turnTimerSeconds: snapshot.turnTimerSeconds,
+    takeoverBot: snapshot.takeoverBot,
     aiPlayerIds: new Set(snapshot.aiPlayerIds),
     lobbyService: new InMemoryLobbyService(
       snapshot.lobby,
@@ -321,6 +354,9 @@ function countAiSeats(session: SessionRecord, aiProfile: SessionAiProfile): numb
 function inferAiProfile(playerId: PlayerId): SessionAiProfile | undefined {
   if (playerId.startsWith('ai-randy-')) {
     return 'randy';
+  }
+  if (playerId.startsWith('ai-martin-')) {
+    return 'martin';
   }
 
   return undefined;

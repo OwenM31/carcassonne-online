@@ -117,14 +117,17 @@ function isSessionSummary(value: unknown): value is SessionSummary {
         isRecord(player) &&
         typeof player.name === 'string' &&
         (player.isAi === undefined || typeof player.isAi === 'boolean') &&
-        (player.aiProfile === undefined || player.aiProfile === 'randy')
+        (player.aiProfile === undefined ||
+          player.aiProfile === 'randy' ||
+          player.aiProfile === 'martin')
     ) &&
     (value.deckSize === 'standard' || value.deckSize === 'small') &&
     (value.mode === 'standard' || value.mode === 'sandbox') &&
     (value.turnTimerSeconds === 0 ||
       value.turnTimerSeconds === 30 ||
       value.turnTimerSeconds === 60 ||
-      value.turnTimerSeconds === 90)
+      value.turnTimerSeconds === 90) &&
+    (value.takeoverBot === 'randy' || value.takeoverBot === 'martin')
   );
 }
 

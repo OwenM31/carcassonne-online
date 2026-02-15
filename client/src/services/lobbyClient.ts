@@ -9,6 +9,7 @@ import type {
   SessionAiProfile,
   SessionDeckSize,
   SessionMode,
+  SessionTakeoverBot,
   SessionTurnTimer,
   ServerMessage,
   TileId
@@ -79,6 +80,10 @@ export class LobbyClient {
 
   setSessionTurnTimer(sessionId: string, turnTimerSeconds: SessionTurnTimer) {
     this.send({ type: 'set_session_turn_timer', sessionId, turnTimerSeconds });
+  }
+
+  setSessionTakeoverBot(sessionId: string, takeoverBot: SessionTakeoverBot) {
+    this.send({ type: 'set_session_takeover_bot', sessionId, takeoverBot });
   }
 
   addAiPlayer(sessionId: string, aiProfile: SessionAiProfile = 'randy') {
