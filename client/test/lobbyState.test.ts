@@ -43,11 +43,11 @@ describe('applyLobbyMessage', () => {
     const seeded = { ...initialLobbyViewState, sessions: [] };
     const result = applyLobbyMessage(seeded, {
       type: 'session_list',
-      sessions: [{ id: 'session-1', status: 'lobby', playerCount: 0 }]
+      sessions: [{ id: 'session-1', status: 'lobby', playerCount: 0, deckSize: 'standard' }]
     }, null);
 
     expect(result.sessions).toEqual([
-      { id: 'session-1', status: 'lobby', playerCount: 0 }
+      { id: 'session-1', status: 'lobby', playerCount: 0, deckSize: 'standard' }
     ]);
   });
 });

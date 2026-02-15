@@ -2,7 +2,7 @@
  * @description Handles lobby/session flow and routing into active games.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { GameState } from '@carcassonne/shared';
+import type { GameState, SessionDeckSize } from '@carcassonne/shared';
 import { LobbyPanel } from '../organisms/LobbyPanel';
 import { GameScreen } from './GameScreen';
 import { LobbyClient } from '../../services/lobbyClient';
@@ -133,6 +133,13 @@ export function LobbyScreen() {
     clearActiveSessionState();
     setViewState((prev) => ({ ...prev, lobby: null, error: null }));
   };
+  const handleSetSessionDeckSize = (sessionId: string, deckSize: SessionDeckSize) => {
+    if (!isConnected) {
+      return;
+    }
+
+    client.setSessionDeckSize(sessionId, deckSize);
+  };
 
   const canStartGame =
     isConnected && !!activeSessionId && (viewState.lobby?.players.length ?? 0) >= 2;
@@ -172,6 +179,7 @@ export function LobbyScreen() {
       onCreateSession={handleCreateSession}
       onJoinSession={handleJoinSession}
       onDeleteSession={handleDeleteSession}
+      onSetSessionDeckSize={handleSetSessionDeckSize}
       onLeaveSession={handleLeaveSession}
       onStartGame={handleStartGame}
       isConnected={isConnected}

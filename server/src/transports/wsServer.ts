@@ -55,7 +55,8 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
       const lobbyController = createLobbyController(
         sessionId,
         session.lobbyService,
-        session.gameService
+        session.gameService,
+        () => session.deckSize
       );
       const response = lobbyController.handleDisconnect(playerId);
       broadcast(response);
@@ -77,7 +78,21 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
       }
 
       if (parsed.type === 'create_session') {
-        sessionService.createSession();
+        sessionService.createSession(parsed.deckSize);
+        broadcast(buildSessionListMessage(sessionService));
+        return;
+      }
+
+      if (parsed.type === 'set_session_deck_size') {
+        const updateResult = sessionService.updateSessionDeckSize(
+          parsed.sessionId,
+          parsed.deckSize
+        );
+        if (updateResult.type === 'error') {
+          sendTo(socket, { type: 'error', message: updateResult.message });
+          return;
+        }
+
         broadcast(buildSessionListMessage(sessionService));
         return;
       }
@@ -107,7 +122,8 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
       const lobbyController = createLobbyController(
         parsed.sessionId,
         session.lobbyService,
-        session.gameService
+        session.gameService,
+        () => session.deckSize
       );
       const gameController = createGameController(parsed.sessionId, session.gameService);
 

@@ -10,11 +10,12 @@ import type {
   SkipMeepleAction
 } from './game';
 import type { LobbyState } from './lobby';
-import type { SessionId, SessionSummary } from './session';
+import type { SessionDeckSize, SessionId, SessionSummary } from './session';
 
 export type ClientMessage =
   | { type: 'list_sessions' }
-  | { type: 'create_session' }
+  | { type: 'create_session'; deckSize?: SessionDeckSize }
+  | { type: 'set_session_deck_size'; sessionId: SessionId; deckSize: SessionDeckSize }
   | { type: 'delete_session'; sessionId: SessionId }
   | { type: 'join_lobby'; sessionId: SessionId; playerId: PlayerId; playerName: string }
   | { type: 'leave_lobby'; sessionId: SessionId; playerId: PlayerId }

@@ -15,7 +15,6 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
   if (!payload) {
     return null;
   }
-
   let parsed: unknown;
   try {
     parsed = JSON.parse(payload);
@@ -26,13 +25,26 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
   if (!isRecord(parsed) || typeof parsed.type !== 'string') {
     return null;
   }
-
   if (parsed.type === 'list_sessions') {
     return { type: 'list_sessions' };
   }
 
   if (parsed.type === 'create_session') {
-    return { type: 'create_session' };
+    if (parsed.deckSize !== undefined && !isSessionDeckSize(parsed.deckSize)) {
+      return null;
+    }
+    return { type: 'create_session', deckSize: parsed.deckSize };
+  }
+
+  if (parsed.type === 'set_session_deck_size') {
+    if (typeof parsed.sessionId !== 'string' || !isSessionDeckSize(parsed.deckSize)) {
+      return null;
+    }
+    return {
+      type: 'set_session_deck_size',
+      sessionId: parsed.sessionId,
+      deckSize: parsed.deckSize
+    };
   }
 
   if (parsed.type === 'delete_session') {
@@ -180,4 +192,8 @@ function readRawData(raw: RawData): string | null {
   }
 
   return null;
+}
+
+function isSessionDeckSize(value: unknown): value is 'standard' | 'small' {
+  return value === 'standard' || value === 'small';
 }

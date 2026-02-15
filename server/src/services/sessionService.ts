@@ -1,7 +1,12 @@
 /**
  * @description In-memory registry for lobby/game sessions.
  */
-import type { SessionId, SessionSummary, SessionStatus } from '@carcassonne/shared';
+import type {
+  SessionDeckSize,
+  SessionId,
+  SessionSummary,
+  SessionStatus
+} from '@carcassonne/shared';
 
 import type { GameService } from './gameService';
 import type { LobbyService } from './lobbyService';
@@ -10,25 +15,35 @@ import { InMemoryLobbyService } from './lobbyService';
 
 export interface SessionRecord {
   id: SessionId;
+  deckSize: SessionDeckSize;
   lobbyService: LobbyService;
   gameService: GameService;
 }
 
+export type SessionDeckSizeUpdateResult =
+  | { type: 'success'; session: SessionRecord }
+  | { type: 'error'; message: string };
+
 export interface SessionService {
-  createSession(): SessionRecord;
+  createSession(deckSize?: SessionDeckSize): SessionRecord;
+  updateSessionDeckSize(
+    sessionId: SessionId,
+    deckSize: SessionDeckSize
+  ): SessionDeckSizeUpdateResult;
   getSession(sessionId: SessionId): SessionRecord | null;
   listSessions(): SessionSummary[];
   deleteSession(sessionId: SessionId): boolean;
 }
 
 type SessionIdFactory = () => SessionId;
-type SessionFactory = (id: SessionId) => SessionRecord;
+type SessionFactory = (id: SessionId, deckSize: SessionDeckSize) => SessionRecord;
 
 const defaultSessionIdFactory: SessionIdFactory = () =>
   `session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-const defaultSessionFactory: SessionFactory = (id) => ({
+const defaultSessionFactory: SessionFactory = (id, deckSize) => ({
   id,
+  deckSize,
   lobbyService: new InMemoryLobbyService(),
   gameService: new InMemoryGameService()
 });
@@ -46,11 +61,28 @@ export class InMemorySessionService implements SessionService {
     this.sessionFactory = sessionFactory;
   }
 
-  createSession(): SessionRecord {
+  createSession(deckSize: SessionDeckSize = 'standard'): SessionRecord {
     const id = this.idFactory();
-    const session = this.sessionFactory(id);
+    const session = this.sessionFactory(id, deckSize);
     this.sessions.set(id, session);
     return session;
+  }
+
+  updateSessionDeckSize(
+    sessionId: SessionId,
+    deckSize: SessionDeckSize
+  ): SessionDeckSizeUpdateResult {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      return { type: 'error', message: 'Session not found.' };
+    }
+
+    if (session.gameService.getGame()) {
+      return { type: 'error', message: 'Cannot change deck size after game start.' };
+    }
+
+    session.deckSize = deckSize;
+    return { type: 'success', session };
   }
 
   getSession(sessionId: SessionId): SessionRecord | null {
@@ -76,6 +108,7 @@ function buildSummary(session: SessionRecord): SessionSummary {
   return {
     id: session.id,
     status,
-    playerCount: lobby.players.length
+    playerCount: lobby.players.length,
+    deckSize: session.deckSize
   };
 }

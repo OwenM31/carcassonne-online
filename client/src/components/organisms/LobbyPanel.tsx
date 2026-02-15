@@ -2,7 +2,7 @@
  * @description Lobby screen layout with session selection and controls.
  */
 import type { CSSProperties } from 'react';
-import type { LobbyPlayer, SessionSummary } from '@carcassonne/shared';
+import type { LobbyPlayer, SessionDeckSize, SessionSummary } from '@carcassonne/shared';
 
 import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
@@ -14,6 +14,7 @@ interface LobbyPanelProps {
   onCreateSession: () => void;
   onJoinSession: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
+  onSetSessionDeckSize: (sessionId: string, deckSize: SessionDeckSize) => void;
   onLeaveSession: () => void;
   onStartGame: () => void;
   isConnected: boolean;
@@ -30,6 +31,7 @@ export function LobbyPanel({
   onCreateSession,
   onJoinSession,
   onDeleteSession,
+  onSetSessionDeckSize,
   onLeaveSession,
   onStartGame,
   isConnected,
@@ -97,7 +99,11 @@ export function LobbyPanel({
                   const isInProgress = session.status === 'in_progress';
                   const canJoin = isConnected && !activeSessionId;
                   const canDelete = isConnected && !activeSessionId;
+                  const canChangeDeckSize = isConnected && !isInProgress;
                   const statusLabel = isInProgress ? 'In progress' : 'Lobby';
+                  const nextDeckSize: SessionDeckSize =
+                    session.deckSize === 'small' ? 'standard' : 'small';
+                  const deckLabel = session.deckSize === 'small' ? 'Small deck' : 'Standard deck';
 
                   return (
                     <li
@@ -108,11 +114,19 @@ export function LobbyPanel({
                       <div className="session-info">
                         <span className="session-id">{session.id}</span>
                         <span className="session-meta">
-                          {statusLabel} · {session.playerCount} players
+                          {statusLabel} · {session.playerCount} players · {deckLabel}
                         </span>
                       </div>
                       <div className="session-actions">
                         <Badge tone={isInProgress ? 'warning' : 'neutral'}>{statusLabel}</Badge>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          disabled={!canChangeDeckSize}
+                          onClick={() => onSetSessionDeckSize(session.id, nextDeckSize)}
+                        >
+                          {session.deckSize === 'small' ? 'Use standard deck' : 'Use small deck'}
+                        </Button>
                         <Button
                           type="button"
                           variant="primary"

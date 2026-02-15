@@ -6,6 +6,7 @@ import type {
   Coordinate,
   MeeplePlacement,
   Orientation,
+  SessionDeckSize,
   ServerMessage,
   TileId
 } from '@carcassonne/shared';
@@ -57,8 +58,12 @@ export class LobbyClient {
     this.send({ type: 'list_sessions' });
   }
 
-  createSession() {
-    this.send({ type: 'create_session' });
+  createSession(deckSize: SessionDeckSize = 'standard') {
+    this.send({ type: 'create_session', deckSize });
+  }
+
+  setSessionDeckSize(sessionId: string, deckSize: SessionDeckSize) {
+    this.send({ type: 'set_session_deck_size', sessionId, deckSize });
   }
 
   deleteSession(sessionId: string) {

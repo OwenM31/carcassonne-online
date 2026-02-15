@@ -1,15 +1,27 @@
 import { TileId } from '../types/game';
+import type { SessionDeckSize } from '../types/session';
 import { TILE_CATALOG, TileCatalogEntry } from './catalog';
 
 export type RandomSource = () => number;
+const STANDARD_DECK_SIZE: SessionDeckSize = 'standard';
+
+function getTileCountForDeck(tileCount: number, deckSize: SessionDeckSize): number {
+  if (deckSize === 'small') {
+    return Math.ceil(tileCount / 2);
+  }
+
+  return tileCount;
+}
 
 export function buildTileDeck(
-  catalog: TileCatalogEntry[] = TILE_CATALOG
+  catalog: TileCatalogEntry[] = TILE_CATALOG,
+  deckSize: SessionDeckSize = STANDARD_DECK_SIZE
 ): TileId[] {
   const deck: TileId[] = [];
 
   for (const tile of catalog) {
-    for (let index = 0; index < tile.count; index += 1) {
+    const copies = getTileCountForDeck(tile.count, deckSize);
+    for (let index = 0; index < copies; index += 1) {
       deck.push(tile.id);
     }
   }

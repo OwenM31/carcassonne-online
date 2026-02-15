@@ -65,6 +65,18 @@ describe('InMemoryGameService', () => {
     expect(result.game.tileDeck).toHaveLength(expectedDeckLength);
   });
 
+  it('creates a game with small deck sizing when selected', () => {
+    const service = new InMemoryGameService(() => 'game-small');
+    const result = service.startGame(lobbyPlayers, 'small');
+
+    if (result.type !== 'success') {
+      throw new Error('Expected a successful game start.');
+    }
+
+    const expectedDeckLength = buildTileDeck(undefined, 'small').length - 1;
+    expect(result.game.tileDeck).toHaveLength(expectedDeckLength);
+  });
+
   it('prevents starting multiple games', () => {
     const service = new InMemoryGameService(() => 'game-4');
 

@@ -1,4 +1,11 @@
-import type { GameAction, GameActionResult, GameState, LobbyPlayer, PlayerColor } from '@carcassonne/shared';
+import type {
+  GameAction,
+  GameActionResult,
+  GameState,
+  LobbyPlayer,
+  PlayerColor,
+  SessionDeckSize
+} from '@carcassonne/shared';
 import {
   applyGameAction,
   buildTileDeck,
@@ -14,7 +21,7 @@ export type GameStartResult =
   | { type: 'error'; message: string };
 
 export interface GameService {
-  startGame(players: LobbyPlayer[]): GameStartResult;
+  startGame(players: LobbyPlayer[], deckSize?: SessionDeckSize): GameStartResult;
   getGame(): GameState | null;
   reset(): void;
   applyAction(action: GameAction): GameActionResult;
@@ -35,7 +42,7 @@ export class InMemoryGameService implements GameService {
     this.gameIdFactory = gameIdFactory;
   }
 
-  startGame(players: LobbyPlayer[]): GameStartResult {
+  startGame(players: LobbyPlayer[], deckSize: SessionDeckSize = 'standard'): GameStartResult {
     if (this.game) {
       return { type: 'error', message: 'Game already started.' };
     }
@@ -62,7 +69,7 @@ export class InMemoryGameService implements GameService {
     const game = createGame({
       gameId: this.gameIdFactory(),
       players: playerSetups,
-      tileDeck: shuffleTileDeck(buildTileDeck()),
+      tileDeck: shuffleTileDeck(buildTileDeck(undefined, deckSize)),
       startingTileId: startingTiles[0]
     });
 

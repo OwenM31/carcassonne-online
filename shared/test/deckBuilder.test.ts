@@ -19,6 +19,21 @@ describe('buildTileDeck', () => {
     }
   });
 
+  it('builds a small deck using ceil(count/2) per tile type', () => {
+    const deck = buildTileDeck(TILE_CATALOG, 'small');
+    const counts: Record<string, number> = {};
+
+    for (const tileId of deck) {
+      counts[tileId] = (counts[tileId] ?? 0) + 1;
+    }
+
+    expect(deck).toHaveLength(43);
+
+    for (const tile of TILE_CATALOG) {
+      expect(counts[tile.id] ?? 0).toBe(Math.ceil(tile.count / 2));
+    }
+  });
+
   it('shuffles a deck without mutating the input when a random source is provided', () => {
     const deck = ['A', 'B', 'C', 'D'];
     const randomValues = [0.9, 0.1, 0.2];

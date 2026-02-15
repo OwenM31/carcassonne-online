@@ -7,7 +7,8 @@ import {
   getStartingTileCandidates,
   type GameActionResult,
   type GameState,
-  type LobbyPlayer
+  type LobbyPlayer,
+  type SessionDeckSize
 } from '@carcassonne/shared';
 
 import type { GameStartResult, GameService } from '../src/services/gameService';
@@ -16,13 +17,15 @@ import { InMemoryLobbyService } from '../src/services/lobbyService';
 
 class StubGameService implements GameService {
   resetCalls = 0;
+  lastDeckSize: SessionDeckSize | null = null;
   private game: GameState | null;
 
   constructor(game: GameState | null = null) {
     this.game = game;
   }
 
-  startGame(players: LobbyPlayer[]): GameStartResult {
+  startGame(players: LobbyPlayer[], deckSize: SessionDeckSize = 'standard'): GameStartResult {
+    this.lastDeckSize = deckSize;
     return { type: 'error', message: `Not implemented for ${players.length} players.` };
   }
 
@@ -136,6 +139,38 @@ describe('createLobbyController', () => {
 
     expect(response).toEqual({ type: 'error', message: 'Game in progress.' });
     expect(lobbyService.getState().players).toHaveLength(0);
+  });
+
+  it('starts game with the configured session deck size', () => {
+    const lobbyService = new InMemoryLobbyService();
+    const gameService = new StubGameService();
+    const controller = createLobbyController(
+      'session-1',
+      lobbyService,
+      gameService,
+      () => 'small'
+    );
+
+    controller.handleMessage({
+      type: 'join_lobby',
+      sessionId: 'session-1',
+      playerId: 'p1',
+      playerName: 'Ada'
+    });
+    controller.handleMessage({
+      type: 'join_lobby',
+      sessionId: 'session-1',
+      playerId: 'p2',
+      playerName: 'Grace'
+    });
+
+    controller.handleMessage({
+      type: 'start_game',
+      sessionId: 'session-1',
+      playerId: 'p1'
+    });
+
+    expect(gameService.lastDeckSize).toBe('small');
   });
 });
 

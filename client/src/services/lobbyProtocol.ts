@@ -110,7 +110,8 @@ function isSessionSummary(value: unknown): value is SessionSummary {
     typeof value.id === 'string' &&
     typeof value.status === 'string' &&
     (value.status === 'lobby' || value.status === 'in_progress') &&
-    typeof value.playerCount === 'number'
+    typeof value.playerCount === 'number' &&
+    (value.deckSize === 'standard' || value.deckSize === 'small')
   );
 }
 

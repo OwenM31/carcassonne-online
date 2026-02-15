@@ -3,9 +3,11 @@
  */
 export type SessionId = string;
 export type SessionStatus = 'lobby' | 'in_progress';
+export type SessionDeckSize = 'standard' | 'small';
 
 export interface SessionSummary {
   id: SessionId;
   status: SessionStatus;
   playerCount: number;
+  deckSize: SessionDeckSize;
 }
