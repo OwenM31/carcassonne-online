@@ -108,7 +108,14 @@ function partitionTilePixels(tilePixels, width, height, tile) {
     }
     allFeatureSeeds.push({ type: 'road', fIdx: i, logicalSeeds });
   });
-  tile.features.farms.forEach((f, i) => allFeatureSeeds.push({ type: 'farm', fIdx: i, logicalSeeds: f.zones.map(z => FARM_ZONE_SEEDS[z]) }));
+  tile.features.farms.forEach((f, i) => {
+    let logicalSeeds = f.zones.map(z => FARM_ZONE_SEEDS[z]);
+    // Fix for RV2_R1C2 where the SSW seed at 0.95 hits the river due to thin feature
+    if (tile.id === 'RV2_R1C2' && f.zones.includes('SSW')) {
+       logicalSeeds = logicalSeeds.map(s => (s.y === 0.95 && s.x === 0.35) ? { x: 0.2, y: 0.9 } : s);
+    }
+    allFeatureSeeds.push({ type: 'farm', fIdx: i, logicalSeeds });
+  });
   
   if (tile.features.monastery) allFeatureSeeds.push({ type: 'monastery_exclusion', fIdx: 0, logicalSeeds: [CENTER_COORD] });
   if (tile.features.garden) allFeatureSeeds.push({ type: 'garden_exclusion', fIdx: 0, logicalSeeds: [CENTER_COORD] });
