@@ -1101,8 +1101,9 @@ export const RIVER_2_TILE_CATALOG: TileCatalogEntry[] = [
       cities: [city([])],
       roads: [road(['N', 'W'])],
       farms: [
-        farmCorners(['NE', 'SW']),
+        farmCorners(['NE']),
         farmCorners(['SE']),
+        farmCorners(['SW']),
         farmCorners(['NW'])
       ],
       monastery: false
