@@ -1,4 +1,4 @@
 /**
  * @description Shared application version metadata.
  */
-export const APP_VERSION = '0.1.129';
+export const APP_VERSION = '0.1.130';

@@ -114,6 +114,11 @@ function partitionTilePixels(tilePixels, width, height, tile) {
     if (tile.id === 'RV2_R1C2' && f.zones.includes('SSW')) {
        logicalSeeds = logicalSeeds.map(s => (s.y === 0.95 && s.x === 0.35) ? { x: 0.2, y: 0.9 } : s);
     }
+    // Fix for RV2_R1C4 where ENE hits white and SSW hits null/river
+    if (tile.id === 'RV2_R1C4') {
+       if (f.zones.includes('ENE')) logicalSeeds = logicalSeeds.map(s => (s.x === 0.95 && s.y === 0.35) ? { x: 0.9, y: 0.2 } : s);
+       if (f.zones.includes('SSW')) logicalSeeds = logicalSeeds.map(s => (s.x === 0.35 && s.y === 0.95) ? { x: 0.2, y: 0.9 } : s);
+    }
     allFeatureSeeds.push({ type: 'farm', fIdx: i, logicalSeeds });
   });
   
@@ -212,7 +217,7 @@ function partitionTilePixels(tilePixels, width, height, tile) {
           // Tunneling logic
           const isOtherLogicalFeature = targetType && logicalTypesOnTile.has(targetType) && targetType !== seedType;
           if (isOtherLogicalFeature) {
-            stepCost = 100.0;
+            stepCost = 500.0;
           } else {
             stepCost = 10.0; 
           }
