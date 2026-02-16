@@ -115,7 +115,8 @@ function partitionTilePixels(tilePixels, width, height, tile) {
 
   Object.entries(tile.features.edges).forEach(([edge, type]) => {
     if (type === 'river') {
-      allFeatureSeeds.push({ type: 'river_exclusion', fIdx: 0, logicalSeeds: [EDGE_SEEDS[edge]] });
+      const typeStr = 'river_exclusion';
+      allFeatureSeeds.push({ type: typeStr, fIdx: 0, logicalSeeds: [EDGE_SEEDS[edge]] });
     }
   });
 
@@ -167,7 +168,11 @@ function partitionTilePixels(tilePixels, width, height, tile) {
     });
   });
 
+  // Treat 'water' as a logical feature for barrier purposes
   const logicalTypesOnTile = new Set(allFeatureSeeds.map(fs => fs.type));
+  if (pixelTypes.includes('water')) {
+    logicalTypesOnTile.add('water');
+  }
 
   while (pq.size() > 0) {
     const { x, y, cost, sIdx } = pq.pop();

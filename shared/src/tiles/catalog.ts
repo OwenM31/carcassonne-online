@@ -1071,7 +1071,8 @@ export const RIVER_2_TILE_CATALOG: TileCatalogEntry[] = [
       farms: [
         farmCorners(['NW']),
         farmCorners(['NE']),
-        farmCorners(['SE', 'SW'])
+        farmCorners(['SE']),
+        farmCorners(['SW'])
       ],
       monastery: false
     }
@@ -1100,7 +1101,12 @@ export const RIVER_2_TILE_CATALOG: TileCatalogEntry[] = [
       edges: edges(ROAD, RIVER, RIVER, ROAD),
       cities: [city([])],
       roads: [road(['N', 'W'])],
-      farms: [farmCorners(['NE', 'SW']), farmCorners(['NW']), farmCorners(['SE'])],
+      farms: [
+        farmCorners(['NE']),
+        farmCorners(['SE']),
+        farmCorners(['SW']),
+        farmCorners(['NW'])
+      ],
       monastery: false
     }
   },
@@ -1128,7 +1134,11 @@ export const RIVER_2_TILE_CATALOG: TileCatalogEntry[] = [
       edges: edges(CITY, RIVER, RIVER, CITY),
       cities: [city(['N', 'W'], 1)],
       roads: [],
-      farms: [farmZones(['ENE', 'SSW']), farmZones(['ESE', 'SSE'])],
+      farms: [
+        farmCorners(['NE']),
+        farmCorners(['SE']),
+        farmCorners(['SW'])
+      ],
       monastery: false
     }
   },
@@ -1169,7 +1179,7 @@ export const RIVER_2_TILE_CATALOG: TileCatalogEntry[] = [
   },
   {
     id: 'RV2_R3C1',
-    label: 'river_curve_monastery',
+    label: 'river_straight_monastery',
     count: 1,
     source: { sheet: RIVER_2_TILE_SHEET, row: 3, col: 1 },
     startingTileCandidate: false,
@@ -1177,7 +1187,10 @@ export const RIVER_2_TILE_CATALOG: TileCatalogEntry[] = [
       edges: edges(FARM, RIVER, FARM, RIVER),
       cities: [],
       roads: [],
-      farms: [farmCorners(['NW', 'NE']), farmCorners(['SE', 'SW'])],
+      farms: [
+        farmZones(['NNW', 'NNE', 'WNW', 'ENE']),
+        farmZones(['SSW', 'SSE', 'WSW', 'ESE'])
+      ],
       monastery: true
     }
   },
