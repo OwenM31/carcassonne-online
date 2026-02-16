@@ -957,7 +957,11 @@ export const RIVER_TILE_CATALOG: TileCatalogEntry[] = [
       edges: edges(FARM, RIVER, ROAD, RIVER),
       cities: [],
       roads: [road(['S'])],
-      farms: [farmCorners(['NW', 'NE']), farmCorners(['SE']), farmCorners(['SW'])],
+      farms: [
+        farmCorners(['NW', 'NE']),
+        farmZones(['WSW', 'SSW']),
+        farmZones(['ESE', 'SSE'])
+      ],
       monastery: true
     }
   },
@@ -971,7 +975,12 @@ export const RIVER_TILE_CATALOG: TileCatalogEntry[] = [
       edges: edges(CITY, RIVER, ROAD, RIVER),
       cities: [city(['N'])],
       roads: [road(['S'])],
-      farms: [farmCorners(['SE']), farmCorners(['SW']), farmZones(['WNW']), farmZones(['ENE'])],
+      farms: [
+        farmZones(['WNW']),
+        farmZones(['ENE']),
+        farmZones(['WSW', 'SSW']),
+        farmZones(['ESE', 'SSE'])
+      ],
       monastery: false
     }
   },
@@ -1165,10 +1174,10 @@ export const RIVER_2_TILE_CATALOG: TileCatalogEntry[] = [
     source: { sheet: RIVER_2_TILE_SHEET, row: 3, col: 1 },
     startingTileCandidate: false,
     features: {
-      edges: edges(FARM, RIVER, FARM, RIVER),
+      edges: edges(FARM, FARM, RIVER, RIVER),
       cities: [],
       roads: [],
-      farms: [farmCorners(['NW', 'NE']), farmCorners(['SW', 'SE'])],
+      farms: [farmCorners(['NW', 'NE', 'SE']), farmCorners(['SW'])],
       monastery: true
     }
   },

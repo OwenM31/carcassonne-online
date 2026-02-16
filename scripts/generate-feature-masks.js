@@ -23,12 +23,15 @@ function classifyPixel(r, g, b, a) {
   // - Light gray / tan roads (high max, low/medium chroma)
   if (max >= 100 && chroma < 35) return 'road';
   // - Brownish roads (medium chroma, reddish)
-  if (r > g && r > b && chroma <= 52 && max < 240) return 'road';
+  if (r > g && r > b && chroma <= 80 && max < 240) return 'road';
   // - Greenish roads (medium chroma, greenish) - common in some expansion sets
   if (g >= r && g > b && chroma <= 65 && max < 240) return 'road';
 
   if (r > g + 5 && r > b + 20) return 'city';
   if (chroma > 30 && r > 80 && g > 80 && b < 150) return 'garden_exclusion';
+  
+  // Monastery detection: reddish/brownish building in center. Treat as farm for masking.
+  if (r > 100 && g > 80 && b < 100 && chroma > 20 && chroma < 100) return 'farm';
   
   return null;
 }
