@@ -1,6 +1,7 @@
 /**
  * @description Sandbox-only tile picker for selecting the next tile and remaining counts.
  */
+import { useMemo, useState } from 'react';
 import type { TileId } from '@carcassonne/shared';
 import { Button } from '../atoms/Button';
 import { TileSprite } from '../atoms/TileSprite';
@@ -23,17 +24,49 @@ export function SandboxTileSelector({
   onDrawSelected,
   canDrawSelected
 }: SandboxTileSelectorProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredEntries = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return entries;
+    return entries.filter(
+      (entry) =>
+        entry.tileId.toLowerCase().includes(query) || entry.label.toLowerCase().includes(query)
+    );
+  }, [entries, searchQuery]);
+
   return (
     <section className="sandbox-tray">
       <div className="sandbox-tray__header">
-        <h3 className="sandbox-tray__title">Sandbox tile picker</h3>
+        <div className="sandbox-tray__controls">
+          <h3 className="sandbox-tray__title">Sandbox tile picker</h3>
+          <div className="sandbox-tray__search-container">
+            <input
+              type="text"
+              className="sandbox-tray__search"
+              placeholder="Search tiles (e.g. city, road, T_R1...)"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                className="sandbox-tray__search-clear"
+                onClick={() => setSearchQuery('')}
+                title="Clear search"
+              >
+                &times;
+              </button>
+            )}
+          </div>
+        </div>
         <Button type="button" variant="primary" disabled={!canDrawSelected} onClick={onDrawSelected}>
           Draw selected tile
         </Button>
       </div>
       <p className="hint">Choose any remaining tile type and keep normal placement/meeple rules.</p>
       <div className="sandbox-tray__tiles" role="list" aria-label="Sandbox tile picker">
-        {entries.map((entry) => {
+        {filteredEntries.map((entry) => {
           const isSelected = entry.tileId === selectedTileId;
 
           return (
@@ -50,6 +83,9 @@ export function SandboxTileSelector({
             </button>
           );
         })}
+        {filteredEntries.length === 0 && (
+          <div className="sandbox-tray__empty">No tiles match "{searchQuery}"</div>
+        )}
       </div>
     </section>
   );

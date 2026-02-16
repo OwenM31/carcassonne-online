@@ -97,6 +97,7 @@ export interface GameState {
   turnTimerSeconds: SessionTurnTimer;
   turnStartedAt: string;
   turnNumber: number;
+  canRedo?: boolean;
   seed?: string;
 }
 

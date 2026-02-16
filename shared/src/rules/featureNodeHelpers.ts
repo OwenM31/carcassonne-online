@@ -137,7 +137,8 @@ export function getFarmFeatureNeighbors(
         return;
       }
 
-      if (neighborDefinition.edges[EDGE_DELTAS[link.edge].opposite] === 'city') {
+      const oppositeEdge = EDGE_DELTAS[link.edge].opposite;
+      if (neighborDefinition.edges[oppositeEdge] === 'city') {
         return;
       }
 

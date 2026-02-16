@@ -5,6 +5,7 @@ import { FULL_TILE_CATALOG, type TileId } from '@carcassonne/shared';
 
 export interface SandboxDeckEntry {
   tileId: TileId;
+  label: string;
   remaining: number;
 }
 
@@ -14,7 +15,9 @@ export function buildSandboxDeckEntries(tileDeck: TileId[]): SandboxDeckEntry[] 
     return index;
   }, {});
 
-  return FULL_TILE_CATALOG.map((tile) => ({ tileId: tile.id, remaining: counts[tile.id] ?? 0 })).filter(
-    (entry) => entry.remaining > 0
-  );
+  return FULL_TILE_CATALOG.map((tile) => ({
+    tileId: tile.id,
+    label: tile.label,
+    remaining: counts[tile.id] ?? 0
+  })).filter((entry) => entry.remaining > 0);
 }

@@ -77,6 +77,7 @@ function buildAiSession(profile: SessionAiProfile): SessionRecord {
   const gameService = new InMemoryGameService(() => `game-ai-${profile}`, {
     game,
     history: [],
+    redoStack: [],
     startConfig: {
       deckSize: 'standard',
       mode: 'sandbox',

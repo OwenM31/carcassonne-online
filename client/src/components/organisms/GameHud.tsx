@@ -103,10 +103,10 @@ export function GameHud({
               <span className="hud-item__meta">
                 Meeples {entry.meeplesAvailable}/{entry.meeplesTotal}
                 {hud.hasBigMeeples
-                  ? ` · Big meeple ${entry.bigMeepleAvailable ? '1/1' : entry.bigMeeplePlaced ? 'placed' : 'used'}`
+                  ? ` · Big meeple ${entry.bigMeepleAvailable ? '1/1' : '0/1'}`
                   : ''}
                 {hud.hasAbbots
-                  ? ` · Abbot ${entry.abbotAvailable ? '1/1' : entry.abbotPlaced ? 'placed' : '0/1'}`
+                  ? ` · Abbot ${entry.abbotAvailable ? '1/1' : '0/1'}`
                   : ''}
                 {' · '}Score {entry.score}
               </span>

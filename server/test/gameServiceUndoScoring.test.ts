@@ -26,7 +26,7 @@ describe('InMemoryGameService undo scoring', () => {
       throw new Error('Expected undo to succeed.');
     }
 
-    expect(undoResult.game).toEqual(beforeScoring);
+    expect(undoResult.game).toEqual({ ...beforeScoring, canRedo: true });
   });
 });
 

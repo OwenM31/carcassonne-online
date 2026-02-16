@@ -236,6 +236,18 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
     };
   }
 
+  if (parsed.type === 'redo_turn') {
+    if (typeof parsed.sessionId !== 'string' || typeof parsed.playerId !== 'string') {
+      return null;
+    }
+
+    return {
+      type: 'redo_turn',
+      sessionId: parsed.sessionId,
+      playerId: parsed.playerId
+    };
+  }
+
   if (parsed.type === 'reset_sandbox_board') {
     if (typeof parsed.sessionId !== 'string' || typeof parsed.playerId !== 'string') {
       return null;
@@ -276,7 +288,7 @@ function isSessionMode(value: unknown): value is 'standard' | 'sandbox' {
 }
 
 function isSessionTurnTimer(value: unknown): value is SessionTurnTimer {
-  return value === 0 || value === 30 || value === 60 || value === 90;
+  return value === 0 || value === 1 || value === 30 || value === 60 || value === 90;
 }
 
 function isSessionAiProfile(value: unknown): value is SessionAiProfile {

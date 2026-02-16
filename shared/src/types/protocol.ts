@@ -58,6 +58,7 @@ export type ClientMessage =
   | { type: 'leave_lobby'; sessionId: SessionId; playerId: PlayerId }
   | { type: 'start_game'; sessionId: SessionId; playerId: PlayerId }
   | { type: 'undo_turn'; sessionId: SessionId; playerId: PlayerId }
+  | { type: 'redo_turn'; sessionId: SessionId; playerId: PlayerId }
   | { type: 'reset_sandbox_board'; sessionId: SessionId; playerId: PlayerId }
   | (DrawTileAction & { sessionId: SessionId })
   | (DrawSandboxTileAction & { sessionId: SessionId })

@@ -19,6 +19,7 @@ export interface PersistedGameStartConfig {
 export interface GameServiceSnapshot {
   game: GameState | null;
   history: GameState[];
+  redoStack: GameState[];
   startConfig: PersistedGameStartConfig | null;
 }
 

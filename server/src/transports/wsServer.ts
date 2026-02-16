@@ -32,8 +32,19 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
   const heartbeatIntervalMs = readDurationMs(process.env.HEARTBEAT_INTERVAL_MS, 30_000);
   const broadcast = (message: ServerMessage) => {
     const payload = JSON.stringify(message);
+    const sessionTargeted =
+      message.type === 'game_state' ||
+      message.type === 'game_started' ||
+      message.type === 'lobby_state';
+
     for (const client of wss.clients) {
       if (client.readyState === WebSocket.OPEN) {
+        if (sessionTargeted) {
+          const identity = presenceService.getIdentity(client);
+          if (!identity || identity.sessionId !== (message as any).sessionId) {
+            continue;
+          }
+        }
         client.send(payload);
       }
     }
@@ -285,6 +296,8 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         response = lobbyController.handleMessage(parsed);
       } else if (parsed.type === 'undo_turn') {
         response = gameController.handleUndo(parsed.playerId);
+      } else if (parsed.type === 'redo_turn') {
+        response = gameController.handleRedo(parsed.playerId);
       } else if (parsed.type === 'reset_sandbox_board') {
         response = gameController.handleSandboxReset(parsed.playerId);
       } else if (isGameAction(parsed)) {

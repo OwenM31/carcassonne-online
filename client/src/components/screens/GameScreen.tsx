@@ -40,6 +40,7 @@ interface GameScreenProps {
   onSkipMeeple: () => void;
   onReturnAbbot: () => void;
   onUndo: () => void;
+  onRedo: () => void;
   onResetSandboxBoard: () => void;
   error?: string | null;
   onExit?: () => void;
@@ -56,6 +57,7 @@ export function GameScreen({
   onSkipMeeple,
   onReturnAbbot,
   onUndo,
+  onRedo,
   onResetSandboxBoard,
   error,
   onExit
@@ -95,6 +97,7 @@ export function GameScreen({
     game.addons.includes('abbot') &&
     game.meeples.some((meeple) => meeple.playerId === playerId && meeple.kind === 'abbot');
   const canUndo = isActivePlayer;
+  const canRedo = isActivePlayer && !!game.canRedo;
   const canResetSandbox = isSandbox && isActivePlayer;
 
   useEffect(() => {
@@ -204,6 +207,30 @@ export function GameScreen({
     replay.jumpToTurnCompletion(turn);
   };
 
+  const handleCopyBoardState = () => {
+    const stateExport = {
+      addons: game.addons,
+      tiles: Object.values(game.board.tiles).map(t => ({
+        id: t.tileId,
+        x: t.position.x,
+        y: t.position.y,
+        o: t.orientation
+      })),
+      meeples: game.meeples.map(m => ({
+        p: m.playerId,
+        k: m.kind,
+        t: m.featureType,
+        i: m.featureIndex,
+        x: m.tilePosition.x,
+        y: m.tilePosition.y
+      }))
+    };
+    
+    navigator.clipboard.writeText(JSON.stringify(stateExport, null, 2))
+      .then(() => alert('Board state copied to clipboard!'))
+      .catch(err => console.error('Failed to copy state:', err));
+  };
+
   return (
     <main className="page game-page">
       <header className="hero game-hero">
@@ -270,10 +297,12 @@ export function GameScreen({
               canReturnAbbot={canReturnAbbot}
               selectedMeepleKind={selectedMeepleKind}
               canUndo={canUndo}
+              canRedo={canRedo}
               currentTileId={viewCurrentTileId}
               error={error}
               onDrawTile={handleDrawTile}
               onUndo={onUndo}
+              onRedo={onRedo}
               onRotate={handleRotate}
               onMeepleKindChange={setSelectedMeepleKind}
               onSkipMeeple={onSkipMeeple}
@@ -300,6 +329,11 @@ export function GameScreen({
       </div>
       {isSandbox ? (
         <section className="sandbox-footer">
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+            <Button type="button" variant="ghost" onClick={handleCopyBoardState}>
+              Copy Board State (JSON)
+            </Button>
+          </div>
           <SandboxTileSelector
             entries={sandboxDeckEntries}
             selectedTileId={selectedSandboxTileId}

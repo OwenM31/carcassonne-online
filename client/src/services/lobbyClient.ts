@@ -126,6 +126,10 @@ export class LobbyClient {
     this.send({ type: 'undo_turn', sessionId, playerId });
   }
 
+  redoTurn(sessionId: string, playerId: string) {
+    this.send({ type: 'redo_turn', sessionId, playerId });
+  }
+
   resetSandboxBoard(sessionId: string, playerId: string) {
     this.send({ type: 'reset_sandbox_board', sessionId, playerId });
   }

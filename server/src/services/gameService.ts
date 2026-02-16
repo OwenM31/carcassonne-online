@@ -48,6 +48,7 @@ export interface GameService {
   reset(): void;
   applyAction(action: GameAction): GameActionResult;
   undo(): GameActionResult;
+  redo(): GameActionResult;
   resetSandboxBoard(playerId: string): GameActionResult;
 }
 
@@ -59,6 +60,7 @@ const defaultGameIdFactory: GameIdFactory = () =>
 export class InMemoryGameService implements GameService {
   private game: GameState | null = null;
   private history: GameState[] = [];
+  private redoStack: GameState[] = [];
   private startConfig: Required<GameStartConfig> | null = null;
   private gameIdFactory: GameIdFactory;
 
@@ -117,19 +119,27 @@ export class InMemoryGameService implements GameService {
 
     this.game = game;
     this.history = [];
+    this.redoStack = [];
     this.startConfig = { deckSize, mode, addons, turnTimerSeconds };
 
     return { type: 'success', game };
   }
 
   getGame(): GameState | null {
-    return this.game;
+    if (!this.game) {
+      return null;
+    }
+    return {
+      ...this.game,
+      canRedo: this.redoStack.length > 0
+    };
   }
 
   getSnapshot(): GameServiceSnapshot {
     return cloneGameServiceSnapshot({
       game: this.game,
       history: this.history,
+      redoStack: this.redoStack,
       startConfig: this.startConfig
     });
   }
@@ -137,6 +147,7 @@ export class InMemoryGameService implements GameService {
   reset() {
     this.game = null;
     this.history = [];
+    this.redoStack = [];
     this.startConfig = null;
   }
 
@@ -149,7 +160,18 @@ export class InMemoryGameService implements GameService {
 
     if (result.type === 'success') {
       this.history.push(this.game);
+      this.redoStack = [];
       this.game = result.game;
+    }
+
+    if (result.type === 'success') {
+      return {
+        ...result,
+        game: {
+          ...result.game,
+          canRedo: this.redoStack.length > 0
+        }
+      };
     }
 
     return result;
@@ -165,8 +187,36 @@ export class InMemoryGameService implements GameService {
       return { type: 'error', message: 'Nothing to undo.' };
     }
 
+    this.redoStack.push(this.game);
     this.game = previous;
-    return { type: 'success', game: previous };
+    return {
+      type: 'success',
+      game: {
+        ...previous,
+        canRedo: this.redoStack.length > 0
+      }
+    };
+  }
+
+  redo(): GameActionResult {
+    if (!this.game) {
+      return { type: 'error', message: 'No active game.' };
+    }
+
+    const next = this.redoStack.pop();
+    if (!next) {
+      return { type: 'error', message: 'Nothing to redo.' };
+    }
+
+    this.history.push(this.game);
+    this.game = next;
+    return {
+      type: 'success',
+      game: {
+        ...next,
+        canRedo: this.redoStack.length > 0
+      }
+    };
   }
 
   resetSandboxBoard(playerId: string): GameActionResult {
@@ -207,7 +257,14 @@ export class InMemoryGameService implements GameService {
 
     this.game = resetGame;
     this.history = [];
-    return { type: 'success', game: resetGame };
+    this.redoStack = [];
+    return {
+      type: 'success',
+      game: {
+        ...resetGame,
+        canRedo: false
+      }
+    };
   }
 
   private hydrate(snapshot: GameServiceSnapshot): void {
@@ -215,6 +272,7 @@ export class InMemoryGameService implements GameService {
     const timerSeconds = next.startConfig?.turnTimerSeconds ?? 0;
     this.game = next.game ? normalizeGameState(next.game, timerSeconds) : null;
     this.history = next.history.map((state) => normalizeGameState(state, timerSeconds));
+    this.redoStack = (next.redoStack ?? []).map((state) => normalizeGameState(state, timerSeconds));
     this.startConfig = next.startConfig
       ? {
           deckSize: next.startConfig.deckSize,

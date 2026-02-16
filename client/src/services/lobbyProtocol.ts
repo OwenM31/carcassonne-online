@@ -147,6 +147,7 @@ function isSessionSummary(value: unknown): value is SessionSummary {
     typeof value.tileCount === 'number' &&
     value.tileCount >= 0 &&
     (value.turnTimerSeconds === 0 ||
+      value.turnTimerSeconds === 1 ||
       value.turnTimerSeconds === 30 ||
       value.turnTimerSeconds === 60 ||
       value.turnTimerSeconds === 90) &&

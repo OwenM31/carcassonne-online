@@ -103,6 +103,7 @@ function createSimulationSession(
   const gameService = new InMemoryGameService(() => game.id, {
     game,
     history: [],
+    redoStack: [],
     startConfig: { deckSize, mode: 'standard', addons: [], turnTimerSeconds: 0 }
   });
   const lobbyService = new InMemoryLobbyService();

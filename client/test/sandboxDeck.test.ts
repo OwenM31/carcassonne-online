@@ -11,7 +11,9 @@ describe('buildSandboxDeckEntries', () => {
     const missingTile = entries.find((entry) => entry.tileId === 'T_R1C1');
 
     expect(roadMonastery?.remaining).toBe(2);
+    expect(roadMonastery?.label).toBe('monastery_road');
     expect(startTile?.remaining).toBe(1);
+    expect(startTile?.label).toBe('city_road_straight');
     expect(missingTile).toBeUndefined();
   });
 });

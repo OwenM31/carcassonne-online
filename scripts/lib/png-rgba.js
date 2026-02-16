@@ -58,7 +58,7 @@ function decodePngRgba(buffer) {
     throw new Error(`Unexpected inflated length ${raw.length}; expected ${expectedLength}.`);
   }
 
-  const pixels = Buffer.alloc(width * height * channels);
+  const pixels = Buffer.alloc(width * height * 4);
   const previous = Buffer.alloc(stride);
   const reconstructed = Buffer.alloc(stride);
   let inOffset = 0;

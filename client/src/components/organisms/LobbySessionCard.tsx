@@ -49,7 +49,7 @@ const ADDON_OPTIONS: Array<{ id: SessionAddon; label: string; tileCount: number 
     )
   }
 ];
-const TURN_TIMER_OPTIONS: SessionTurnTimer[] = [0, 30, 60, 90];
+const TURN_TIMER_OPTIONS: SessionTurnTimer[] = [0, 1, 30, 60, 90];
 const MAX_SESSION_PLAYERS = 6;
 interface LobbySessionCardProps {
   index: number;

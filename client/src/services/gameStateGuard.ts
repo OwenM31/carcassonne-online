@@ -96,6 +96,7 @@ export function isGameState(value: unknown): value is GameState {
 
   if (
     value.turnTimerSeconds !== 0 &&
+    value.turnTimerSeconds !== 1 &&
     value.turnTimerSeconds !== 30 &&
     value.turnTimerSeconds !== 60 &&
     value.turnTimerSeconds !== 90

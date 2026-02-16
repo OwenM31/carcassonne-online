@@ -288,7 +288,7 @@ describe('InMemoryGameService', () => {
       throw new Error('Expected undo to succeed.');
     }
 
-    expect(undo.game).toEqual(initial);
+    expect(undo.game).toEqual({ ...initial, canRedo: true });
   });
 
   it('returns an error when there is nothing to undo', () => {
@@ -360,5 +360,51 @@ describe('InMemoryGameService', () => {
       type: 'error',
       message: 'Only the active player can act.'
     });
+  });
+
+  it('returns drawn tile to deck when draw is undone', () => {
+    const service = new InMemoryGameService(() => 'game-undo-draw');
+    service.startGame(lobbyPlayers);
+    const initialDeck = [...(service.getGame()?.tileDeck ?? [])];
+    const drawnTileId = initialDeck[0];
+
+    service.applyAction({ type: 'draw_tile', playerId: 'p1' });
+    expect(service.getGame()?.tileDeck).toHaveLength(initialDeck.length - 1);
+    expect(service.getGame()?.currentTileId).toBe(drawnTileId);
+
+    service.undo();
+    expect(service.getGame()?.tileDeck).toHaveLength(initialDeck.length);
+    expect(service.getGame()?.tileDeck[0]).toBe(drawnTileId);
+    expect(service.getGame()?.currentTileId).toBeNull();
+  });
+
+  it('supports redoing an undone action', () => {
+    const service = new InMemoryGameService(() => 'game-redo');
+    service.startGame(lobbyPlayers);
+    const initial = service.getGame();
+    service.applyAction({ type: 'draw_tile', playerId: 'p1' });
+    const afterDraw = service.getGame();
+
+    service.undo();
+    expect(service.getGame()).toEqual({ ...initial, canRedo: true });
+
+    const redo = service.redo();
+    if (redo.type !== 'success') {
+      throw new Error('Expected redo to succeed.');
+    }
+    expect(redo.game).toEqual(afterDraw);
+  });
+
+  it('clears redo stack when a new action is applied', () => {
+    const service = new InMemoryGameService(() => 'game-redo-clear');
+    service.startGame(lobbyPlayers);
+    service.applyAction({ type: 'draw_tile', playerId: 'p1' });
+    service.undo();
+    expect(service.getGame()?.canRedo).toBe(true);
+
+    // Apply a DIFFERENT action (e.g. draw again, which might be the same tile but it's a new action)
+    service.applyAction({ type: 'draw_tile', playerId: 'p1' });
+    expect(service.getGame()?.canRedo).toBe(false);
+    expect(service.redo()).toEqual({ type: 'error', message: 'Nothing to redo.' });
   });
 });

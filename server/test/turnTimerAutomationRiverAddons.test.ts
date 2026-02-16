@@ -68,6 +68,7 @@ function buildAiSession(
   const gameService = new InMemoryGameService(() => `game-ai-${profile}-river`, {
     game,
     history: [],
+    redoStack: [],
     startConfig: {
       deckSize: 'standard',
       mode: 'standard',

@@ -20,10 +20,12 @@ interface GamePlacementPanelProps {
   canReturnAbbot: boolean;
   selectedMeepleKind: MeepleKind;
   canUndo: boolean;
+  canRedo: boolean;
   currentTileId: TileId | null;
   error?: string | null;
   onDrawTile: () => void;
   onUndo: () => void;
+  onRedo: () => void;
   onRotate: (step: number) => void;
   onMeepleKindChange: (kind: MeepleKind) => void;
   onSkipMeeple: () => void;
@@ -42,10 +44,12 @@ export function GamePlacementPanel({
   canReturnAbbot,
   selectedMeepleKind,
   canUndo,
+  canRedo,
   currentTileId,
   error,
   onDrawTile,
   onUndo,
+  onRedo,
   onRotate,
   onMeepleKindChange,
   onSkipMeeple,
@@ -68,11 +72,22 @@ export function GamePlacementPanel({
         <p className="hud-tile-id">{currentTileId ?? '—'}</p>
       </div>
       <div className="board-turn-panel__row">
-        <Button type="button" variant="primary" disabled={!canDrawTile} onClick={onDrawTile}>
+        <Button
+          type="button"
+          variant="primary"
+          disabled={!canDrawTile}
+          onClick={onDrawTile}
+          style={{ gridColumn: 'span 2' }}
+        >
           Draw tile
         </Button>
+      </div>
+      <div className="board-turn-panel__row">
         <Button type="button" variant="ghost" disabled={!canUndo} onClick={onUndo}>
           Undo
+        </Button>
+        <Button type="button" variant="ghost" disabled={!canRedo} onClick={onRedo}>
+          Redo
         </Button>
       </div>
       <div className="board-turn-panel__row">

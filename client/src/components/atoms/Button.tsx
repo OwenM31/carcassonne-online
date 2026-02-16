@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 interface ButtonProps {
   children: ReactNode;
@@ -7,6 +7,7 @@ interface ButtonProps {
   variant?: 'primary' | 'ghost';
   disabled?: boolean;
   className?: string;
+  style?: CSSProperties;
 }
 
 export function Button({
@@ -15,14 +16,15 @@ export function Button({
   type = 'button',
   variant = 'primary',
   disabled = false,
-  className
+  className,
+  style
 }: ButtonProps) {
   const classes = ['button', `button--${variant}`, className]
     .filter(Boolean)
     .join(' ');
 
   return (
-    <button className={classes} type={type} onClick={onClick} disabled={disabled}>
+    <button className={classes} type={type} onClick={onClick} disabled={disabled} style={style}>
       {children}
     </button>
   );

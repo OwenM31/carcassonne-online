@@ -4,21 +4,26 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
   type PointerEvent
 } from 'react';
 
-import type {
-  BoardState,
-  MeeplePlacement,
-  PlacedMeeple,
-  PlayerColor,
-  PlacementOption,
-  TileId
+import {
+  analyzeBoardFeatures,
+  FULL_TILE_CATALOG,
+  toFeatureKey,
+  type BoardState,
+  type FeatureType,
+  type MeeplePlacement,
+  type PlacedMeeple,
+  type PlacedTile,
+  type PlayerColor,
+  type PlacementOption,
+  type TileId
 } from '@carcassonne/shared';
-import { FULL_TILE_CATALOG } from '@carcassonne/shared';
 
 import {
   createTileSourceIndex,
@@ -28,6 +33,13 @@ import {
   getTileSheetMetricsBySheet,
   toGridPosition
 } from '../../state/boardLayout';
+import {
+  decodeMask,
+  FEATURE_MASKS,
+  MASK_SIZE,
+  maskToPathData,
+  rotateMask
+} from '../../state/featureMasks';
 import { getMeepleAnchor, getMeepleRole, getMeepleRoleLabel } from '../../state/meepleLayout';
 import { getMeepleSprites } from '../../state/meepleSprites';
 
@@ -94,6 +106,105 @@ export function BoardView({
   const placementPositions = placementOptions.map((option) => option.position);
   const bounds = getBoundsWithPositions(board.bounds, placementPositions);
   const metrics = getBoardGridMetrics(bounds);
+
+  const [isHighlightEnabled, setHighlightEnabled] = useState(false);
+  const [hoveredFeatureKey, setHoveredFeatureKey] = useState<string | null>(null);
+  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
+
+  const analysis = useMemo(() => analyzeBoardFeatures(board), [board]);
+
+  const hoveredComponent = useMemo(() => {
+    if (!isHighlightEnabled || !hoveredFeatureKey) {
+      return null;
+    }
+    const componentId = analysis.componentByFeatureKey[hoveredFeatureKey];
+    if (!componentId) {
+      return null;
+    }
+    const component = analysis.components.find((c) => c.id === componentId);
+    if (!component || component.type === 'monastery' || component.type === 'garden') {
+      return null;
+    }
+    return component;
+  }, [isHighlightEnabled, hoveredFeatureKey, analysis]);
+
+  const hoveredTileInfo = useMemo(() => {
+    if (!isHighlightEnabled || !hoveredFeatureKey) {
+      return null;
+    }
+    const [posStr] = hoveredFeatureKey.split(':');
+    const tile = board.tiles[posStr];
+    if (!tile) {
+      return null;
+    }
+    const entry = FULL_TILE_CATALOG.find((e) => e.id === tile.tileId);
+    return {
+      id: tile.tileId,
+      label: (entry?.label ?? tile.tileId).replace(/_/g, ' ')
+    };
+  }, [isHighlightEnabled, hoveredFeatureKey, board.tiles]);
+
+  const handleTilePointerMove = useCallback(
+    (event: PointerEvent<HTMLDivElement>, tile: PlacedTile) => {
+      const shell = shellRef.current;
+      if (shell) {
+        const rect = shell.getBoundingClientRect();
+        setMousePosition({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+      }
+
+      if (!isHighlightEnabled) {
+        return;
+      }
+
+      const rect = event.currentTarget.getBoundingClientRect();
+      const xPercent = ((event.clientX - rect.left) / rect.width) * 100;
+      const yPercent = ((event.clientY - rect.top) / rect.height) * 100;
+
+      const gridX = Math.floor((xPercent / 100) * MASK_SIZE);
+      const gridY = Math.floor((yPercent / 100) * MASK_SIZE);
+
+      if (gridX < 0 || gridX >= MASK_SIZE || gridY < 0 || gridY >= MASK_SIZE) {
+        return;
+      }
+
+      const tileMasks = FEATURE_MASKS[tile.tileId];
+      if (!tileMasks) {
+        setHoveredFeatureKey(null);
+        return;
+      }
+
+      // Check city masks
+      for (let i = 0; i < tileMasks.city.length; i++) {
+        const mask = rotateMask(decodeMask(tileMasks.city[i]), tile.orientation);
+        if (mask[gridY * MASK_SIZE + gridX]) {
+          setHoveredFeatureKey(toFeatureKey(tile.position, 'city', i));
+          return;
+        }
+      }
+
+      // Check road masks
+      for (let i = 0; i < tileMasks.road.length; i++) {
+        const mask = rotateMask(decodeMask(tileMasks.road[i]), tile.orientation);
+        if (mask[gridY * MASK_SIZE + gridX]) {
+          setHoveredFeatureKey(toFeatureKey(tile.position, 'road', i));
+          return;
+        }
+      }
+
+      // Check farm masks
+      for (let i = 0; i < tileMasks.farm.length; i++) {
+        const mask = rotateMask(decodeMask(tileMasks.farm[i]), tile.orientation);
+        if (mask[gridY * MASK_SIZE + gridX]) {
+          setHoveredFeatureKey(toFeatureKey(tile.position, 'farm', i));
+          return;
+        }
+      }
+
+      setHoveredFeatureKey(null);
+    },
+    [isHighlightEnabled, setHoveredFeatureKey]
+  );
+
   const boardShapeKey = `${bounds.minX}:${bounds.maxX}:${bounds.minY}:${bounds.maxY}:${Object.keys(board.tiles).length}`;
   const placementSource = placementTileId ? TILE_SOURCES[placementTileId] : null;
   const placementSprite = placementSource
@@ -323,11 +434,65 @@ export function BoardView({
                 }`}
                 style={tileStyle}
                 aria-label={`Tile ${tile.tileId}`}
+                onPointerMove={(e) => handleTilePointerMove(e, tile)}
+                onPointerLeave={() => {
+                  setHoveredFeatureKey(null);
+                  setMousePosition(null);
+                }}
               >
                 {source ? null : <span className="board-tile__label">{tile.tileId}</span>}
               </div>
             );
           })}
+          {hoveredComponent && (
+            <svg
+              className="board-highlight-overlay"
+              viewBox={`0 0 ${metrics.columns * 100} ${metrics.rows * 100}`}
+              aria-hidden="true"
+            >
+              <defs>
+                <filter id="glow">
+                  <feGaussianBlur stdDeviation="1.5" result="coloredBlur" />
+                  <feMerge>
+                    <feMergeNode in="coloredBlur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+              </defs>
+              {hoveredComponent.featureKeys.map((fkey) => {
+                const [posStr, type, indexStr] = fkey.split(':');
+                const [x, y] = posStr.split(',').map(Number);
+                const index = Number(indexStr);
+                const tile = board.tiles[`${x},${y}`];
+                if (!tile) {
+                  return null;
+                }
+                const grid = toGridPosition(tile.position, bounds);
+                const tileMasks = FEATURE_MASKS[tile.tileId];
+                if (!tileMasks) {
+                  return null;
+                }
+
+                const maskBase64 = (tileMasks as any)[type]?.[index];
+                if (!maskBase64) {
+                  return null;
+                }
+
+                const mask = rotateMask(decodeMask(maskBase64), tile.orientation);
+                const pathData = maskToPathData(mask, 100);
+
+                return (
+                  <path
+                    key={`highlight-${fkey}`}
+                    d={pathData}
+                    fill="rgba(57, 255, 20, 0.5)"
+                    transform={`translate(${(grid.column - 1) * 100}, ${(grid.row - 1) * 100})`}
+                    filter="url(#glow)"
+                  />
+                );
+              })}
+            </svg>
+          )}
           {placementOptions.map((option) => {
             const grid = toGridPosition(option.position, bounds);
             const tileStyle = {
@@ -463,6 +628,15 @@ export function BoardView({
           fit
         </button>
       </div>
+      <button
+        type="button"
+        className={`highlight-toggle-button${isHighlightEnabled ? ' highlight-toggle-button--active' : ''}`}
+        aria-label="Toggle feature highlighting"
+        onClick={() => setHighlightEnabled((prev) => !prev)}
+        title="Toggle feature highlighting"
+      >
+        <span style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>H</span>
+      </button>
       {onOpenRules ? (
         <button
           type="button"
@@ -473,6 +647,18 @@ export function BoardView({
           ?
         </button>
       ) : null}
+      {isHighlightEnabled && hoveredTileInfo && mousePosition && (
+        <div
+          className="tile-tooltip"
+          style={{
+            position: 'absolute',
+            left: mousePosition.x,
+            top: mousePosition.y
+          }}
+        >
+          [{hoveredTileInfo.id}] {hoveredTileInfo.label}
+        </div>
+      )}
     </div>
   );
 }

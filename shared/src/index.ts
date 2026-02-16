@@ -7,6 +7,8 @@ export * from './rules/board';
 export * from './rules/createGame';
 export * from './rules/gameActions';
 export * from './rules/featureAnalysis';
+export * from './rules/featureKeys';
+export * from './rules/featureNodes';
 export * from './rules/meeplePlacement';
 export * from './rules/placement';
 export * from './rules/scoring';

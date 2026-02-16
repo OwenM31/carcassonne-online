@@ -38,7 +38,7 @@ class StubGameService implements GameService {
   }
 
   getSnapshot(): GameServiceSnapshot {
-    return { game: this.game, history: [], startConfig: null };
+    return { game: this.game, history: [], redoStack: [], startConfig: null };
   }
 
   reset() {
@@ -51,6 +51,10 @@ class StubGameService implements GameService {
   }
 
   undo(): GameActionResult {
+    return { type: 'error', message: 'Not implemented.' };
+  }
+
+  redo(): GameActionResult {
     return { type: 'error', message: 'Not implemented.' };
   }
 

@@ -237,6 +237,7 @@ function buildSandboxSession(
   const gameService = new InMemoryGameService(() => 'game-timeout', {
     game,
     history: [],
+    redoStack: [],
     startConfig: { deckSize: 'standard', mode: 'sandbox', addons: [], turnTimerSeconds }
   });
 
