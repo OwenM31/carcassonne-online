@@ -25,9 +25,9 @@ function classifyPixel(r, g, b, a) {
   // - Brownish roads (medium chroma, reddish)
   if (r > g && r > b && chroma <= 52 && max < 240) return 'road';
   // - Greenish roads (medium chroma, greenish) - common in some expansion sets
-  if (g >= r && g > b && chroma <= 52 && max < 240) return 'road';
+  if (g >= r && g > b && chroma <= 65 && max < 240) return 'road';
 
-  if (r > g + 5 && r > b - 20) return 'city';
+  if (r > g + 5 && r > b + 20) return 'city';
   if (chroma > 30 && r > 80 && g > 80 && b < 150) return 'garden_exclusion';
   
   return null;
@@ -148,6 +148,10 @@ function partitionTilePixels(tilePixels, width, height, tile) {
             }
           }
         }
+      }
+      
+      if (minDistSq === Infinity) {
+        console.warn(`Warning: Seed for ${fs.type} on ${tile.id} at ${ls.x},${ls.y} failed to find matching pixel (base type: ${pixelTypes[syBase * width + sxBase]})`);
       }
       
       const idx = bestY * width + bestX;
