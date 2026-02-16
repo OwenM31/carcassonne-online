@@ -1,7 +1,7 @@
 /**
  * @description Helpers for deriving sandbox tile picker data from the remaining deck.
  */
-import { TILE_CATALOG, type TileId } from '@carcassonne/shared';
+import { FULL_TILE_CATALOG, type TileId } from '@carcassonne/shared';
 
 export interface SandboxDeckEntry {
   tileId: TileId;
@@ -14,7 +14,7 @@ export function buildSandboxDeckEntries(tileDeck: TileId[]): SandboxDeckEntry[] 
     return index;
   }, {});
 
-  return TILE_CATALOG.map((tile) => ({ tileId: tile.id, remaining: counts[tile.id] ?? 0 })).filter(
+  return FULL_TILE_CATALOG.map((tile) => ({ tileId: tile.id, remaining: counts[tile.id] ?? 0 })).filter(
     (entry) => entry.remaining > 0
   );
 }

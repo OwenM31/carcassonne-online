@@ -34,10 +34,21 @@ export function getStatusText(
   }
 
   if (game.phase === 'place_meeple') {
+    const activePlayer = game.players[game.activePlayerIndex];
+    const canReturnAbbot =
+      !!activePlayer &&
+      game.addons.includes('abbot') &&
+      game.meeples.some(
+        (meeple) => meeple.playerId === activePlayer.id && meeple.kind === 'abbot'
+      );
     if (meepleOptions.length === 0) {
-      return 'No legal meeple placement is available. Skip to end your turn.';
+      return canReturnAbbot
+        ? 'No legal meeple placement is available. Return your abbot or skip to end your turn.'
+        : 'No legal meeple placement is available. Skip to end your turn.';
     }
-    return 'Optionally place one meeple on the tile you just placed, or skip.';
+    return canReturnAbbot
+      ? 'Optionally place one meeple, return your abbot, or skip.'
+      : 'Optionally place one meeple on the tile you just placed, or skip.';
   }
 
   return 'Waiting for the next action.';

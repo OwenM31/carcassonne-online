@@ -6,12 +6,14 @@ import { Button } from '../atoms/Button';
 interface GameReplayHotbarProps {
   replayTurn: number | null;
   autoJumpOnLiveUpdate: boolean;
+  autoZoomOnNewTile: boolean;
   canStepBackward: boolean;
   canJumpCurrent: boolean;
   canStepForward: boolean;
   showSandboxReset: boolean;
   canResetSandbox: boolean;
   onToggleAutoJumpOnLiveUpdate: (enabled: boolean) => void;
+  onToggleAutoZoomOnNewTile: (enabled: boolean) => void;
   onStepBackward: () => void;
   onJumpCurrent: () => void;
   onStepForward: () => void;
@@ -21,12 +23,14 @@ interface GameReplayHotbarProps {
 export function GameReplayHotbar({
   replayTurn,
   autoJumpOnLiveUpdate,
+  autoZoomOnNewTile,
   canStepBackward,
   canJumpCurrent,
   canStepForward,
   showSandboxReset,
   canResetSandbox,
   onToggleAutoJumpOnLiveUpdate,
+  onToggleAutoZoomOnNewTile,
   onStepBackward,
   onJumpCurrent,
   onStepForward,
@@ -60,6 +64,14 @@ export function GameReplayHotbar({
           onChange={(event) => onToggleAutoJumpOnLiveUpdate(event.target.checked)}
         />
         auto-jump to current on live update
+      </label>
+      <label className="replay-hotbar__toggle">
+        <input
+          type="checkbox"
+          checked={autoZoomOnNewTile}
+          onChange={(event) => onToggleAutoZoomOnNewTile(event.target.checked)}
+        />
+        auto-zoom on new tile
       </label>
     </div>
   );

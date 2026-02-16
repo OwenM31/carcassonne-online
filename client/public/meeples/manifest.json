@@ -1,0 +1,81 @@
+{
+  "source": "/meeples-sheet.png",
+  "generatedAt": "2026-02-16T05:33:33.622Z",
+  "groups": {
+    "normal": {
+      "key": "normal",
+      "width": 27,
+      "height": 28,
+      "preview": "/meeples/preview-strip.png",
+      "colors": {
+        "black": "/meeples/black.png",
+        "red": "/meeples/red.png",
+        "yellow": "/meeples/yellow.png",
+        "green": "/meeples/green.png",
+        "blue": "/meeples/blue.png",
+        "gray": "/meeples/gray.png",
+        "pink": "/meeples/pink.png"
+      }
+    },
+    "big": {
+      "key": "big",
+      "width": 31,
+      "height": 31,
+      "preview": "/meeples/preview-strip-big.png",
+      "colors": {
+        "black": "/meeples/big-black.png",
+        "red": "/meeples/big-red.png",
+        "yellow": "/meeples/big-yellow.png",
+        "green": "/meeples/big-green.png",
+        "blue": "/meeples/big-blue.png",
+        "gray": "/meeples/big-gray.png",
+        "pink": "/meeples/big-pink.png"
+      }
+    },
+    "builder": {
+      "key": "builder",
+      "width": 27,
+      "height": 37,
+      "preview": "/meeples/preview-strip-builder.png",
+      "colors": {
+        "black": "/meeples/builder-black.png",
+        "red": "/meeples/builder-red.png",
+        "yellow": "/meeples/builder-yellow.png",
+        "green": "/meeples/builder-green.png",
+        "blue": "/meeples/builder-blue.png",
+        "gray": "/meeples/builder-gray.png",
+        "pink": "/meeples/builder-pink.png"
+      }
+    },
+    "pig": {
+      "key": "pig",
+      "width": 33,
+      "height": 19,
+      "preview": "/meeples/preview-strip-pig.png",
+      "colors": {
+        "black": "/meeples/pig-black.png",
+        "red": "/meeples/pig-red.png",
+        "yellow": "/meeples/pig-yellow.png",
+        "green": "/meeples/pig-green.png",
+        "blue": "/meeples/pig-blue.png",
+        "gray": "/meeples/pig-gray.png",
+        "pink": "/meeples/pig-pink.png"
+      }
+    },
+    "abbot": {
+      "key": "abbot",
+      "width": 28,
+      "height": 36,
+      "preview": "/meeples/preview-strip-abbot.png",
+      "colors": {
+        "black": "/meeples/abbot-black.png",
+        "red": "/meeples/abbot-red.png",
+        "yellow": "/meeples/abbot-yellow.png",
+        "green": "/meeples/abbot-green.png",
+        "blue": "/meeples/abbot-blue.png",
+        "gray": "/meeples/abbot-gray.png",
+        "pink": "/meeples/abbot-pink.png"
+      }
+    }
+  }
+}

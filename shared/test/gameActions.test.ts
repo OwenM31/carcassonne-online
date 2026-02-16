@@ -16,8 +16,8 @@ describe('applyGameAction', () => {
     startingTileId: 'T_R3C4',
     tileDeck: ['T_R1C1'],
     players: [
-      { id: 'p1', name: 'Ada', color: 'red' },
-      { id: 'p2', name: 'Linus', color: 'blue' }
+      { id: 'p1', name: 'Ada', color: 'yellow' },
+      { id: 'p2', name: 'Linus', color: 'green' }
     ]
   };
 
@@ -158,8 +158,8 @@ describe('applyGameAction', () => {
       startingTileId: 'T_R3C4',
       tileDeck: ['T_R3C5', 'T_R3C5'],
       players: [
-        { id: 'p1', name: 'Ada', color: 'red' },
-        { id: 'p2', name: 'Linus', color: 'blue' }
+        { id: 'p1', name: 'Ada', color: 'yellow' },
+        { id: 'p2', name: 'Linus', color: 'green' }
       ]
     };
 
@@ -228,5 +228,270 @@ describe('applyGameAction', () => {
       type: 'error',
       message: 'Feature already has a meeple.'
     });
+  });
+
+  it('rejects River 2 placements that create immediate u-turns', () => {
+    const state = createGame({
+      gameId: 'river2-no-u-turn',
+      addons: ['river_2'],
+      startingTileId: 'RV2_R1C1',
+      tileDeck: ['RV2_R1C2', 'RV2_R1C3', 'RV2_R2C1'],
+      players: [{ id: 'p1', name: 'Ada', color: 'yellow' }]
+    });
+
+    const drawFork = applyGameAction(state, { type: 'draw_tile', playerId: 'p1' });
+    if (drawFork.type !== 'success') {
+      throw new Error('Expected River 2 fork draw to succeed.');
+    }
+    const placeFork = applyGameAction(drawFork.game, {
+      type: 'place_tile',
+      playerId: 'p1',
+      tileId: 'RV2_R1C2',
+      position: { x: 0, y: -1 },
+      orientation: 0
+    });
+    if (placeFork.type !== 'success') {
+      throw new Error('Expected River 2 fork placement to succeed.');
+    }
+    const skipForkMeeple = applyGameAction(placeFork.game, {
+      type: 'skip_meeple',
+      playerId: 'p1'
+    });
+    if (skipForkMeeple.type !== 'success') {
+      throw new Error('Expected River 2 fork meeple skip to succeed.');
+    }
+
+    const drawCurve = applyGameAction(skipForkMeeple.game, {
+      type: 'draw_tile',
+      playerId: 'p1'
+    });
+    if (drawCurve.type !== 'success') {
+      throw new Error('Expected River 2 first branch curve draw to succeed.');
+    }
+    const placeCurve = applyGameAction(drawCurve.game, {
+      type: 'place_tile',
+      playerId: 'p1',
+      tileId: 'RV2_R1C3',
+      position: { x: -1, y: -1 },
+      orientation: 0
+    });
+    if (placeCurve.type !== 'success') {
+      throw new Error('Expected River 2 first branch curve placement to succeed.');
+    }
+    const skipCurveMeeple = applyGameAction(placeCurve.game, {
+      type: 'skip_meeple',
+      playerId: 'p1'
+    });
+    if (skipCurveMeeple.type !== 'success') {
+      throw new Error('Expected River 2 curve meeple skip to succeed.');
+    }
+
+    const drawUTurnCurve = applyGameAction(skipCurveMeeple.game, {
+      type: 'draw_tile',
+      playerId: 'p1'
+    });
+    if (drawUTurnCurve.type !== 'success') {
+      throw new Error('Expected River 2 u-turn curve draw to succeed.');
+    }
+    const placeUTurnCurve = applyGameAction(drawUTurnCurve.game, {
+      type: 'place_tile',
+      playerId: 'p1',
+      tileId: 'RV2_R2C1',
+      position: { x: -1, y: -2 },
+      orientation: 90
+    });
+
+    expect(placeUTurnCurve).toEqual({
+      type: 'error',
+      message: 'Tile placement is not legal.'
+    });
+  });
+
+  it('does not enforce River 2 u-turn restrictions in sandbox mode', () => {
+    const state = createGame({
+      gameId: 'river2-sandbox-u-turn',
+      mode: 'sandbox',
+      addons: ['river_2'],
+      startingTileId: 'RV2_R1C1',
+      tileDeck: ['RV2_R1C2', 'RV2_R1C3', 'RV2_R2C1'],
+      players: [{ id: 'p1', name: 'Ada', color: 'yellow' }]
+    });
+
+    const drawFork = applyGameAction(state, {
+      type: 'draw_sandbox_tile',
+      playerId: 'p1',
+      tileId: 'RV2_R1C2'
+    });
+    if (drawFork.type !== 'success') {
+      throw new Error('Expected sandbox River 2 fork draw to succeed.');
+    }
+    const placeFork = applyGameAction(drawFork.game, {
+      type: 'place_tile',
+      playerId: 'p1',
+      tileId: 'RV2_R1C2',
+      position: { x: 0, y: -1 },
+      orientation: 0
+    });
+    if (placeFork.type !== 'success') {
+      throw new Error('Expected sandbox River 2 fork placement to succeed.');
+    }
+    const skipForkMeeple = applyGameAction(placeFork.game, {
+      type: 'skip_meeple',
+      playerId: 'p1'
+    });
+    if (skipForkMeeple.type !== 'success') {
+      throw new Error('Expected sandbox River 2 fork meeple skip to succeed.');
+    }
+
+    const drawCurve = applyGameAction(skipForkMeeple.game, {
+      type: 'draw_sandbox_tile',
+      playerId: 'p1',
+      tileId: 'RV2_R1C3'
+    });
+    if (drawCurve.type !== 'success') {
+      throw new Error('Expected sandbox River 2 first branch curve draw to succeed.');
+    }
+    const placeCurve = applyGameAction(drawCurve.game, {
+      type: 'place_tile',
+      playerId: 'p1',
+      tileId: 'RV2_R1C3',
+      position: { x: -1, y: -1 },
+      orientation: 0
+    });
+    if (placeCurve.type !== 'success') {
+      throw new Error('Expected sandbox River 2 first branch curve placement to succeed.');
+    }
+    const skipCurveMeeple = applyGameAction(placeCurve.game, {
+      type: 'skip_meeple',
+      playerId: 'p1'
+    });
+    if (skipCurveMeeple.type !== 'success') {
+      throw new Error('Expected sandbox River 2 curve meeple skip to succeed.');
+    }
+
+    const drawUTurnCurve = applyGameAction(skipCurveMeeple.game, {
+      type: 'draw_sandbox_tile',
+      playerId: 'p1',
+      tileId: 'RV2_R2C1'
+    });
+    if (drawUTurnCurve.type !== 'success') {
+      throw new Error('Expected sandbox River 2 u-turn curve draw to succeed.');
+    }
+    const placeUTurnCurve = applyGameAction(drawUTurnCurve.game, {
+      type: 'place_tile',
+      playerId: 'p1',
+      tileId: 'RV2_R2C1',
+      position: { x: -1, y: -2 },
+      orientation: 90
+    });
+
+    expect(placeUTurnCurve.type).toBe('success');
+  });
+
+  it('rejects River placements that create immediate u-turns', () => {
+    const state = createGame({
+      gameId: 'river-no-u-turn',
+      addons: ['river'],
+      startingTileId: 'RV1_R1C1',
+      tileDeck: ['RV1_R1C3', 'RV1_R1C3'],
+      players: [{ id: 'p1', name: 'Ada', color: 'yellow' }]
+    });
+
+    const drawFirstCurve = applyGameAction(state, { type: 'draw_tile', playerId: 'p1' });
+    if (drawFirstCurve.type !== 'success') {
+      throw new Error('Expected River first curve draw to succeed.');
+    }
+    const placeFirstCurve = applyGameAction(drawFirstCurve.game, {
+      type: 'place_tile',
+      playerId: 'p1',
+      tileId: 'RV1_R1C3',
+      position: { x: 1, y: 0 },
+      orientation: 0
+    });
+    if (placeFirstCurve.type !== 'success') {
+      throw new Error('Expected River first curve placement to succeed.');
+    }
+    const skipFirstCurveMeeple = applyGameAction(placeFirstCurve.game, {
+      type: 'skip_meeple',
+      playerId: 'p1'
+    });
+    if (skipFirstCurveMeeple.type !== 'success') {
+      throw new Error('Expected River first curve meeple skip to succeed.');
+    }
+
+    const drawUTurnCurve = applyGameAction(skipFirstCurveMeeple.game, {
+      type: 'draw_tile',
+      playerId: 'p1'
+    });
+    if (drawUTurnCurve.type !== 'success') {
+      throw new Error('Expected River u-turn curve draw to succeed.');
+    }
+    const placeUTurnCurve = applyGameAction(drawUTurnCurve.game, {
+      type: 'place_tile',
+      playerId: 'p1',
+      tileId: 'RV1_R1C3',
+      position: { x: 1, y: -1 },
+      orientation: 90
+    });
+
+    expect(placeUTurnCurve).toEqual({
+      type: 'error',
+      message: 'Tile placement is not legal.'
+    });
+  });
+
+  it('does not enforce River u-turn restrictions in sandbox mode', () => {
+    const state = createGame({
+      gameId: 'river-sandbox-u-turn',
+      mode: 'sandbox',
+      addons: ['river'],
+      startingTileId: 'RV1_R1C1',
+      tileDeck: ['RV1_R1C3', 'RV1_R1C3'],
+      players: [{ id: 'p1', name: 'Ada', color: 'yellow' }]
+    });
+
+    const drawFirstCurve = applyGameAction(state, {
+      type: 'draw_sandbox_tile',
+      playerId: 'p1',
+      tileId: 'RV1_R1C3'
+    });
+    if (drawFirstCurve.type !== 'success') {
+      throw new Error('Expected sandbox River first curve draw to succeed.');
+    }
+    const placeFirstCurve = applyGameAction(drawFirstCurve.game, {
+      type: 'place_tile',
+      playerId: 'p1',
+      tileId: 'RV1_R1C3',
+      position: { x: 1, y: 0 },
+      orientation: 0
+    });
+    if (placeFirstCurve.type !== 'success') {
+      throw new Error('Expected sandbox River first curve placement to succeed.');
+    }
+    const skipFirstCurveMeeple = applyGameAction(placeFirstCurve.game, {
+      type: 'skip_meeple',
+      playerId: 'p1'
+    });
+    if (skipFirstCurveMeeple.type !== 'success') {
+      throw new Error('Expected sandbox River first curve meeple skip to succeed.');
+    }
+
+    const drawUTurnCurve = applyGameAction(skipFirstCurveMeeple.game, {
+      type: 'draw_sandbox_tile',
+      playerId: 'p1',
+      tileId: 'RV1_R1C3'
+    });
+    if (drawUTurnCurve.type !== 'success') {
+      throw new Error('Expected sandbox River u-turn curve draw to succeed.');
+    }
+    const placeUTurnCurve = applyGameAction(drawUTurnCurve.game, {
+      type: 'place_tile',
+      playerId: 'p1',
+      tileId: 'RV1_R1C3',
+      position: { x: 1, y: -1 },
+      orientation: 90
+    });
+
+    expect(placeUTurnCurve.type).toBe('success');
   });
 });

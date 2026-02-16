@@ -2,7 +2,6 @@
  * @description RANDY heuristics for automated tile and meeple decisions.
  */
 import type {
-  BoardState,
   GameState,
   MeeplePlacement,
   Orientation,
@@ -10,20 +9,15 @@ import type {
 } from '@carcassonne/shared';
 import {
   getLegalMeeplePlacements,
-  getLegalTilePlacements
+  getLegalTilePlacementsForState
 } from '@carcassonne/shared';
 
-interface RandyPlacementInput {
-  board: BoardState;
-  currentTileId: string | null;
-}
-
-export function chooseRandyTilePlacement(game: RandyPlacementInput): PlacementOption | null {
+export function chooseRandyTilePlacement(game: GameState): PlacementOption | null {
   if (!game.currentTileId) {
     return null;
   }
 
-  const allOptions = getLegalTilePlacements(game.board, game.currentTileId);
+  const allOptions = getLegalTilePlacementsForState(game, game.currentTileId);
   if (allOptions.length === 0) {
     return null;
   }

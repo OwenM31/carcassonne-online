@@ -22,6 +22,8 @@ export interface TileSheetMetrics {
   rows: number;
 }
 
+export type TileSheetMetricsBySheet = Record<string, TileSheetMetrics>;
+
 export interface SpriteOffset {
   xRem: number;
   yRem: number;
@@ -67,15 +69,45 @@ export function toGridPosition(
 }
 
 export function getTileSheetMetrics(
-  catalog: TileCatalogEntry[]
+  catalog: TileCatalogEntry[],
+  sheet?: TileSource['sheet']
 ): TileSheetMetrics {
+  if (!sheet) {
+    return catalog.reduce<TileSheetMetrics>(
+      (metrics, entry) => ({
+        columns: Math.max(metrics.columns, entry.source.col),
+        rows: Math.max(metrics.rows, entry.source.row)
+      }),
+      { columns: 0, rows: 0 }
+    );
+  }
+
   return catalog.reduce<TileSheetMetrics>(
-    (metrics, entry) => ({
-      columns: Math.max(metrics.columns, entry.source.col),
-      rows: Math.max(metrics.rows, entry.source.row)
-    }),
+    (metrics, entry) => {
+      if (entry.source.sheet !== sheet) {
+        return metrics;
+      }
+
+      return {
+        columns: Math.max(metrics.columns, entry.source.col),
+        rows: Math.max(metrics.rows, entry.source.row)
+      };
+    },
     { columns: 0, rows: 0 }
   );
+}
+
+export function getTileSheetMetricsBySheet(
+  catalog: TileCatalogEntry[]
+): TileSheetMetricsBySheet {
+  return catalog.reduce<TileSheetMetricsBySheet>((metrics, entry) => {
+    const current = metrics[entry.source.sheet] ?? { columns: 0, rows: 0 };
+    metrics[entry.source.sheet] = {
+      columns: Math.max(current.columns, entry.source.col),
+      rows: Math.max(current.rows, entry.source.row)
+    };
+    return metrics;
+  }, {});
 }
 
 export function createTileSourceIndex(

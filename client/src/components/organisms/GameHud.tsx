@@ -78,7 +78,10 @@ export function GameHud({
 
       <div className="hud-section">
         <p className="hud-label">Deck</p>
-        <p className="hud-value">{hud.deckCount} tiles</p>
+        {hud.riverDeckCount > 0 ? (
+          <p className="hud-value">{hud.riverDeckCount} River Tiles Remaining</p>
+        ) : null}
+        <p className="hud-value">{hud.deckCount} Tiles Remaining</p>
       </div>
 
       <div className="hud-section">
@@ -87,7 +90,7 @@ export function GameHud({
           {hud.scoreboard.map((entry) => (
             <li key={entry.id} className={`hud-item${entry.isActive ? ' hud-item--active' : ''}`}>
               <div className="hud-item__header">
-                <span className="hud-item__name">
+                <span className={`hud-item__name player-name-color player-name-color--${entry.color}`}>
                   <span className={`hud-chip hud-chip--${entry.color}`} aria-hidden="true" />
                   {entry.name}
                 </span>
@@ -97,7 +100,16 @@ export function GameHud({
                   </span>
                 ) : null}
               </div>
-              <span className="hud-item__meta">Meeples {entry.meeplesAvailable}/{entry.meeplesTotal} · Score {entry.score}</span>
+              <span className="hud-item__meta">
+                Meeples {entry.meeplesAvailable}/{entry.meeplesTotal}
+                {hud.hasBigMeeples
+                  ? ` · Big meeple ${entry.bigMeepleAvailable ? '1/1' : entry.bigMeeplePlaced ? 'placed' : 'used'}`
+                  : ''}
+                {hud.hasAbbots
+                  ? ` · Abbot ${entry.abbotAvailable ? '1/1' : entry.abbotPlaced ? 'placed' : '0/1'}`
+                  : ''}
+                {' · '}Score {entry.score}
+              </span>
             </li>
           ))}
         </ul>
@@ -121,7 +133,9 @@ export function GameHud({
               <span className="hud-item__meta">{hud.featureCounter.roads.closed} closed / {hud.featureCounter.roads.open} open</span>
             </li>
             <li className="hud-item">
-              <span className="hud-item__name">{labelForFeature('monastery')}</span>
+              <span className="hud-item__name">
+                {hud.hasAbbots ? 'Monastery / Garden' : labelForFeature('monastery')}
+              </span>
               <span className="hud-item__meta">{hud.featureCounter.monasteries}</span>
             </li>
             <li className="hud-item">

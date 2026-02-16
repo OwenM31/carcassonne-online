@@ -2,9 +2,12 @@
  * @description Draw and tile placement action handlers.
  */
 import type { DrawSandboxTileAction, GameState, PlaceTileAction, TileId } from '../types/game';
-import { TILE_CATALOG } from '../tiles';
+import { buildCatalogForAddons } from '../tiles';
 import { addTileToBoard } from './board';
-import { getLegalTilePlacements, isTilePlacementValid } from './placement';
+import {
+  getLegalTilePlacementsForState,
+  isTilePlacementValidForState
+} from './placement';
 import {
   applyScoringResolution,
   ERROR_DRAW_PHASE,
@@ -100,7 +103,14 @@ export const applyPlaceTileAction = (
   if (action.tileId !== state.currentTileId) {
     return { type: 'error', message: ERROR_TILE_MISMATCH };
   }
-  if (!isTilePlacementValid(state.board, action.tileId, action.position, action.orientation)) {
+  if (
+    !isTilePlacementValidForState(
+      state,
+      action.tileId,
+      action.position,
+      action.orientation
+    )
+  ) {
     return { type: 'error', message: ERROR_ILLEGAL_PLACEMENT };
   }
 
@@ -137,7 +147,7 @@ const drawResolvedTile = (
   remainingDeck: TileId[],
   drawVerb: 'drew' | 'selected'
 ): GameActionResult => {
-  const placements = getLegalTilePlacements(state.board, tileId);
+  const placements = getLegalTilePlacementsForState(state, tileId);
 
   if (placements.length === 0) {
     const discarded = withEvent(
@@ -166,7 +176,7 @@ const drawResolvedTile = (
         ...state,
         tileDeck: remainingDeck,
         currentTileId: tileId,
-        currentTileOrientation: getDrawOrientation(tileId),
+        currentTileOrientation: getDrawOrientation(tileId, state.addons),
         phase: 'place_tile'
       },
       {
@@ -184,8 +194,11 @@ const randomOrientation = (): 0 | 90 | 180 | 270 => {
   return orientations[Math.floor(Math.random() * orientations.length)];
 };
 
-const getDrawOrientation = (tileId: TileId): 0 | 90 | 180 | 270 => {
-  const tile = TILE_CATALOG.find((entry) => entry.id === tileId);
+const getDrawOrientation = (
+  tileId: TileId,
+  addons: GameState['addons']
+): 0 | 90 | 180 | 270 => {
+  const tile = buildCatalogForAddons(addons).find((entry) => entry.id === tileId);
   if (!tile) {
     return randomOrientation();
   }

@@ -1,17 +1,19 @@
-import type { SessionMode, SessionTurnTimer } from './session';
+import type { SessionAddon, SessionMode, SessionTurnTimer } from './session';
 
 export type GameId = string;
 export type PlayerId = string;
 export type TileId = string;
 
 export type Orientation = 0 | 90 | 180 | 270;
-export type FeatureType = 'city' | 'road' | 'farm' | 'monastery';
-export type PlayerColor = 'red' | 'blue' | 'green' | 'yellow' | 'black';
+export type FeatureType = 'city' | 'road' | 'farm' | 'monastery' | 'garden';
+export type MeepleKind = 'normal' | 'big' | 'abbot';
+export type PlayerColor = 'black' | 'red' | 'yellow' | 'green' | 'blue' | 'gray' | 'pink';
 export type GameEventType =
   | 'game_started'
   | 'draw_tile'
   | 'place_tile'
   | 'place_meeple'
+  | 'return_abbot'
   | 'skip_meeple'
   | 'score'
   | 'discard_tile'
@@ -58,6 +60,8 @@ export interface PlayerState {
   name: string;
   color: PlayerColor;
   meeplesAvailable: number;
+  bigMeepleAvailable: boolean;
+  abbotAvailable: boolean;
   score: number;
 }
 
@@ -66,6 +70,8 @@ export interface PlayerSetup {
   name: string;
   color: PlayerColor;
   meeplesAvailable?: number;
+  bigMeepleAvailable?: boolean;
+  abbotAvailable?: boolean;
 }
 
 export type GameStatus = 'waiting' | 'active' | 'finished';
@@ -74,6 +80,7 @@ export type TurnPhase = 'setup' | 'draw_tile' | 'place_tile' | 'place_meeple' | 
 export interface GameState {
   id: GameId;
   mode: SessionMode;
+  addons: SessionAddon[];
   status: GameStatus;
   phase: TurnPhase;
   players: PlayerState[];
@@ -96,6 +103,7 @@ export interface GameState {
 export interface GameSetup {
   gameId: GameId;
   mode?: SessionMode;
+  addons?: SessionAddon[];
   players: PlayerSetup[];
   tileDeck: TileId[];
   startingTileId: TileId;
@@ -116,6 +124,7 @@ export interface MeeplePlacement {
 
 export interface PlacedMeeple extends MeeplePlacement {
   playerId: PlayerId;
+  kind: MeepleKind;
 }
 
 export interface GameEvent {
@@ -155,10 +164,16 @@ export interface PlaceMeepleAction {
   type: 'place_meeple';
   playerId: PlayerId;
   placement: MeeplePlacement;
+  kind?: MeepleKind;
 }
 
 export interface SkipMeepleAction {
   type: 'skip_meeple';
+  playerId: PlayerId;
+}
+
+export interface ReturnAbbotAction {
+  type: 'return_abbot';
   playerId: PlayerId;
 }
 
@@ -168,4 +183,5 @@ export type GameAction =
   | SetTileOrientationAction
   | PlaceTileAction
   | PlaceMeepleAction
-  | SkipMeepleAction;
+  | SkipMeepleAction
+  | ReturnAbbotAction;

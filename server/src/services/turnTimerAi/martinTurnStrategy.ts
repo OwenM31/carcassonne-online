@@ -10,7 +10,7 @@ import type {
 import {
   applyGameAction,
   getLegalMeeplePlacements,
-  getLegalTilePlacements
+  getLegalTilePlacementsForState
 } from '@carcassonne/shared';
 import {
   buildTieSeed,
@@ -20,6 +20,7 @@ import {
   pickBestCandidate,
   pickRandom
 } from './martinHeuristicUtils';
+import { chooseMeepleKindForStrategy } from './meepleKindStrategy';
 
 export function chooseMartinTilePlacement(
   game: GameState,
@@ -31,7 +32,7 @@ export function chooseMartinTilePlacement(
       return null;
     }
 
-    const options = getLegalTilePlacements(game.board, game.currentTileId);
+    const options = getLegalTilePlacementsForState(game, game.currentTileId);
     return options.length > 0 ? pickRandom(options) : null;
   }
 
@@ -56,7 +57,7 @@ function evaluatePlacementCandidates(
     return [];
   }
 
-  const allOptions = getLegalTilePlacements(game.board, game.currentTileId);
+  const allOptions = getLegalTilePlacementsForState(game, game.currentTileId);
   const ranked: RankedCandidate<PlacementOption>[] = [];
   allOptions.forEach((option) => {
     const placeResult = applyGameAction(game, {
@@ -105,7 +106,12 @@ function evaluateMartinMeepleChoice(
     const result = applyGameAction(
       game,
       option
-        ? { type: 'place_meeple', playerId, placement: option }
+        ? {
+            type: 'place_meeple',
+            playerId,
+            placement: option,
+            kind: chooseMeepleKindForStrategy(game, playerId, option, 'martin')
+          }
         : { type: 'skip_meeple', playerId }
     );
     if (result.type === 'error') {

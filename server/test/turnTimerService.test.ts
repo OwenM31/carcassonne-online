@@ -76,6 +76,23 @@ describe('TurnTimerService', () => {
     expect(message.game.eventLog.some((entry) => entry.type === 'place_meeple')).toBe(true);
   });
 
+  it('uses JUAN takeover strategy for disconnected human players', () => {
+    const session = buildSandboxSession(false, 30, { takeoverBot: 'juan' });
+    const persist = jest.fn();
+    const sessionService = buildSessionService(session, persist);
+    const broadcast = jest.fn();
+    const service = new TurnTimerService({ sessionService, broadcast });
+
+    service.syncSession(session.id);
+    jest.runOnlyPendingTimers();
+
+    const message = broadcast.mock.calls[0][0] as {
+      type: string;
+      game: { eventLog: Array<{ type: string }> };
+    };
+    expect(message.game.eventLog.some((entry) => entry.type === 'place_meeple')).toBe(true);
+  });
+
   it('reschedules to immediate timeout when the active player leaves mid-turn', () => {
     const session = buildSandboxSession(true);
     const persist = jest.fn();
@@ -172,6 +189,26 @@ describe('TurnTimerService', () => {
     };
     expect(message.game.eventLog.some((entry) => entry.type === 'place_meeple')).toBe(true);
   });
+
+  it('uses JUAN AI seats over takeover fallback profile', () => {
+    const session = buildSandboxSession(true, 0, {
+      aiPlayerId: 'ai-juan-1',
+      takeoverBot: 'randy'
+    });
+    const persist = jest.fn();
+    const sessionService = buildSessionService(session, persist);
+    const broadcast = jest.fn();
+    const service = new TurnTimerService({ sessionService, broadcast });
+
+    service.syncSession(session.id);
+    jest.runOnlyPendingTimers();
+
+    const message = broadcast.mock.calls[0][0] as {
+      type: string;
+      game: { eventLog: Array<{ type: string }> };
+    };
+    expect(message.game.eventLog.some((entry) => entry.type === 'place_meeple')).toBe(true);
+  });
 });
 
 function buildSandboxSession(
@@ -191,7 +228,8 @@ function buildSandboxSession(
   const game = createGame({
     gameId: 'game-timeout',
     mode: 'sandbox',
-    players: [{ id: activePlayerId, name: 'Ada', color: 'red' }],
+    addons: [],
+    players: [{ id: activePlayerId, name: 'Ada', color: 'yellow' }],
     tileDeck: ['T_R1C1'],
     startingTileId,
     turnTimerSeconds
@@ -199,7 +237,7 @@ function buildSandboxSession(
   const gameService = new InMemoryGameService(() => 'game-timeout', {
     game,
     history: [],
-    startConfig: { deckSize: 'standard', mode: 'sandbox', turnTimerSeconds }
+    startConfig: { deckSize: 'standard', mode: 'sandbox', addons: [], turnTimerSeconds }
   });
 
   const lobbyService = new InMemoryLobbyService();
@@ -211,6 +249,7 @@ function buildSandboxSession(
     id: 'session-1',
     deckSize: 'standard',
     mode: 'sandbox',
+    addons: [],
     turnTimerSeconds,
     takeoverBot: options.takeoverBot ?? 'randy',
     aiPlayerIds: options.aiPlayerId ? new Set([options.aiPlayerId]) : new Set(),
@@ -224,20 +263,25 @@ function buildSessionService(session: SessionRecord, persist: () => void): Sessi
     id: session.id,
     status: 'in_progress',
     playerCount: 1,
-    players: [{ name: 'Ada' }],
+    players: [{ name: 'Ada', color: 'black' }],
     deckSize: session.deckSize,
     mode: session.mode,
+    addons: session.addons,
+    tileCount: 1,
     turnTimerSeconds: session.turnTimerSeconds,
     takeoverBot: session.takeoverBot
   };
 
   return {
-    createSession: () => session,
+    createSession: (_deckSize, _mode, _turnTimerSeconds, _addons) => session,
     updateSessionDeckSize: () => ({ type: 'success', session }),
     updateSessionMode: () => ({ type: 'success', session }),
+    updateSessionAddons: () => ({ type: 'success', session }),
     updateSessionTurnTimer: () => ({ type: 'success', session }),
+    updateSessionPlayerColor: () => ({ type: 'success', session }),
     updateSessionTakeoverBot: () => ({ type: 'success', session }),
     addAiPlayer: () => ({ type: 'success', session }),
+    removeAiPlayer: () => ({ type: 'success', session }),
     isAiPlayer: (_sessionId: string, playerId: string) => session.aiPlayerIds.has(playerId),
     getSession: (sessionId: string) => (sessionId === session.id ? session : null),
     listSessions: () => [summary],

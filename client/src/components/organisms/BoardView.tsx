@@ -7,8 +7,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
-  type PointerEvent,
-  type WheelEvent
+  type PointerEvent
 } from 'react';
 
 import type {
@@ -19,22 +18,33 @@ import type {
   PlacementOption,
   TileId
 } from '@carcassonne/shared';
-import { TILE_CATALOG } from '@carcassonne/shared';
+import { FULL_TILE_CATALOG } from '@carcassonne/shared';
 
 import {
   createTileSourceIndex,
   getBoundsWithPositions,
   getBoardGridMetrics,
   getSpriteOffset,
-  getTileSheetMetrics,
+  getTileSheetMetricsBySheet,
   toGridPosition
 } from '../../state/boardLayout';
-import { getMeepleAnchor, getMeepleRole } from '../../state/meepleLayout';
+import { getMeepleAnchor, getMeepleRole, getMeepleRoleLabel } from '../../state/meepleLayout';
+import { getMeepleSprites } from '../../state/meepleSprites';
 
 const TILE_SIZE_REM = 6;
-const TILE_SHEET_URL = '/tiles.png?v=2';
-const TILE_SOURCES = createTileSourceIndex(TILE_CATALOG);
-const TILE_SHEET = getTileSheetMetrics(TILE_CATALOG);
+const TILE_SHEET_URLS: Record<string, string> = {
+  'tiles.png': '/tiles.png?v=2',
+  'tiles-inns-and-cathedrals.png': '/tiles-inns-and-cathedrals.png?v=1',
+  'tiles-river.png': '/tiles-river.png?v=1',
+  'tiles-river-2.png': '/tiles-river-2.png?v=1',
+  'tiles-abbot.png': '/tiles-abbot.png?v=1',
+  'tiles-abbot-river.png': '/tiles-abbot-river.png?v=1',
+  'tiles-abbot-river-2.png': '/tiles-abbot-river-2.png?v=1',
+  'tiles-abbot-inns-and-cathedrals.png': '/tiles-abbot-inns-and-cathedrals.png?v=1'
+};
+const TILE_SOURCES = createTileSourceIndex(FULL_TILE_CATALOG);
+const TILE_SHEETS = getTileSheetMetricsBySheet(FULL_TILE_CATALOG);
+const BASE_SHEET = TILE_SHEETS['tiles.png'] ?? { columns: 1, rows: 1 };
 const FIT_PADDING_PX = 24;
 const MIN_ZOOM = 0.24;
 const MAX_ZOOM = 2.2;
@@ -58,6 +68,7 @@ interface BoardViewProps {
   board: BoardState;
   meeples?: PlacedMeeple[];
   playerColorById?: Record<string, PlayerColor>;
+  autoZoomOnNewTile?: boolean;
   highlightTileId?: TileId | null;
   placementOptions?: PlacementOption[];
   placementTileId?: TileId | null;
@@ -71,6 +82,7 @@ export function BoardView({
   board,
   meeples = [],
   playerColorById = {},
+  autoZoomOnNewTile = false,
   highlightTileId,
   placementOptions = [],
   placementTileId,
@@ -87,21 +99,28 @@ export function BoardView({
   const placementSprite = placementSource
     ? getSpriteOffset(placementSource, TILE_SIZE_REM)
     : null;
+  const placementSheet = placementSource ? TILE_SHEETS[placementSource.sheet] ?? BASE_SHEET : BASE_SHEET;
   const shellRef = useRef<HTMLDivElement | null>(null);
+  const hasFittedRef = useRef(false);
   const dragRef = useRef<DragState | null>(null);
   const [isDragging, setDragging] = useState(false);
+  const [isFocused, setFocused] = useState(false);
   const [camera, setCamera] = useState<BoardCamera>({
     scale: 1,
     offsetX: 0,
     offsetY: 0
   });
+  const normalMeepleSprites = getMeepleSprites('normal');
+  const bigMeepleSprites = getMeepleSprites('big');
+  const abbotMeepleSprites = getMeepleSprites('abbot');
   const boardStyle = {
     '--tile-size': `${TILE_SIZE_REM}rem`,
     '--tile-gap': '0rem',
     '--board-columns': `${metrics.columns}`,
     '--board-rows': `${metrics.rows}`,
-    '--sheet-width': `${TILE_SHEET.columns * TILE_SIZE_REM}rem`,
-    '--sheet-height': `${TILE_SHEET.rows * TILE_SIZE_REM}rem`
+    '--sheet-width': `${BASE_SHEET.columns * TILE_SIZE_REM}rem`,
+    '--sheet-height': `${BASE_SHEET.rows * TILE_SIZE_REM}rem`,
+    '--board-scale': `${camera.scale}`
   } as CSSProperties;
   const cameraStyle = {
     transform: `translate(${camera.offsetX}px, ${camera.offsetY}px) scale(${camera.scale})`
@@ -130,13 +149,34 @@ export function BoardView({
   }, [metrics.columns, metrics.rows]);
 
   useEffect(() => {
-    fitToBoard();
-  }, [fitToBoard, boardShapeKey]);
+    if (!hasFittedRef.current) {
+      fitToBoard();
+      hasFittedRef.current = true;
+      return;
+    }
+
+    if (autoZoomOnNewTile) {
+      fitToBoard();
+    }
+  }, [autoZoomOnNewTile, fitToBoard, boardShapeKey]);
 
   useEffect(() => {
     window.addEventListener('resize', fitToBoard);
     return () => window.removeEventListener('resize', fitToBoard);
   }, [fitToBoard]);
+
+  useEffect(() => {
+    const handleDocumentPointerDown = (event: globalThis.PointerEvent) => {
+      const shell = shellRef.current;
+      if (!shell || shell.contains(event.target as Node)) {
+        return;
+      }
+      setFocused(false);
+    };
+
+    document.addEventListener('pointerdown', handleDocumentPointerDown);
+    return () => document.removeEventListener('pointerdown', handleDocumentPointerDown);
+  }, []);
 
   const zoomAtClientPoint = useCallback((factor: number, clientX: number, clientY: number) => {
     const shell = shellRef.current;
@@ -163,12 +203,28 @@ export function BoardView({
     });
   }, []);
 
-  const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    zoomAtClientPoint(event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP, event.clientX, event.clientY);
-  };
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) {
+      return;
+    }
+
+    const handleWheel = (event: WheelEvent) => {
+      if (!isFocused) {
+        return;
+      }
+
+      event.preventDefault();
+      zoomAtClientPoint(event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP, event.clientX, event.clientY);
+    };
+
+    shell.addEventListener('wheel', handleWheel, { passive: false });
+    return () => shell.removeEventListener('wheel', handleWheel);
+  }, [isFocused, zoomAtClientPoint]);
 
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    setFocused(true);
+
     if (event.button !== 0) {
       return;
     }
@@ -228,9 +284,10 @@ export function BoardView({
   return (
     <div
       ref={shellRef}
-      className={`board-shell${isDragging ? ' board-shell--dragging' : ''}`}
+      className={`board-shell${isDragging ? ' board-shell--dragging' : ''}${
+        isFocused ? ' board-shell--focused' : ''
+      }`}
       style={boardStyle}
-      onWheel={handleWheel}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={endDrag}
@@ -243,13 +300,18 @@ export function BoardView({
             const grid = toGridPosition(tile.position, bounds);
             const source = TILE_SOURCES[tile.tileId];
             const sprite = source ? getSpriteOffset(source, TILE_SIZE_REM) : null;
+            const sheet = source ? TILE_SHEETS[source.sheet] ?? BASE_SHEET : BASE_SHEET;
             const tileStyle = {
               gridColumn: grid.column,
               gridRow: grid.row,
               transform: `rotate(${tile.orientation}deg)`,
               '--tile-offset-x': sprite ? `${sprite.xRem}rem` : '0rem',
               '--tile-offset-y': sprite ? `${sprite.yRem}rem` : '0rem',
-              '--tile-sheet': source ? `url("${TILE_SHEET_URL}")` : 'none'
+              '--tile-sheet': source
+                ? `url("${TILE_SHEET_URLS[source.sheet] ?? TILE_SHEET_URLS['tiles.png']}")`
+                : 'none',
+              '--sheet-width': `${sheet.columns * TILE_SIZE_REM}rem`,
+              '--sheet-height': `${sheet.rows * TILE_SIZE_REM}rem`
             } as CSSProperties;
             const isHighlighted = highlightTileId === tile.tileId;
 
@@ -274,7 +336,11 @@ export function BoardView({
               transform: `rotate(${option.orientation}deg)`,
               '--tile-offset-x': placementSprite ? `${placementSprite.xRem}rem` : '0rem',
               '--tile-offset-y': placementSprite ? `${placementSprite.yRem}rem` : '0rem',
-              '--tile-sheet': placementSource ? `url("${TILE_SHEET_URL}")` : 'none'
+              '--tile-sheet': placementSource
+                ? `url("${TILE_SHEET_URLS[placementSource.sheet] ?? TILE_SHEET_URLS['tiles.png']}")`
+                : 'none',
+              '--sheet-width': `${placementSheet.columns * TILE_SIZE_REM}rem`,
+              '--sheet-height': `${placementSheet.rows * TILE_SIZE_REM}rem`
             } as CSSProperties;
 
             const handleClick = () => {
@@ -335,13 +401,20 @@ export function BoardView({
             const grid = toGridPosition(meeple.tilePosition, bounds);
             const anchor = getMeepleAnchor(meeple, tile);
             const color = playerColorById[meeple.playerId] ?? 'black';
+            const spriteSet =
+              meeple.kind === 'big'
+                ? bigMeepleSprites
+                : meeple.kind === 'abbot'
+                  ? abbotMeepleSprites
+                  : normalMeepleSprites;
+            const sprite = spriteSet[color];
             const markerStyle = {
               gridColumn: grid.column,
               gridRow: grid.row,
               '--meeple-x': `${anchor.xPercent}%`,
               '--meeple-y': `${anchor.yPercent}%`
             } as CSSProperties;
-            const role = getMeepleRole(meeple.featureType);
+            const role = getMeepleRoleLabel(meeple.featureType, meeple.kind);
 
             return (
               <div
@@ -350,6 +423,15 @@ export function BoardView({
                 style={markerStyle}
                 aria-label={`${role} on ${meeple.featureType}`}
               >
+                <span
+                  className={`board-meeple__token${sprite ? '' : ' board-meeple__token--fallback'}`}
+                  style={
+                    sprite
+                      ? ({ '--meeple-token-url': `url("${sprite}")` } as CSSProperties)
+                      : undefined
+                  }
+                  aria-hidden="true"
+                />
                 <span className="board-meeple__role">{role}</span>
               </div>
             );

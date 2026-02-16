@@ -2,6 +2,7 @@ import {
   buildTileDeck,
   getLegalTilePlacements,
   getStartingTileCandidates,
+  isRiverAddonTileId,
   type LobbyPlayer
 } from '@carcassonne/shared';
 import { InMemoryGameService } from '../src/services/gameService';
@@ -31,14 +32,15 @@ describe('InMemoryGameService', () => {
       { id: 'p3', name: 'C' },
       { id: 'p4', name: 'D' },
       { id: 'p5', name: 'E' },
-      { id: 'p6', name: 'F' }
+      { id: 'p6', name: 'F' },
+      { id: 'p7', name: 'G' }
     ];
 
     const result = service.startGame(tooManyPlayers);
 
     expect(result).toEqual({
       type: 'error',
-      message: 'Only 5 players are supported.'
+      message: 'Only 6 players are supported.'
     });
   });
 
@@ -56,8 +58,8 @@ describe('InMemoryGameService', () => {
 
     expect(result.game.id).toBe('game-3');
     expect(result.game.players).toHaveLength(2);
-    expect(result.game.players[0].color).toBe('red');
-    expect(result.game.players[1].color).toBe('blue');
+    expect(result.game.players[0].color).toBe('black');
+    expect(result.game.players[1].color).toBe('red');
     expect(result.game.startingTileId).toBe(startingTileId);
     expect(result.game.board.tiles['0,0'].tileId).toBe(startingTileId);
 
@@ -75,6 +77,122 @@ describe('InMemoryGameService', () => {
 
     const expectedDeckLength = buildTileDeck(undefined, 'small').length - 1;
     expect(result.game.tileDeck).toHaveLength(expectedDeckLength);
+  });
+
+  it('uses River 2 opening and closing sequence in standard mode', () => {
+    const service = new InMemoryGameService(() => 'game-river2');
+    const result = service.startGame(lobbyPlayers, { addons: ['river_2'] });
+
+    if (result.type !== 'success') {
+      throw new Error('Expected River 2 game start to succeed.');
+    }
+
+    expect(result.game.startingTileId).toBe('RV2_R1C1');
+    expect(result.game.board.tiles['0,0'].tileId).toBe('RV2_R1C1');
+    expect(result.game.tileDeck[0]).toBe('RV2_R1C2');
+
+    const firstNonRiverIndex = result.game.tileDeck.findIndex((tileId) => !tileId.startsWith('RV2_'));
+    if (firstNonRiverIndex <= 1) {
+      throw new Error('Expected River 2 tiles to lead the draw deck.');
+    }
+
+    const riverSegment = result.game.tileDeck.slice(0, firstNonRiverIndex);
+    expect(riverSegment.slice(-2).sort()).toEqual(['RV2_R3C3', 'RV2_R3C4']);
+  });
+
+  it('uses River opening and closing sequence in standard mode', () => {
+    const service = new InMemoryGameService(() => 'game-river');
+    const result = service.startGame(lobbyPlayers, { addons: ['river'] });
+
+    if (result.type !== 'success') {
+      throw new Error('Expected River game start to succeed.');
+    }
+
+    expect(result.game.startingTileId).toBe('RV1_R1C1');
+    expect(result.game.board.tiles['0,0'].tileId).toBe('RV1_R1C1');
+    expect(result.game.tileDeck).not.toContain('RV1_R1C1');
+
+    const firstNonRiverIndex = result.game.tileDeck.findIndex((tileId) => !tileId.startsWith('RV1_'));
+    if (firstNonRiverIndex <= 0) {
+      throw new Error('Expected River tiles to lead the draw deck.');
+    }
+
+    const riverSegment = result.game.tileDeck.slice(0, firstNonRiverIndex);
+    expect(riverSegment[riverSegment.length - 1]).toBe('RV1_R3C2');
+  });
+
+  it('includes Abbot + River bonus river tile in the opening river segment', () => {
+    const service = new InMemoryGameService(() => 'game-river-abbot');
+    const result = service.startGame(lobbyPlayers, { addons: ['river', 'abbot'] });
+
+    if (result.type !== 'success') {
+      throw new Error('Expected River + Abbot game start to succeed.');
+    }
+
+    const firstNonRiverIndex = result.game.tileDeck.findIndex((tileId) => !isRiverAddonTileId(tileId));
+    if (firstNonRiverIndex <= 0) {
+      throw new Error('Expected River + Abbot river tiles to lead the draw deck.');
+    }
+
+    const riverSegment = result.game.tileDeck.slice(0, firstNonRiverIndex);
+    expect(riverSegment).toContain('ABRV1_R1C1');
+  });
+
+  it('includes Abbot + River 2 bonus river tiles in the opening river segment', () => {
+    const service = new InMemoryGameService(() => 'game-river2-abbot');
+    const result = service.startGame(lobbyPlayers, { addons: ['river_2', 'abbot'] });
+
+    if (result.type !== 'success') {
+      throw new Error('Expected River 2 + Abbot game start to succeed.');
+    }
+
+    expect(result.game.tileDeck[0]).toBe('RV2_R1C2');
+
+    const firstNonRiverIndex = result.game.tileDeck.findIndex((tileId) => !isRiverAddonTileId(tileId));
+    if (firstNonRiverIndex <= 1) {
+      throw new Error('Expected River 2 + Abbot river tiles to lead the draw deck.');
+    }
+
+    const riverSegment = result.game.tileDeck.slice(0, firstNonRiverIndex);
+    expect(riverSegment).toEqual(expect.arrayContaining(['ABRV2_R1C1', 'ABRV2_R1C2']));
+    expect(riverSegment.slice(-2).sort()).toEqual(['RV2_R3C3', 'RV2_R3C4']);
+  });
+
+  it('omits River spring/lake tiles when River and River 2 are both enabled', () => {
+    const service = new InMemoryGameService(() => 'game-river-combined');
+    const result = service.startGame(lobbyPlayers, { addons: ['river', 'river_2'] });
+
+    if (result.type !== 'success') {
+      throw new Error('Expected combined river game start to succeed.');
+    }
+
+    expect(result.game.startingTileId).toBe('RV2_R1C1');
+    expect(result.game.board.tiles['0,0'].tileId).toBe('RV2_R1C1');
+    expect(result.game.tileDeck[0]).toBe('RV2_R1C2');
+    expect(result.game.tileDeck).not.toContain('RV1_R1C1');
+    expect(result.game.tileDeck).not.toContain('RV1_R3C2');
+
+    const firstNonRiverIndex = result.game.tileDeck.findIndex(
+      (tileId) => !tileId.startsWith('RV1_') && !tileId.startsWith('RV2_')
+    );
+    if (firstNonRiverIndex <= 1) {
+      throw new Error('Expected combined river tiles to lead the draw deck.');
+    }
+
+    const riverSegment = result.game.tileDeck.slice(0, firstNonRiverIndex);
+    expect(riverSegment.slice(-2).sort()).toEqual(['RV2_R3C3', 'RV2_R3C4']);
+    expect(riverSegment.filter((tileId) => tileId.startsWith('RV1_'))).toHaveLength(10);
+  });
+
+  it('keeps base-game starting tile in sandbox mode with River 2 enabled', () => {
+    const service = new InMemoryGameService(() => 'game-river2-sandbox');
+    const result = service.startGame(lobbyPlayers, { mode: 'sandbox', addons: ['river_2'] });
+
+    if (result.type !== 'success') {
+      throw new Error('Expected River 2 sandbox game start to succeed.');
+    }
+
+    expect(result.game.startingTileId).toBe(getStartingTileCandidates()[0]);
   });
 
   it('allows single-player starts in sandbox mode', () => {

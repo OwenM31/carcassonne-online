@@ -1,11 +1,24 @@
 import { TileId } from '../types/game';
-import type { SessionDeckSize } from '../types/session';
-import { TILE_CATALOG, TileCatalogEntry } from './catalog';
+import type { SessionAddon, SessionDeckSize } from '../types/session';
+import {
+  buildCatalogForAddons,
+  TILE_CATALOG,
+  TileCatalogEntry
+} from './catalog';
+import { isRiverAddonTileId } from './river2';
 
 export type RandomSource = () => number;
 const STANDARD_DECK_SIZE: SessionDeckSize = 'standard';
 
-function getTileCountForDeck(tileCount: number, deckSize: SessionDeckSize): number {
+function getTileCountForDeck(
+  tileId: TileId,
+  tileCount: number,
+  deckSize: SessionDeckSize
+): number {
+  if (deckSize === 'small' && isRiverAddonTileId(tileId)) {
+    return tileCount;
+  }
+
   if (deckSize === 'small') {
     return Math.ceil(tileCount / 2);
   }
@@ -15,12 +28,14 @@ function getTileCountForDeck(tileCount: number, deckSize: SessionDeckSize): numb
 
 export function buildTileDeck(
   catalog: TileCatalogEntry[] = TILE_CATALOG,
-  deckSize: SessionDeckSize = STANDARD_DECK_SIZE
+  deckSize: SessionDeckSize = STANDARD_DECK_SIZE,
+  addons: SessionAddon[] = []
 ): TileId[] {
+  const activeCatalog = catalog === TILE_CATALOG ? buildCatalogForAddons(addons) : catalog;
   const deck: TileId[] = [];
 
-  for (const tile of catalog) {
-    const copies = getTileCountForDeck(tile.count, deckSize);
+  for (const tile of activeCatalog) {
+    const copies = getTileCountForDeck(tile.id, tile.count, deckSize);
     for (let index = 0; index < copies; index += 1) {
       deck.push(tile.id);
     }
@@ -46,9 +61,11 @@ export function shuffleTileDeck(
 }
 
 export function getStartingTileCandidates(
-  catalog: TileCatalogEntry[] = TILE_CATALOG
+  catalog: TileCatalogEntry[] = TILE_CATALOG,
+  addons: SessionAddon[] = []
 ): TileId[] {
-  return catalog
+  const activeCatalog = catalog === TILE_CATALOG ? buildCatalogForAddons(addons) : catalog;
+  return activeCatalog
     .filter((tile) => tile.startingTileCandidate)
     .map((tile) => tile.id);
 }

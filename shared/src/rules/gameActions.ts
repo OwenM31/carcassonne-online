@@ -2,7 +2,11 @@
  * @description Game action dispatcher.
  */
 import type { GameAction, GameState } from '../types/game';
-import { applySkipMeepleAction, applyPlaceMeepleAction } from './gameActionMeeple';
+import {
+  applySkipMeepleAction,
+  applyPlaceMeepleAction,
+  applyReturnAbbotAction
+} from './gameActionMeeple';
 import { type GameActionResult } from './gameActionState';
 import { applySetTileOrientationAction } from './gameActionOrientation';
 import {
@@ -27,6 +31,8 @@ export function applyGameAction(state: GameState, action: GameAction): GameActio
       return applyPlaceMeepleAction(state, action);
     case 'skip_meeple':
       return applySkipMeepleAction(state, action.playerId);
+    case 'return_abbot':
+      return applyReturnAbbotAction(state, action);
     default:
       return { type: 'error', message: 'Action not supported yet.' };
   }

@@ -162,4 +162,56 @@ describe('LobbyClient', () => {
       })
     );
   });
+
+  it('sends remove_ai_player messages while connected', () => {
+    const client = new LobbyClient();
+    client.connect('ws://localhost:3001', {});
+    const socket = MockWebSocket.instances[0];
+    socket.emitOpen();
+
+    client.removeAiPlayer('session-1', 'ai-randy-1');
+
+    expect(socket.sent).toContain(
+      JSON.stringify({
+        type: 'remove_ai_player',
+        sessionId: 'session-1',
+        aiPlayerId: 'ai-randy-1'
+      })
+    );
+  });
+
+  it('sends set_session_player_color messages while connected', () => {
+    const client = new LobbyClient();
+    client.connect('ws://localhost:3001', {});
+    const socket = MockWebSocket.instances[0];
+    socket.emitOpen();
+
+    client.setSessionPlayerColor('session-1', 'blue');
+
+    expect(socket.sent).toContain(
+      JSON.stringify({
+        type: 'set_session_player_color',
+        sessionId: 'session-1',
+        color: 'blue'
+      })
+    );
+  });
+
+  it('sends targeted set_session_player_color messages while connected', () => {
+    const client = new LobbyClient();
+    client.connect('ws://localhost:3001', {});
+    const socket = MockWebSocket.instances[0];
+    socket.emitOpen();
+
+    client.setSessionPlayerColor('session-1', 'green', 'ai-randy-1');
+
+    expect(socket.sent).toContain(
+      JSON.stringify({
+        type: 'set_session_player_color',
+        sessionId: 'session-1',
+        color: 'green',
+        targetPlayerId: 'ai-randy-1'
+      })
+    );
+  });
 });

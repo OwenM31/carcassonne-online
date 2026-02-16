@@ -17,7 +17,9 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 60,
+        addons: [],
+        tileCount: 72,
+        turnTimerSeconds: 0,
         takeoverBot: 'randy'
       }
     ]);
@@ -42,12 +44,14 @@ describe('InMemorySessionService', () => {
       status: 'in_progress',
       playerCount: 2,
       players: [
-        { name: 'Ada' },
-        { name: 'Grace' }
+        { name: 'Ada', color: 'black' },
+        { name: 'Grace', color: 'red' }
       ],
       deckSize: 'standard',
       mode: 'standard',
-      turnTimerSeconds: 60,
+      addons: [],
+      tileCount: 71,
+      turnTimerSeconds: 0,
       takeoverBot: 'randy'
     });
   });
@@ -71,7 +75,9 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 60,
+        addons: [],
+        tileCount: 72,
+        turnTimerSeconds: 0,
         takeoverBot: 'randy'
       }
     ]);
@@ -92,7 +98,9 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'small',
         mode: 'standard',
-        turnTimerSeconds: 60,
+        addons: [],
+        tileCount: 43,
+        turnTimerSeconds: 0,
         takeoverBot: 'randy'
       }
     ]);
@@ -132,7 +140,9 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'standard',
         mode: 'sandbox',
-        turnTimerSeconds: 60,
+        addons: [],
+        tileCount: 72,
+        turnTimerSeconds: 0,
         takeoverBot: 'randy'
       }
     ]);
@@ -172,6 +182,8 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'standard',
         mode: 'standard',
+        addons: [],
+        tileCount: 72,
         turnTimerSeconds: 90,
         takeoverBot: 'randy'
       }
@@ -193,6 +205,8 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'standard',
         mode: 'standard',
+        addons: [],
+        tileCount: 72,
         turnTimerSeconds: 0,
         takeoverBot: 'randy'
       }
@@ -233,12 +247,26 @@ describe('InMemorySessionService', () => {
         status: 'lobby',
         playerCount: 2,
         players: [
-          { name: 'RANDY', isAi: true, aiProfile: 'randy' },
-          { name: 'RANDY 2', isAi: true, aiProfile: 'randy' }
+          {
+            name: 'RANDY',
+            color: 'black',
+            isAi: true,
+            aiProfile: 'randy',
+            aiPlayerId: 'ai-randy-1'
+          },
+          {
+            name: 'RANDY 2',
+            color: 'red',
+            isAi: true,
+            aiProfile: 'randy',
+            aiPlayerId: 'ai-randy-2'
+          }
         ],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 60,
+        addons: [],
+        tileCount: 72,
+        turnTimerSeconds: 0,
         takeoverBot: 'randy'
       }
     ]);
@@ -259,12 +287,66 @@ describe('InMemorySessionService', () => {
         status: 'lobby',
         playerCount: 2,
         players: [
-          { name: 'MARTIN', isAi: true, aiProfile: 'martin' },
-          { name: 'MARTIN 2', isAi: true, aiProfile: 'martin' }
+          {
+            name: 'MARTIN',
+            color: 'black',
+            isAi: true,
+            aiProfile: 'martin',
+            aiPlayerId: 'ai-martin-1'
+          },
+          {
+            name: 'MARTIN 2',
+            color: 'red',
+            isAi: true,
+            aiProfile: 'martin',
+            aiPlayerId: 'ai-martin-2'
+          }
         ],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 60,
+        addons: [],
+        tileCount: 72,
+        turnTimerSeconds: 0,
+        takeoverBot: 'randy'
+      }
+    ]);
+  });
+
+  it('adds JUAN players before game start and labels them in summaries', () => {
+    const service = new InMemorySessionService(() => 'session-11d');
+    service.createSession();
+
+    const first = service.addAiPlayer('session-11d', 'juan');
+    const second = service.addAiPlayer('session-11d', 'juan');
+
+    expect(first.type).toBe('success');
+    expect(second.type).toBe('success');
+    expect(service.listSessions()).toEqual([
+      {
+        id: 'session-11d',
+        status: 'lobby',
+        playerCount: 2,
+        players: [
+          {
+            name: 'JUAN',
+            color: 'black',
+            isAi: true,
+            aiProfile: 'juan',
+            aiPlayerId: 'ai-juan-1'
+          },
+          {
+            name: 'JUAN 2',
+            color: 'red',
+            isAi: true,
+            aiProfile: 'juan',
+            aiPlayerId: 'ai-juan-2'
+          }
+        ],
+        deckSize: 'standard',
+        mode: 'standard',
+        addons: [],
+        tileCount: 72,
+        turnTimerSeconds: 0,
         takeoverBot: 'randy'
       }
     ]);
@@ -285,8 +367,33 @@ describe('InMemorySessionService', () => {
         players: [],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 60,
+        addons: [],
+        tileCount: 72,
+        turnTimerSeconds: 0,
         takeoverBot: 'martin'
+      }
+    ]);
+  });
+
+  it('updates takeover bot to JUAN before game start', () => {
+    const service = new InMemorySessionService(() => 'session-11e');
+    service.createSession();
+
+    const result = service.updateSessionTakeoverBot('session-11e', 'juan');
+
+    expect(result.type).toBe('success');
+    expect(service.listSessions()).toEqual([
+      {
+        id: 'session-11e',
+        status: 'lobby',
+        playerCount: 0,
+        players: [],
+        deckSize: 'standard',
+        mode: 'standard',
+        addons: [],
+        tileCount: 72,
+        turnTimerSeconds: 0,
+        takeoverBot: 'juan'
       }
     ]);
   });
@@ -325,5 +432,111 @@ describe('InMemorySessionService', () => {
       type: 'error',
       message: 'Cannot change takeover bot after game start.'
     });
+  });
+
+  it('removes AI players before game start', () => {
+    const service = new InMemorySessionService(() => 'session-14');
+    service.createSession();
+    service.addAiPlayer('session-14', 'randy');
+
+    const result = service.removeAiPlayer('session-14', 'ai-randy-1');
+
+    expect(result.type).toBe('success');
+    expect(service.listSessions()).toEqual([
+      {
+        id: 'session-14',
+        status: 'lobby',
+        playerCount: 0,
+        players: [],
+        deckSize: 'standard',
+        mode: 'standard',
+        addons: [],
+        tileCount: 72,
+        turnTimerSeconds: 0,
+        takeoverBot: 'randy'
+      }
+    ]);
+  });
+
+  it('rejects AI removal after game start', () => {
+    const service = new InMemorySessionService(() => 'session-15');
+    const session = service.createSession();
+    service.addAiPlayer('session-15', 'martin');
+    session.lobbyService.join('p1', 'Ada');
+    session.gameService.startGame([
+      { id: 'p1', name: 'Ada' },
+      { id: 'ai-martin-1', name: 'MARTIN' }
+    ]);
+
+    const result = service.removeAiPlayer('session-15', 'ai-martin-1');
+
+    expect(result).toEqual({
+      type: 'error',
+      message: 'Cannot remove AI players after game start.'
+    });
+  });
+
+  it('allows players to change bot colors before game start', () => {
+    const service = new InMemorySessionService(() => 'session-15a');
+    const session = service.createSession();
+    session.lobbyService.join('p1', 'Ada');
+    session.lobbyService.join('p2', 'Grace');
+    service.addAiPlayer('session-15a', 'randy');
+
+    const result = service.updateSessionPlayerColor('session-15a', 'p1', 'ai-randy-1', 'green');
+
+    expect(result.type).toBe('success');
+    expect(service.listSessions()).toEqual([
+      {
+        id: 'session-15a',
+        status: 'lobby',
+        playerCount: 3,
+        players: [
+          { name: 'Ada', color: 'black' },
+          { name: 'Grace', color: 'red' },
+          {
+            name: 'RANDY',
+            color: 'green',
+            isAi: true,
+            aiProfile: 'randy',
+            aiPlayerId: 'ai-randy-1'
+          }
+        ],
+        deckSize: 'standard',
+        mode: 'standard',
+        addons: [],
+        tileCount: 72,
+        turnTimerSeconds: 0,
+        takeoverBot: 'randy'
+      }
+    ]);
+  });
+
+  it('rejects changing another human player color', () => {
+    const service = new InMemorySessionService(() => 'session-15b');
+    const session = service.createSession();
+    session.lobbyService.join('p1', 'Ada');
+    session.lobbyService.join('p2', 'Grace');
+
+    const result = service.updateSessionPlayerColor('session-15b', 'p1', 'p2', 'green');
+
+    expect(result).toEqual({
+      type: 'error',
+      message: 'Only bot colors can be changed for other players.'
+    });
+  });
+
+  it('marks the viewing player in personalized summaries', () => {
+    const service = new InMemorySessionService(() => 'session-16');
+    const session = service.createSession();
+    session.lobbyService.join('p1', 'Ada');
+    session.lobbyService.join('p2', 'Grace');
+
+    const [summary] = service.listSessions('p2');
+
+    expect(summary.players).toEqual([
+      { name: 'Ada', color: 'black' },
+      { name: 'Grace', color: 'red', isYou: true }
+    ]);
   });
 });

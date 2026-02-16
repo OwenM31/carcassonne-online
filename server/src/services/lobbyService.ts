@@ -1,11 +1,17 @@
 import { createHash } from 'crypto';
-import type { LobbyState, PlayerId } from '@carcassonne/shared';
+import type { LobbyState, PlayerColor, PlayerId } from '@carcassonne/shared';
 
 export type RejoinValidationResult = 'allowed' | 'incorrect_passkey' | 'pin_not_set';
+export type LobbyColorUpdateResult =
+  | { type: 'success'; lobby: LobbyState }
+  | { type: 'error'; message: string };
+
+const PLAYER_COLORS: PlayerColor[] = ['black', 'red', 'yellow', 'green', 'blue', 'gray', 'pink'];
 
 export interface LobbyService {
   join(playerId: PlayerId, playerName: string, playerPin?: string): LobbyState;
   leave(playerId: PlayerId): LobbyState;
+  setPlayerColor(playerId: PlayerId, color: PlayerColor): LobbyColorUpdateResult;
   getState(): LobbyState;
   lockGameRejoinPins(playerIds: PlayerId[]): void;
   clearGameRejoinPins(): void;
@@ -15,7 +21,7 @@ export interface LobbyService {
 }
 
 export class InMemoryLobbyService implements LobbyService {
-  private players = new Map<PlayerId, { id: PlayerId; name: string }>();
+  private players = new Map<PlayerId, { id: PlayerId; name: string; color: PlayerColor }>();
   private playerPinHashById = new Map<PlayerId, string | null>();
   private gameRejoinPinHashById = new Map<PlayerId, string | null>();
 
@@ -24,8 +30,12 @@ export class InMemoryLobbyService implements LobbyService {
     playerPinHashes: Record<PlayerId, string | null> = {},
     gameRejoinPinHashes: Record<PlayerId, string | null> = {}
   ) {
-    initialState?.players.forEach((player) => {
-      this.players.set(player.id, { id: player.id, name: player.name });
+    initialState?.players.forEach((player, index) => {
+      this.players.set(player.id, {
+        id: player.id,
+        name: player.name,
+        color: resolvePlayerColor(player.color, this.players, index)
+      });
     });
     Object.entries(playerPinHashes).forEach(([playerId, pinHash]) => {
       this.playerPinHashById.set(playerId, pinHash ?? null);
@@ -36,7 +46,12 @@ export class InMemoryLobbyService implements LobbyService {
   }
 
   join(playerId: PlayerId, playerName: string, playerPin?: string): LobbyState {
-    this.players.set(playerId, { id: playerId, name: playerName });
+    const existing = this.players.get(playerId);
+    this.players.set(playerId, {
+      id: playerId,
+      name: playerName,
+      color: existing?.color ?? firstAvailableColor(this.players)
+    });
     const pinHash = parsePlayerPinHash(playerPin);
     if (pinHash !== undefined) {
       this.playerPinHashById.set(playerId, pinHash);
@@ -50,6 +65,23 @@ export class InMemoryLobbyService implements LobbyService {
   leave(playerId: PlayerId): LobbyState {
     this.players.delete(playerId);
     return this.getState();
+  }
+
+  setPlayerColor(playerId: PlayerId, color: PlayerColor): LobbyColorUpdateResult {
+    const target = this.players.get(playerId);
+    if (!target) {
+      return { type: 'error', message: 'Player not found in lobby.' };
+    }
+
+    const isColorUsed = Array.from(this.players.values()).some(
+      (player) => player.id !== playerId && player.color === color
+    );
+    if (isColorUsed) {
+      return { type: 'error', message: 'Color is already taken.' };
+    }
+
+    this.players.set(playerId, { ...target, color });
+    return { type: 'success', lobby: this.getState() };
   }
 
   getState(): LobbyState {
@@ -107,4 +139,23 @@ function parsePlayerPinHash(playerPin: string | undefined): string | null | unde
   }
 
   return createHash('sha256').update(normalizedPin).digest('hex');
+}
+
+function firstAvailableColor(
+  players: Map<PlayerId, { id: PlayerId; name: string; color: PlayerColor }>
+): PlayerColor {
+  const used = new Set(Array.from(players.values()).map((player) => player.color));
+  return PLAYER_COLORS.find((color) => !used.has(color)) ?? PLAYER_COLORS[0];
+}
+
+function resolvePlayerColor(
+  color: PlayerColor | undefined,
+  players: Map<PlayerId, { id: PlayerId; name: string; color: PlayerColor }>,
+  fallbackIndex: number
+): PlayerColor {
+  if (color && !Array.from(players.values()).some((player) => player.color === color)) {
+    return color;
+  }
+
+  return firstAvailableColor(players) ?? PLAYER_COLORS[fallbackIndex % PLAYER_COLORS.length];
 }

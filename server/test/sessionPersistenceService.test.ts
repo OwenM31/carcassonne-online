@@ -35,9 +35,11 @@ describe('FileSessionPersistenceService', () => {
       id: 'session-1',
       status: 'in_progress',
       playerCount: 2,
-      players: [{ name: 'Ada' }, { name: 'Grace' }],
+      players: [{ name: 'Ada', color: 'black' }, { name: 'Grace', color: 'red' }],
       deckSize: 'small',
       mode: 'sandbox',
+      addons: [],
+      tileCount: 42,
       turnTimerSeconds: 90,
       takeoverBot: 'randy'
     });
@@ -77,11 +79,57 @@ describe('FileSessionPersistenceService', () => {
         id: 'session-3',
         status: 'lobby',
         playerCount: 1,
-        players: [{ name: 'MARTIN', isAi: true, aiProfile: 'martin' }],
+        players: [
+          {
+            name: 'MARTIN',
+            color: 'black',
+            isAi: true,
+            aiProfile: 'martin',
+            aiPlayerId: 'ai-martin-1'
+          }
+        ],
         deckSize: 'standard',
         mode: 'standard',
-        turnTimerSeconds: 60,
+        addons: [],
+        tileCount: 72,
+        turnTimerSeconds: 0,
         takeoverBot: 'martin'
+      }
+    ]);
+  });
+
+  it('persists JUAN as a takeover bot profile', () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'carc-session-'));
+    const stateFile = path.join(tempDir, 'sessions.json');
+    const persistence = new FileSessionPersistenceService(stateFile);
+    const service = new InMemorySessionService(() => 'session-4', undefined, persistence);
+
+    service.createSession();
+    service.addAiPlayer('session-4', 'juan');
+    service.updateSessionTakeoverBot('session-4', 'juan');
+    service.persist();
+
+    const restored = new InMemorySessionService(() => 'session-next', undefined, persistence);
+    expect(restored.listSessions()).toEqual([
+      {
+        id: 'session-4',
+        status: 'lobby',
+        playerCount: 1,
+        players: [
+          {
+            name: 'JUAN',
+            color: 'black',
+            isAi: true,
+            aiProfile: 'juan',
+            aiPlayerId: 'ai-juan-1'
+          }
+        ],
+        deckSize: 'standard',
+        mode: 'standard',
+        addons: [],
+        tileCount: 72,
+        turnTimerSeconds: 0,
+        takeoverBot: 'juan'
       }
     ]);
   });

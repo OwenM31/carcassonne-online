@@ -8,6 +8,7 @@ import type {
   PlayerId,
   SessionAiProfile,
   SessionDeckSize,
+  SessionAddon,
   SessionMode,
   SessionTurnTimer,
   ServerMessage,
@@ -26,6 +27,10 @@ type AddAiPlayerResult =
   | { type: 'success'; lobby: LobbyState }
   | { type: 'error'; message: string };
 type AddAiPlayer = (aiProfile: SessionAiProfile) => AddAiPlayerResult;
+type RemoveAiPlayerResult =
+  | { type: 'success'; lobby: LobbyState }
+  | { type: 'error'; message: string };
+type RemoveAiPlayer = (aiPlayerId: PlayerId) => RemoveAiPlayerResult;
 type IsAiPlayer = (playerId: PlayerId) => boolean;
 
 export function createLobbyController(
@@ -35,15 +40,21 @@ export function createLobbyController(
   getSessionConfig: () => {
     deckSize: SessionDeckSize;
     mode: SessionMode;
+    addons: SessionAddon[];
     turnTimerSeconds: SessionTurnTimer;
   } = () => ({
     deckSize: 'standard',
     mode: 'standard',
-    turnTimerSeconds: 60
+    addons: [],
+    turnTimerSeconds: 0
   }),
   addAiPlayer: AddAiPlayer = () => ({
     type: 'error',
     message: 'Adding AI players is not available.'
+  }),
+  removeAiPlayer: RemoveAiPlayer = () => ({
+    type: 'error',
+    message: 'Removing AI players is not available.'
   }),
   isAiPlayer: IsAiPlayer = () => false
 ): LobbyController {
@@ -52,6 +63,14 @@ export function createLobbyController(
       switch (message.type) {
         case 'add_ai_player': {
           const result = addAiPlayer(message.aiProfile ?? 'randy');
+          if (result.type === 'error') {
+            return { type: 'error', message: result.message };
+          }
+
+          return { type: 'lobby_state', sessionId, lobby: result.lobby };
+        }
+        case 'remove_ai_player': {
+          const result = removeAiPlayer(message.aiPlayerId);
           if (result.type === 'error') {
             return { type: 'error', message: result.message };
           }

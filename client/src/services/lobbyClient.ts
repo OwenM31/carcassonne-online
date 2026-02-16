@@ -4,8 +4,11 @@
 import type {
   ClientMessage,
   Coordinate,
+  MeepleKind,
   MeeplePlacement,
   Orientation,
+  PlayerColor,
+  SessionAddon,
   SessionAiProfile,
   SessionDeckSize,
   SessionMode,
@@ -65,9 +68,10 @@ export class LobbyClient {
   createSession(
     deckSize: SessionDeckSize = 'standard',
     mode: SessionMode = 'standard',
-    turnTimerSeconds: SessionTurnTimer = 60
+    addons: SessionAddon[] = [],
+    turnTimerSeconds: SessionTurnTimer = 0
   ) {
-    this.send({ type: 'create_session', deckSize, mode, turnTimerSeconds });
+    this.send({ type: 'create_session', deckSize, mode, addons, turnTimerSeconds });
   }
 
   setSessionDeckSize(sessionId: string, deckSize: SessionDeckSize) {
@@ -76,6 +80,14 @@ export class LobbyClient {
 
   setSessionMode(sessionId: string, mode: SessionMode) {
     this.send({ type: 'set_session_mode', sessionId, mode });
+  }
+
+  setSessionAddons(sessionId: string, addons: SessionAddon[]) {
+    this.send({ type: 'set_session_addons', sessionId, addons });
+  }
+
+  setSessionPlayerColor(sessionId: string, color: PlayerColor, targetPlayerId?: string) {
+    this.send({ type: 'set_session_player_color', sessionId, color, targetPlayerId });
   }
 
   setSessionTurnTimer(sessionId: string, turnTimerSeconds: SessionTurnTimer) {
@@ -88,6 +100,10 @@ export class LobbyClient {
 
   addAiPlayer(sessionId: string, aiProfile: SessionAiProfile = 'randy') {
     this.send({ type: 'add_ai_player', sessionId, aiProfile });
+  }
+
+  removeAiPlayer(sessionId: string, aiPlayerId: string) {
+    this.send({ type: 'remove_ai_player', sessionId, aiPlayerId });
   }
 
   deleteSession(sessionId: string) {
@@ -136,12 +152,21 @@ export class LobbyClient {
     this.send({ type: 'set_tile_orientation', sessionId, playerId, orientation });
   }
 
-  placeMeeple(sessionId: string, playerId: string, placement: MeeplePlacement) {
-    this.send({ type: 'place_meeple', sessionId, playerId, placement });
+  placeMeeple(
+    sessionId: string,
+    playerId: string,
+    placement: MeeplePlacement,
+    kind: MeepleKind = 'normal'
+  ) {
+    this.send({ type: 'place_meeple', sessionId, playerId, placement, kind });
   }
 
   skipMeeple(sessionId: string, playerId: string) {
     this.send({ type: 'skip_meeple', sessionId, playerId });
+  }
+
+  returnAbbot(sessionId: string, playerId: string) {
+    this.send({ type: 'return_abbot', sessionId, playerId });
   }
 
   disconnect() {

@@ -5,10 +5,13 @@ import type { ServerMessage } from '@carcassonne/shared';
 
 import type { SessionService } from '../services/sessionService';
 
-export function buildSessionListMessage(service: SessionService): ServerMessage {
+export function buildSessionListMessage(
+  service: SessionService,
+  viewerPlayerId?: string
+): ServerMessage {
   return {
     type: 'session_list',
-    sessions: service.listSessions()
+    sessions: service.listSessions(viewerPlayerId)
   };
 }
 

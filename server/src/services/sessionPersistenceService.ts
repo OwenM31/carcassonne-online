@@ -3,13 +3,16 @@
  */
 import fs from 'fs';
 import path from 'path';
-import type {
-  LobbyState,
-  SessionDeckSize,
-  SessionId,
-  SessionMode,
-  SessionTakeoverBot,
-  SessionTurnTimer
+import {
+  SESSION_ADDONS,
+  type LobbyState,
+  type PlayerColor,
+  type SessionAddon,
+  type SessionDeckSize,
+  type SessionId,
+  type SessionMode,
+  type SessionTakeoverBot,
+  type SessionTurnTimer
 } from '@carcassonne/shared';
 
 import type { GameServiceSnapshot } from './gameServiceSnapshot';
@@ -18,6 +21,7 @@ export interface PersistedSessionSnapshot {
   id: SessionId;
   deckSize: SessionDeckSize;
   mode: SessionMode;
+  addons: SessionAddon[];
   turnTimerSeconds: SessionTurnTimer;
   takeoverBot: SessionTakeoverBot;
   aiPlayerIds: string[];
@@ -77,7 +81,7 @@ function decodeSnapshots(value: unknown): PersistedSessionSnapshot[] {
 
     const turnTimerSeconds = isSessionTurnTimer(entry.turnTimerSeconds)
       ? entry.turnTimerSeconds
-      : 60;
+      : 0;
     const takeoverBot = isSessionTakeoverBot(entry.takeoverBot)
       ? entry.takeoverBot
       : 'randy';
@@ -88,12 +92,14 @@ function decodeSnapshots(value: unknown): PersistedSessionSnapshot[] {
       ? entry.gameRejoinPinHashes
       : {};
     const aiPlayerIds = isStringArray(entry.aiPlayerIds) ? entry.aiPlayerIds : [];
+    const addons = isSessionAddons(entry.addons) ? entry.addons : [];
 
+    const lobby = decodeLobbyState(entry.lobby);
     if (
       typeof entry.id !== 'string' ||
       !isSessionDeckSize(entry.deckSize) ||
       !isSessionMode(entry.mode) ||
-      !isLobbyState(entry.lobby) ||
+      !lobby ||
       !isGameSnapshot(entry.game)
     ) {
       return;
@@ -103,10 +109,11 @@ function decodeSnapshots(value: unknown): PersistedSessionSnapshot[] {
       id: entry.id,
       deckSize: entry.deckSize,
       mode: entry.mode,
+      addons,
       turnTimerSeconds,
       takeoverBot,
       aiPlayerIds,
-      lobby: entry.lobby,
+      lobby,
       lobbyPinHashes,
       gameRejoinPinHashes,
       game: entry.game
@@ -129,17 +136,40 @@ function isSessionTurnTimer(value: unknown): value is SessionTurnTimer {
 }
 
 function isSessionTakeoverBot(value: unknown): value is SessionTakeoverBot {
-  return value === 'randy' || value === 'martin';
+  return value === 'randy' || value === 'martin' || value === 'juan';
 }
 
-function isLobbyState(value: unknown): value is LobbyState {
+function isSessionAddons(value: unknown): value is SessionAddon[] {
+  return (
+    Array.isArray(value) &&
+    value.every((entry) => typeof entry === 'string' && SESSION_ADDONS.includes(entry as SessionAddon)) &&
+    new Set(value).size === value.length
+  );
+}
+
+function decodeLobbyState(value: unknown): LobbyState | null {
   if (!isRecord(value) || !Array.isArray(value.players)) {
-    return false;
+    return null;
   }
 
-  return value.players.every((player) => {
-    return isRecord(player) && typeof player.id === 'string' && typeof player.name === 'string';
+  const usedColors = new Set<PlayerColor>();
+  const players = value.players.map((player, index) => {
+    if (!isRecord(player) || typeof player.id !== 'string' || typeof player.name !== 'string') {
+      return null;
+    }
+
+    const color = resolvePlayerColor(player.color, usedColors, index);
+    usedColors.add(color);
+    return { id: player.id, name: player.name, color };
   });
+
+  if (players.some((player) => !player)) {
+    return null;
+  }
+
+  return {
+    players: players as LobbyState['players']
+  };
 }
 
 function isGameSnapshot(value: unknown): value is GameServiceSnapshot {
@@ -158,6 +188,7 @@ function isGameSnapshot(value: unknown): value is GameServiceSnapshot {
       !isRecord(startConfig) ||
       !isSessionDeckSize(startConfig.deckSize) ||
       !isSessionMode(startConfig.mode) ||
+      (startConfig.addons !== undefined && !isSessionAddons(startConfig.addons)) ||
       (startConfig.turnTimerSeconds !== undefined &&
         !isSessionTurnTimer(startConfig.turnTimerSeconds))
     ) {
@@ -182,4 +213,33 @@ function isNullableStringRecord(value: unknown): value is Record<string, string 
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((entry) => typeof entry === 'string');
+}
+
+const PLAYER_COLORS: PlayerColor[] = ['black', 'red', 'yellow', 'green', 'blue', 'gray', 'pink'];
+
+function resolvePlayerColor(
+  rawColor: unknown,
+  usedColors: Set<PlayerColor>,
+  fallbackIndex: number
+): PlayerColor {
+  if (isPlayerColor(rawColor) && !usedColors.has(rawColor)) {
+    return rawColor;
+  }
+
+  return (
+    PLAYER_COLORS.find((color) => !usedColors.has(color)) ??
+    PLAYER_COLORS[fallbackIndex % PLAYER_COLORS.length]
+  );
+}
+
+function isPlayerColor(value: unknown): value is PlayerColor {
+  return (
+    value === 'black' ||
+    value === 'red' ||
+    value === 'yellow' ||
+    value === 'green' ||
+    value === 'blue' ||
+    value === 'gray' ||
+    value === 'pink'
+  );
 }

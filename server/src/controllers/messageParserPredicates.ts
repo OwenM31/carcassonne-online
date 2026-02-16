@@ -23,7 +23,7 @@ export function isMeeplePlacement(
   value: unknown
 ): value is {
   tilePosition: { x: number; y: number };
-  featureType: 'city' | 'road' | 'farm' | 'monastery';
+  featureType: 'city' | 'road' | 'farm' | 'monastery' | 'garden';
   featureIndex: number;
 } {
   return (
@@ -38,11 +38,12 @@ export function isMeeplePlacement(
 
 function isFeatureType(
   value: unknown
-): value is 'city' | 'road' | 'farm' | 'monastery' {
+): value is 'city' | 'road' | 'farm' | 'monastery' | 'garden' {
   return (
     value === 'city' ||
     value === 'road' ||
     value === 'farm' ||
-    value === 'monastery'
+    value === 'monastery' ||
+    value === 'garden'
   );
 }

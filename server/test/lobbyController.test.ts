@@ -160,7 +160,7 @@ describe('createLobbyController', () => {
       'session-1',
       lobbyService,
       gameService,
-      () => ({ deckSize: 'small', mode: 'sandbox', turnTimerSeconds: 90 })
+      () => ({ deckSize: 'small', mode: 'sandbox', addons: [], turnTimerSeconds: 90 })
     );
 
     controller.handleMessage({
@@ -277,11 +277,42 @@ describe('createLobbyController', () => {
     });
   });
 
+  it('removes AI seats through lobby actions', () => {
+    const lobbyService = new InMemoryLobbyService();
+    const gameService = new StubGameService();
+    const removeAiPlayer = jest.fn(() => ({
+      type: 'success' as const,
+      lobby: { players: [] }
+    }));
+    const controller = createLobbyController(
+      'session-1',
+      lobbyService,
+      gameService,
+      undefined,
+      undefined,
+      removeAiPlayer
+    );
+
+    const response = controller.handleMessage({
+      type: 'remove_ai_player',
+      sessionId: 'session-1',
+      aiPlayerId: 'ai-randy-1'
+    });
+
+    expect(removeAiPlayer).toHaveBeenCalledWith('ai-randy-1');
+    expect(response).toEqual({
+      type: 'lobby_state',
+      sessionId: 'session-1',
+      lobby: { players: [] }
+    });
+  });
+
   it('rejects manual joins for AI seats', () => {
     const controller = createLobbyController(
       'session-1',
       new InMemoryLobbyService(),
       new StubGameService(),
+      undefined,
       undefined,
       undefined,
       (playerId) => playerId.startsWith('ai-randy-')
@@ -309,8 +340,8 @@ function createTestGame(): GameState {
   return createGame({
     gameId: 'game-1',
     players: [
-      { id: 'p1', name: 'Ada', color: 'red' },
-      { id: 'p2', name: 'Grace', color: 'blue' }
+      { id: 'p1', name: 'Ada', color: 'yellow' },
+      { id: 'p2', name: 'Grace', color: 'green' }
     ],
     tileDeck: buildTileDeck(),
     startingTileId

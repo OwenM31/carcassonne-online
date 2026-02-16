@@ -60,6 +60,8 @@ export function isPlayerState(value: unknown): value is PlayerState {
     typeof value.name === 'string' &&
     isPlayerColor(value.color) &&
     typeof value.meeplesAvailable === 'number' &&
+    typeof value.bigMeepleAvailable === 'boolean' &&
+    typeof value.abbotAvailable === 'boolean' &&
     typeof value.score === 'number'
   );
 }
@@ -68,6 +70,7 @@ export function isPlacedMeeple(value: unknown): value is PlacedMeeple {
   return (
     isRecord(value) &&
     typeof value.playerId === 'string' &&
+    (value.kind === 'normal' || value.kind === 'big' || value.kind === 'abbot') &&
     isCoordinate(value.tilePosition) &&
     isFeatureType(value.featureType) &&
     typeof value.featureIndex === 'number' &&
@@ -121,11 +124,13 @@ export function isOrientation(value: unknown): value is PlacedTile['orientation'
 
 function isPlayerColor(value: unknown): value is PlayerState['color'] {
   return (
+    value === 'black' ||
     value === 'red' ||
-    value === 'blue' ||
-    value === 'green' ||
     value === 'yellow' ||
-    value === 'black'
+    value === 'green' ||
+    value === 'blue' ||
+    value === 'gray' ||
+    value === 'pink'
   );
 }
 
@@ -134,7 +139,8 @@ function isFeatureType(value: unknown): boolean {
     value === 'city' ||
     value === 'road' ||
     value === 'farm' ||
-    value === 'monastery'
+    value === 'monastery' ||
+    value === 'garden'
   );
 }
 
@@ -144,6 +150,7 @@ function isGameEventType(value: unknown): boolean {
     value === 'draw_tile' ||
     value === 'place_tile' ||
     value === 'place_meeple' ||
+    value === 'return_abbot' ||
     value === 'skip_meeple' ||
     value === 'score' ||
     value === 'discard_tile' ||

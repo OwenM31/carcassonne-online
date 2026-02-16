@@ -1,12 +1,14 @@
 import {
   BoardState,
   Coordinate,
+  GameState,
   Orientation,
   PlacementOption,
   TileId
 } from '../types/game';
-import { TILE_CATALOG, type Edge, type EdgeType, type TileCatalogEntry } from '../tiles';
+import { FULL_TILE_CATALOG, type Edge, type EdgeType, type TileCatalogEntry } from '../tiles';
 import { toBoardKey } from './board';
+import { isRiverPlacementAllowed } from './river2Placement';
 
 const EDGES: Edge[] = ['N', 'E', 'S', 'W'];
 const ORIENTATIONS: Orientation[] = [0, 90, 180, 270];
@@ -87,7 +89,7 @@ export const isTilePlacementValid = (
   tileId: TileId,
   position: Coordinate,
   orientation: Orientation,
-  catalog: TileCatalogEntry[] = TILE_CATALOG
+  catalog: TileCatalogEntry[] = FULL_TILE_CATALOG
 ): boolean => {
   const key = toBoardKey(position);
 
@@ -134,7 +136,7 @@ export const isTilePlacementValid = (
 export const getLegalTilePlacements = (
   board: BoardState,
   tileId: TileId,
-  catalog: TileCatalogEntry[] = TILE_CATALOG
+  catalog: TileCatalogEntry[] = FULL_TILE_CATALOG
 ): PlacementOption[] => {
   if (!findTile(tileId, catalog)) {
     return [];
@@ -153,3 +155,22 @@ export const getLegalTilePlacements = (
 
   return placements;
 };
+
+export const isTilePlacementValidForState = (
+  state: GameState,
+  tileId: TileId,
+  position: Coordinate,
+  orientation: Orientation,
+  catalog: TileCatalogEntry[] = FULL_TILE_CATALOG
+): boolean =>
+  isTilePlacementValid(state.board, tileId, position, orientation, catalog) &&
+  isRiverPlacementAllowed(state, tileId, position, orientation, catalog);
+
+export const getLegalTilePlacementsForState = (
+  state: GameState,
+  tileId: TileId,
+  catalog: TileCatalogEntry[] = FULL_TILE_CATALOG
+): PlacementOption[] =>
+  getLegalTilePlacements(state.board, tileId, catalog).filter((option) =>
+    isRiverPlacementAllowed(state, tileId, option.position, option.orientation, catalog)
+  );

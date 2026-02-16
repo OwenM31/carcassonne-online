@@ -4,6 +4,8 @@ import type {
   GameState,
   LobbyPlayer,
   PlayerColor,
+  TileId,
+  SessionAddon,
   SessionDeckSize,
   SessionMode,
   SessionTurnTimer
@@ -13,13 +15,20 @@ import {
   buildTileDeck,
   createGame,
   getStartingTileCandidates,
+  hasAnyRiver,
+  hasRiver,
+  hasRiver2,
+  orderRiverDeckForStandard,
+  RIVER_START_TILE_ID,
+  RIVER_2_START_TILE_ID,
   shuffleTileDeck
 } from '@carcassonne/shared';
 import {
   cloneGameServiceSnapshot,
   type GameServiceSnapshot
 } from './gameServiceSnapshot';
-const PLAYER_COLORS: PlayerColor[] = ['red', 'blue', 'green', 'yellow', 'black'];
+const PLAYER_COLORS: PlayerColor[] = ['black', 'red', 'yellow', 'green', 'blue', 'gray', 'pink'];
+const MAX_GAME_PLAYERS = 6;
 
 export type GameStartResult =
   | { type: 'success'; game: GameState }
@@ -28,6 +37,7 @@ export type GameStartResult =
 export interface GameStartConfig {
   deckSize?: SessionDeckSize;
   mode?: SessionMode;
+  addons?: SessionAddon[];
   turnTimerSeconds?: SessionTurnTimer;
 }
 
@@ -65,7 +75,8 @@ export class InMemoryGameService implements GameService {
   startGame(players: LobbyPlayer[], config: GameStartConfig = {}): GameStartResult {
     const deckSize = config.deckSize ?? 'standard';
     const mode = config.mode ?? 'standard';
-    const turnTimerSeconds = config.turnTimerSeconds ?? 60;
+    const addons = config.addons ?? [];
+    const turnTimerSeconds = config.turnTimerSeconds ?? 0;
 
     if (this.game) {
       return { type: 'error', message: 'Game already started.' };
@@ -79,33 +90,34 @@ export class InMemoryGameService implements GameService {
       return { type: 'error', message: 'At least 1 player is required to start sandbox mode.' };
     }
 
-    if (players.length > PLAYER_COLORS.length) {
-      return { type: 'error', message: `Only ${PLAYER_COLORS.length} players are supported.` };
+    if (players.length > MAX_GAME_PLAYERS) {
+      return { type: 'error', message: `Only ${MAX_GAME_PLAYERS} players are supported.` };
     }
 
-    const startingTiles = getStartingTileCandidates();
-    if (startingTiles.length === 0) {
+    const startingTileId = chooseStartingTileId(mode, addons);
+    if (!startingTileId) {
       return { type: 'error', message: 'No starting tile configured.' };
     }
 
     const playerSetups = players.map((player, index) => ({
       id: player.id,
       name: player.name,
-      color: PLAYER_COLORS[index]
+      color: player.color ?? PLAYER_COLORS[index]
     }));
 
     const game = createGame({
       gameId: this.gameIdFactory(),
       mode,
+      addons,
       players: playerSetups,
-      tileDeck: shuffleTileDeck(buildTileDeck(undefined, deckSize)),
-      startingTileId: startingTiles[0],
+      tileDeck: buildGameDeck(deckSize, mode, addons),
+      startingTileId,
       turnTimerSeconds
     });
 
     this.game = game;
     this.history = [];
-    this.startConfig = { deckSize, mode, turnTimerSeconds };
+    this.startConfig = { deckSize, mode, addons, turnTimerSeconds };
 
     return { type: 'success', game };
   }
@@ -171,23 +183,24 @@ export class InMemoryGameService implements GameService {
       return { type: 'error', message: 'Only the active player can act.' };
     }
 
-    const startingTiles = getStartingTileCandidates();
-    const startingTileId = startingTiles[0];
+    const addons = this.startConfig?.addons ?? [];
+    const startingTileId = chooseStartingTileId('sandbox', addons);
     if (!startingTileId) {
       return { type: 'error', message: 'No starting tile configured.' };
     }
 
     const deckSize = this.startConfig?.deckSize ?? 'standard';
-    const turnTimerSeconds = this.startConfig?.turnTimerSeconds ?? 60;
+    const turnTimerSeconds = this.startConfig?.turnTimerSeconds ?? 0;
     const resetGame = createGame({
       gameId: this.game.id,
       mode: 'sandbox',
+      addons,
       players: this.game.players.map((player) => ({
         id: player.id,
         name: player.name,
         color: player.color
       })),
-      tileDeck: shuffleTileDeck(buildTileDeck(undefined, deckSize)),
+      tileDeck: buildGameDeck(deckSize, 'sandbox', addons),
       startingTileId,
       turnTimerSeconds
     });
@@ -199,22 +212,62 @@ export class InMemoryGameService implements GameService {
 
   private hydrate(snapshot: GameServiceSnapshot): void {
     const next = cloneGameServiceSnapshot(snapshot);
-    const timerSeconds = next.startConfig?.turnTimerSeconds ?? 60;
+    const timerSeconds = next.startConfig?.turnTimerSeconds ?? 0;
     this.game = next.game ? normalizeGameState(next.game, timerSeconds) : null;
     this.history = next.history.map((state) => normalizeGameState(state, timerSeconds));
     this.startConfig = next.startConfig
       ? {
           deckSize: next.startConfig.deckSize,
           mode: next.startConfig.mode,
+          addons: next.startConfig.addons ?? [],
           turnTimerSeconds: timerSeconds
         }
       : null;
   }
 }
 
+function chooseStartingTileId(
+  mode: SessionMode,
+  addons: SessionAddon[]
+): TileId | null {
+  if (mode === 'standard' && hasRiver2(addons)) {
+    return RIVER_2_START_TILE_ID;
+  }
+  if (mode === 'standard' && hasRiver(addons)) {
+    return RIVER_START_TILE_ID;
+  }
+
+  const startingTiles = getStartingTileCandidates(undefined, addons);
+  return startingTiles[0] ?? null;
+}
+
+function buildGameDeck(
+  deckSize: SessionDeckSize,
+  mode: SessionMode,
+  addons: SessionAddon[]
+) {
+  const shuffledDeck = shuffleTileDeck(buildTileDeck(undefined, deckSize, addons));
+  if (mode === 'standard' && hasAnyRiver(addons)) {
+    return orderRiverDeckForStandard(shuffledDeck, addons);
+  }
+
+  return shuffledDeck;
+}
+
 function normalizeGameState(game: GameState, timerSeconds: SessionTurnTimer): GameState {
   return {
     ...game,
+    addons: game.addons ?? [],
+    players: game.players.map((player) => ({
+      ...player,
+      bigMeepleAvailable: player.bigMeepleAvailable ?? false,
+      abbotAvailable:
+        player.abbotAvailable ?? (game.addons ?? []).includes('abbot')
+    })),
+    meeples: game.meeples.map((meeple) => ({
+      ...meeple,
+      kind: meeple.kind ?? 'normal'
+    })),
     currentTileOrientation: game.currentTileOrientation ?? null,
     turnTimerSeconds: game.turnTimerSeconds ?? timerSeconds,
     turnStartedAt: game.turnStartedAt ?? new Date().toISOString()

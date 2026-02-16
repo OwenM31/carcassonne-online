@@ -3,6 +3,7 @@
  */
 import type {
   GameState,
+  SessionAddon,
   SessionDeckSize,
   SessionMode,
   SessionTurnTimer
@@ -11,6 +12,7 @@ import type {
 export interface PersistedGameStartConfig {
   deckSize: SessionDeckSize;
   mode: SessionMode;
+  addons: SessionAddon[];
   turnTimerSeconds: SessionTurnTimer;
 }
 

@@ -13,7 +13,7 @@ function createFixtureGame(gameId: string) {
   const [startingTileId] = getStartingTileCandidates();
   return createGame({
     gameId,
-    players: [{ id: 'p1', name: 'Ada', color: 'red' }],
+    players: [{ id: 'p1', name: 'Ada', color: 'yellow' }],
     tileDeck: buildTileDeck(),
     startingTileId
   });

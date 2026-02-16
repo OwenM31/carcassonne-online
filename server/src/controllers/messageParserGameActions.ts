@@ -60,11 +60,20 @@ export function parseGameActionMessage(parsed: Record<string, unknown>): ClientM
     if (!isMeeplePlacement(parsed.placement)) {
       return null;
     }
+    if (
+      parsed.kind !== undefined &&
+      parsed.kind !== 'normal' &&
+      parsed.kind !== 'big' &&
+      parsed.kind !== 'abbot'
+    ) {
+      return null;
+    }
     return {
       type: 'place_meeple',
       sessionId: parsed.sessionId,
       playerId: parsed.playerId,
-      placement: parsed.placement
+      placement: parsed.placement,
+      kind: parsed.kind
     };
   }
 
@@ -73,6 +82,13 @@ export function parseGameActionMessage(parsed: Record<string, unknown>): ClientM
       return null;
     }
     return { type: 'skip_meeple', sessionId: parsed.sessionId, playerId: parsed.playerId };
+  }
+
+  if (parsed.type === 'return_abbot') {
+    if (typeof parsed.sessionId !== 'string' || typeof parsed.playerId !== 'string') {
+      return null;
+    }
+    return { type: 'return_abbot', sessionId: parsed.sessionId, playerId: parsed.playerId };
   }
 
   if (parsed.type === 'set_tile_orientation') {

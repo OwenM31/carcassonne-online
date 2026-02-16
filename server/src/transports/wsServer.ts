@@ -40,17 +40,17 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
   };
 
   const sendTo = (socket: WebSocket, message: ServerMessage) => {
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify(message));
-      }
-    };
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify(message));
+    }
+  };
   const turnTimerService = new TurnTimerService({ sessionService, broadcast });
   const presenceService = new SocketPresenceService(
     disconnectGraceMs,
     (sessionId, playerId) => {
       const session = sessionService.getSession(sessionId);
       if (!session) {
-        broadcast(buildSessionListMessage(sessionService));
+        broadcastSessionLists();
         return;
       }
 
@@ -61,6 +61,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         () => ({
           deckSize: session.deckSize,
           mode: session.mode,
+          addons: session.addons,
           turnTimerSeconds: session.turnTimerSeconds
         }),
         (aiProfile) => {
@@ -74,15 +75,42 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
             lobby: addResult.session.lobbyService.getState()
           };
         },
+        (aiPlayerId) => {
+          const removeResult = sessionService.removeAiPlayer(sessionId, aiPlayerId);
+          if (removeResult.type === 'error') {
+            return removeResult;
+          }
+
+          return {
+            type: 'success',
+            lobby: removeResult.session.lobbyService.getState()
+          };
+        },
         (playerId) => sessionService.isAiPlayer(sessionId, playerId)
       );
       const response = lobbyController.handleDisconnect(playerId);
       sessionService.persist();
       broadcast(response);
-      broadcast(buildSessionListMessage(sessionService));
+      broadcastSessionLists();
       turnTimerService.syncSession(sessionId);
     }
   );
+
+  function sendSessionList(socket: WebSocket): void {
+    const identity = presenceService.getIdentity(socket);
+    sendTo(socket, buildSessionListMessage(sessionService, identity?.playerId));
+  }
+
+  function broadcastSessionLists(): void {
+    for (const client of wss.clients) {
+      if (client.readyState !== WebSocket.OPEN) {
+        continue;
+      }
+
+      sendSessionList(client);
+    }
+  }
+
   const heartbeatService = new SocketHeartbeatService();
   turnTimerService.syncAllSessions();
   heartbeatService.start(heartbeatIntervalMs);
@@ -95,12 +123,17 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         return;
       }
       if (parsed.type === 'list_sessions') {
-        sendTo(socket, buildSessionListMessage(sessionService));
+        sendSessionList(socket);
         return;
       }
       if (parsed.type === 'create_session') {
-        sessionService.createSession(parsed.deckSize, parsed.mode, parsed.turnTimerSeconds);
-        broadcast(buildSessionListMessage(sessionService));
+        sessionService.createSession(
+          parsed.deckSize,
+          parsed.mode,
+          parsed.turnTimerSeconds,
+          parsed.addons
+        );
+        broadcastSessionLists();
         return;
       }
       if (parsed.type === 'set_session_deck_size') {
@@ -112,7 +145,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
           sendTo(socket, { type: 'error', message: updateResult.message });
           return;
         }
-        broadcast(buildSessionListMessage(sessionService));
+        broadcastSessionLists();
         return;
       }
       if (parsed.type === 'set_session_mode') {
@@ -124,7 +157,42 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
           sendTo(socket, { type: 'error', message: updateResult.message });
           return;
         }
-        broadcast(buildSessionListMessage(sessionService));
+        broadcastSessionLists();
+        return;
+      }
+      if (parsed.type === 'set_session_addons') {
+        const updateResult = sessionService.updateSessionAddons(
+          parsed.sessionId,
+          parsed.addons
+        );
+        if (updateResult.type === 'error') {
+          sendTo(socket, { type: 'error', message: updateResult.message });
+          return;
+        }
+        broadcastSessionLists();
+        return;
+      }
+      if (parsed.type === 'set_session_player_color') {
+        const identity = presenceService.getIdentity(socket);
+        if (!identity || identity.sessionId !== parsed.sessionId) {
+          sendTo(socket, {
+            type: 'error',
+            message: 'Join the session before changing your color.'
+          });
+          return;
+        }
+
+        const updateResult = sessionService.updateSessionPlayerColor(
+          parsed.sessionId,
+          identity.playerId,
+          parsed.targetPlayerId ?? identity.playerId,
+          parsed.color
+        );
+        if (updateResult.type === 'error') {
+          sendTo(socket, { type: 'error', message: updateResult.message });
+          return;
+        }
+        broadcastSessionLists();
         return;
       }
       if (parsed.type === 'set_session_turn_timer') {
@@ -136,7 +204,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
           sendTo(socket, { type: 'error', message: updateResult.message });
           return;
         }
-        broadcast(buildSessionListMessage(sessionService));
+        broadcastSessionLists();
         return;
       }
       if (parsed.type === 'set_session_takeover_bot') {
@@ -148,7 +216,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
           sendTo(socket, { type: 'error', message: updateResult.message });
           return;
         }
-        broadcast(buildSessionListMessage(sessionService));
+        broadcastSessionLists();
         return;
       }
       if (parsed.type === 'delete_session') {
@@ -158,7 +226,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
           return;
         }
         turnTimerService.clearSession(parsed.sessionId);
-        broadcast(buildSessionListMessage(sessionService));
+        broadcastSessionLists();
         return;
       }
       if (!hasSessionId(parsed)) {
@@ -177,6 +245,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
         () => ({
           deckSize: session.deckSize,
           mode: session.mode,
+          addons: session.addons,
           turnTimerSeconds: session.turnTimerSeconds
         }),
         (aiProfile) => {
@@ -188,6 +257,17 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
           return {
             type: 'success',
             lobby: addResult.session.lobbyService.getState()
+          };
+        },
+        (aiPlayerId) => {
+          const removeResult = sessionService.removeAiPlayer(parsed.sessionId, aiPlayerId);
+          if (removeResult.type === 'error') {
+            return removeResult;
+          }
+
+          return {
+            type: 'success',
+            lobby: removeResult.session.lobbyService.getState()
           };
         },
         (playerId) => sessionService.isAiPlayer(parsed.sessionId, playerId)
@@ -228,7 +308,7 @@ export function createWsServer({ server, sessionService }: WsServerOptions) {
       broadcast(response);
       turnTimerService.syncSession(parsed.sessionId);
       if (shouldRefreshSessions(parsed)) {
-        broadcast(buildSessionListMessage(sessionService));
+        broadcastSessionLists();
       }
     });
 

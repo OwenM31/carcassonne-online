@@ -22,6 +22,8 @@ export interface FeatureNode {
   neighbors: string[];
   openEnds: number;
   pennants: number;
+  inn: boolean;
+  cathedral: boolean;
   adjacentCityFeatureKeys: string[];
 }
 
@@ -66,6 +68,8 @@ export function buildFeatureNodes(
         ),
         openEnds: countOpenEdges(tile.position, feature.edges, board),
         pennants: feature.pennants,
+        inn: false,
+        cathedral: feature.cathedral ?? false,
         adjacentCityFeatureKeys: []
       };
     });
@@ -84,6 +88,8 @@ export function buildFeatureNodes(
         ),
         openEnds: countOpenEdges(tile.position, feature.edges, board),
         pennants: 0,
+        inn: feature.inn ?? false,
+        cathedral: false,
         adjacentCityFeatureKeys: []
       };
     });
@@ -96,16 +102,17 @@ export function buildFeatureNodes(
         tileKey,
         neighbors: getFarmFeatureNeighbors(
           tile.position,
-          feature.corners,
+          feature.zones,
           definition,
-          tileDefinitions,
-          board
+          tileDefinitions
         ),
         openEnds: 0,
         pennants: 0,
+        inn: false,
+        cathedral: false,
         adjacentCityFeatureKeys: getFarmAdjacentCityFeatureKeys(
           tile.position,
-          feature.corners,
+          feature.zones,
           definition
         )
       };
@@ -120,6 +127,23 @@ export function buildFeatureNodes(
         neighbors: [],
         openEnds: countOpenMonasteryNeighbors(tile.position, board),
         pennants: 0,
+        inn: false,
+        cathedral: false,
+        adjacentCityFeatureKeys: []
+      };
+    }
+
+    if (definition.garden) {
+      const key = toFeatureKey(tile.position, 'garden', 0);
+      nodes[key] = {
+        key,
+        type: 'garden',
+        tileKey,
+        neighbors: [],
+        openEnds: countOpenMonasteryNeighbors(tile.position, board),
+        pennants: 0,
+        inn: false,
+        cathedral: false,
         adjacentCityFeatureKeys: []
       };
     }

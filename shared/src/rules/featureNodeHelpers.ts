@@ -2,15 +2,52 @@
  * @description Helper calculations for feature-node construction.
  */
 import type { BoardState, Coordinate } from '../types/game';
+import type { FarmZone } from '../tiles';
 import { toBoardKey } from './board';
 import { toFeatureKey } from './featureKeys';
-import { CORNER_LINKS, EDGE_DELTAS, type OrientedTileDefinition } from './tileFeatures';
+import {
+  EDGE_DELTAS,
+  FARM_ZONE_ADJACENT_EDGES,
+  type OrientedTileDefinition
+} from './tileFeatures';
 
-const CORNER_EDGES: Record<string, string[]> = {
-  NW: ['N', 'W'],
-  NE: ['N', 'E'],
-  SE: ['S', 'E'],
-  SW: ['S', 'W']
+const FARM_ZONE_LINKS: Record<
+  FarmZone,
+  Array<{ edge: keyof typeof EDGE_DELTAS; dx: number; dy: number; neighborZone: FarmZone }>
+> = {
+  NNW: [
+    { edge: 'N', dx: 0, dy: 1, neighborZone: 'SSW' },
+    { edge: 'W', dx: -1, dy: 0, neighborZone: 'ENE' }
+  ],
+  NNE: [
+    { edge: 'N', dx: 0, dy: 1, neighborZone: 'SSE' },
+    { edge: 'E', dx: 1, dy: 0, neighborZone: 'WNW' }
+  ],
+  ENE: [
+    { edge: 'E', dx: 1, dy: 0, neighborZone: 'WNW' },
+    { edge: 'N', dx: 0, dy: 1, neighborZone: 'SSE' }
+  ],
+  ESE: [
+    { edge: 'E', dx: 1, dy: 0, neighborZone: 'WSW' },
+    { edge: 'S', dx: 0, dy: -1, neighborZone: 'NNE' }
+  ],
+  SSE: [
+    { edge: 'S', dx: 0, dy: -1, neighborZone: 'NNE' },
+    { edge: 'E', dx: 1, dy: 0, neighborZone: 'WSW' }
+  ],
+  SSW: [
+    { edge: 'S', dx: 0, dy: -1, neighborZone: 'NNW' },
+    { edge: 'W', dx: -1, dy: 0, neighborZone: 'ENE' }
+  ],
+  WSW: [
+    { edge: 'W', dx: -1, dy: 0, neighborZone: 'ESE' },
+    { edge: 'S', dx: 0, dy: -1, neighborZone: 'NNW' }
+  ],
+  WNW: [
+    { edge: 'W', dx: -1, dy: 0, neighborZone: 'ENE' },
+    { edge: 'N', dx: 0, dy: 1, neighborZone: 'SSE' }
+  ],
+  CENTER: []
 };
 
 export function countOpenEdges(
@@ -82,24 +119,19 @@ export function getEdgeFeatureNeighbors(
 
 export function getFarmFeatureNeighbors(
   position: Coordinate,
-  corners: string[],
+  zones: FarmZone[],
   definition: OrientedTileDefinition,
-  tileDefinitions: Record<string, OrientedTileDefinition>,
-  board: BoardState
+  tileDefinitions: Record<string, OrientedTileDefinition>
 ): string[] {
   const neighbors = new Set<string>();
 
-  corners.forEach((corner) => {
-    CORNER_LINKS[corner as keyof typeof CORNER_LINKS].forEach((link) => {
+  zones.forEach((zone) => {
+    FARM_ZONE_LINKS[zone]?.forEach((link) => {
       if (definition.edges[link.edge] === 'city') {
         return;
       }
 
       const neighborPosition = { x: position.x + link.dx, y: position.y + link.dy };
-      if (!board.tiles[toBoardKey(neighborPosition)]) {
-        return;
-      }
-
       const neighborDefinition = tileDefinitions[toBoardKey(neighborPosition)];
       if (!neighborDefinition) {
         return;
@@ -109,7 +141,7 @@ export function getFarmFeatureNeighbors(
         return;
       }
 
-      const neighborFarmIndex = neighborDefinition.farmByCorner[link.neighborCorner];
+      const neighborFarmIndex = neighborDefinition.farmByZone[link.neighborZone];
       if (neighborFarmIndex === undefined) {
         return;
       }
@@ -123,18 +155,18 @@ export function getFarmFeatureNeighbors(
 
 export function getFarmAdjacentCityFeatureKeys(
   position: Coordinate,
-  corners: string[],
+  zones: FarmZone[],
   definition: OrientedTileDefinition
 ): string[] {
   const adjacentCities = new Set<string>();
 
-  corners.forEach((corner) => {
-    CORNER_EDGES[corner]?.forEach((edge) => {
-      if (definition.edges[edge as keyof typeof definition.edges] !== 'city') {
+  zones.forEach((zone) => {
+    FARM_ZONE_ADJACENT_EDGES[zone]?.forEach((edge) => {
+      if (definition.edges[edge] !== 'city') {
         return;
       }
 
-      const cityIndex = definition.cityByEdge[edge as keyof typeof definition.cityByEdge];
+      const cityIndex = definition.cityByEdge[edge];
       if (cityIndex === undefined) {
         return;
       }

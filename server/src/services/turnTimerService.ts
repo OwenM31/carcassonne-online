@@ -175,5 +175,9 @@ function inferAiProfileFromPlayerId(playerId: PlayerId): SessionAiProfile | null
     return 'martin';
   }
 
+  if (playerId.startsWith('ai-juan-')) {
+    return 'juan';
+  }
+
   return null;
 }

@@ -3,15 +3,24 @@
  */
 import type { Orientation, TileId } from '../types/game';
 import {
-  TILE_CATALOG,
-  type Corner,
+  FULL_TILE_CATALOG,
   type Edge,
   type EdgeType,
+  type FarmZone,
   type TileCatalogEntry
 } from '../tiles';
 
 const EDGE_ORDER: Edge[] = ['N', 'E', 'S', 'W'];
-const CORNER_ORDER: Corner[] = ['NW', 'NE', 'SE', 'SW'];
+const FARM_ZONE_ORDER: FarmZone[] = [
+  'NNW',
+  'NNE',
+  'ENE',
+  'ESE',
+  'SSE',
+  'SSW',
+  'WSW',
+  'WNW'
+];
 const ORIENTATION_STEPS: Record<Orientation, number> = {
   0: 0,
   90: 1,
@@ -23,13 +32,14 @@ export interface OrientedTileDefinition {
   tileId: TileId;
   orientation: Orientation;
   edges: Record<Edge, EdgeType>;
-  cities: Array<{ edges: Edge[]; pennants: number }>;
-  roads: Array<{ edges: Edge[] }>;
-  farms: Array<{ corners: Corner[] }>;
+  cities: Array<{ edges: Edge[]; pennants: number; cathedral?: boolean }>;
+  roads: Array<{ edges: Edge[]; inn?: boolean }>;
+  farms: Array<{ zones: FarmZone[] }>;
   monastery: boolean;
+  garden: boolean;
   cityByEdge: Partial<Record<Edge, number>>;
   roadByEdge: Partial<Record<Edge, number>>;
-  farmByCorner: Partial<Record<Corner, number>>;
+  farmByZone: Partial<Record<FarmZone, number>>;
 }
 
 export const EDGE_DELTAS: Record<
@@ -42,26 +52,16 @@ export const EDGE_DELTAS: Record<
   W: { dx: -1, dy: 0, opposite: 'E' }
 };
 
-export const CORNER_LINKS: Record<
-  Corner,
-  Array<{ edge: Edge; dx: number; dy: number; neighborCorner: Corner }>
-> = {
-  NW: [
-    { edge: 'N', dx: 0, dy: 1, neighborCorner: 'SW' },
-    { edge: 'W', dx: -1, dy: 0, neighborCorner: 'NE' }
-  ],
-  NE: [
-    { edge: 'N', dx: 0, dy: 1, neighborCorner: 'SE' },
-    { edge: 'E', dx: 1, dy: 0, neighborCorner: 'NW' }
-  ],
-  SE: [
-    { edge: 'S', dx: 0, dy: -1, neighborCorner: 'NE' },
-    { edge: 'E', dx: 1, dy: 0, neighborCorner: 'SW' }
-  ],
-  SW: [
-    { edge: 'S', dx: 0, dy: -1, neighborCorner: 'NW' },
-    { edge: 'W', dx: -1, dy: 0, neighborCorner: 'SE' }
-  ]
+export const FARM_ZONE_ADJACENT_EDGES: Record<FarmZone, Edge[]> = {
+  NNW: ['N', 'W'],
+  NNE: ['N', 'E'],
+  ENE: ['E', 'N'],
+  ESE: ['E', 'S'],
+  SSE: ['S', 'E'],
+  SSW: ['S', 'W'],
+  WSW: ['W', 'S'],
+  WNW: ['W', 'N'],
+  CENTER: ['N', 'E', 'S', 'W']
 };
 
 const findTile = (
@@ -79,6 +79,23 @@ const rotateItems = <T extends string>(
     const index = order.indexOf(value);
     const nextIndex = (index + steps) % order.length;
     return order[nextIndex];
+  });
+};
+
+const rotateFarmZones = (zones: FarmZone[], orientation: Orientation): FarmZone[] => {
+  const steps = ORIENTATION_STEPS[orientation] * 2;
+  return zones.map((zone) => {
+    if (zone === 'CENTER') {
+      return 'CENTER';
+    }
+
+    const index = FARM_ZONE_ORDER.indexOf(zone);
+    if (index < 0) {
+      return zone;
+    }
+
+    const nextIndex = (index + steps) % FARM_ZONE_ORDER.length;
+    return FARM_ZONE_ORDER[nextIndex];
   });
 };
 
@@ -101,7 +118,7 @@ export const rotateEdges = (
 export function getOrientedTileDefinition(
   tileId: TileId,
   orientation: Orientation,
-  catalog: TileCatalogEntry[] = TILE_CATALOG
+  catalog: TileCatalogEntry[] = FULL_TILE_CATALOG
 ): OrientedTileDefinition | null {
   const tile = findTile(tileId, catalog);
   if (!tile) {
@@ -111,18 +128,20 @@ export function getOrientedTileDefinition(
   const edges = rotateEdges(tile.features.edges, orientation);
   const cities = tile.features.cities.map((feature) => ({
     edges: rotateItems(feature.edges, EDGE_ORDER, orientation),
-    pennants: feature.pennants
+    pennants: feature.pennants,
+    ...(feature.cathedral ? { cathedral: feature.cathedral } : {})
   }));
   const roads = tile.features.roads.map((feature) => ({
-    edges: rotateItems(feature.edges, EDGE_ORDER, orientation)
+    edges: rotateItems(feature.edges, EDGE_ORDER, orientation),
+    ...(feature.inn ? { inn: feature.inn } : {})
   }));
   const farms = tile.features.farms.map((feature) => ({
-    corners: rotateItems(feature.corners, CORNER_ORDER, orientation)
+    zones: rotateFarmZones(feature.zones, orientation)
   }));
 
   const cityByEdge: Partial<Record<Edge, number>> = {};
   const roadByEdge: Partial<Record<Edge, number>> = {};
-  const farmByCorner: Partial<Record<Corner, number>> = {};
+  const farmByZone: Partial<Record<FarmZone, number>> = {};
 
   cities.forEach((feature, index) =>
     feature.edges.forEach((edge) => {
@@ -135,8 +154,8 @@ export function getOrientedTileDefinition(
     })
   );
   farms.forEach((feature, index) =>
-    feature.corners.forEach((corner) => {
-      farmByCorner[corner] = index;
+    feature.zones.forEach((zone) => {
+      farmByZone[zone] = index;
     })
   );
 
@@ -148,8 +167,9 @@ export function getOrientedTileDefinition(
     roads,
     farms,
     monastery: tile.features.monastery,
+    garden: tile.features.garden ?? false,
     cityByEdge,
     roadByEdge,
-    farmByCorner
+    farmByZone
   };
 }

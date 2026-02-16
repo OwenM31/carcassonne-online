@@ -1,11 +1,14 @@
 /**
  * @description Parses incoming WebSocket messages into typed client actions.
  */
-import type {
-  ClientMessage,
-  SessionAiProfile,
-  SessionTakeoverBot,
-  SessionTurnTimer
+import {
+  SESSION_ADDONS,
+  type ClientMessage,
+  type PlayerColor,
+  type SessionAddon,
+  type SessionAiProfile,
+  type SessionTakeoverBot,
+  type SessionTurnTimer
 } from '@carcassonne/shared';
 import type { RawData } from 'ws';
 import { isRecord } from './messageParserPredicates';
@@ -34,6 +37,7 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
     if (
       (parsed.deckSize !== undefined && !isSessionDeckSize(parsed.deckSize)) ||
       (parsed.mode !== undefined && !isSessionMode(parsed.mode)) ||
+      (parsed.addons !== undefined && !isSessionAddons(parsed.addons)) ||
       (parsed.turnTimerSeconds !== undefined &&
         !isSessionTurnTimer(parsed.turnTimerSeconds))
     ) {
@@ -46,6 +50,9 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
     }
     if (parsed.mode !== undefined) {
       message.mode = parsed.mode;
+    }
+    if (parsed.addons !== undefined) {
+      message.addons = parsed.addons;
     }
     if (parsed.turnTimerSeconds !== undefined) {
       message.turnTimerSeconds = parsed.turnTimerSeconds;
@@ -73,6 +80,36 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
       sessionId: parsed.sessionId,
       mode: parsed.mode
     };
+  }
+
+  if (parsed.type === 'set_session_addons') {
+    if (typeof parsed.sessionId !== 'string' || !isSessionAddons(parsed.addons)) {
+      return null;
+    }
+    return {
+      type: 'set_session_addons',
+      sessionId: parsed.sessionId,
+      addons: parsed.addons
+    };
+  }
+
+  if (parsed.type === 'set_session_player_color') {
+    if (
+      typeof parsed.sessionId !== 'string' ||
+      !isPlayerColor(parsed.color) ||
+      (parsed.targetPlayerId !== undefined && typeof parsed.targetPlayerId !== 'string')
+    ) {
+      return null;
+    }
+    const message: Extract<ClientMessage, { type: 'set_session_player_color' }> = {
+      type: 'set_session_player_color',
+      sessionId: parsed.sessionId,
+      color: parsed.color
+    };
+    if (parsed.targetPlayerId !== undefined) {
+      message.targetPlayerId = parsed.targetPlayerId;
+    }
+    return message;
   }
 
   if (parsed.type === 'set_session_turn_timer') {
@@ -115,6 +152,21 @@ export function parseClientMessage(raw: RawData): ClientMessage | null {
       type: 'add_ai_player',
       sessionId: parsed.sessionId,
       aiProfile: parsed.aiProfile
+    };
+  }
+
+  if (parsed.type === 'remove_ai_player') {
+    if (
+      typeof parsed.sessionId !== 'string' ||
+      typeof parsed.aiPlayerId !== 'string'
+    ) {
+      return null;
+    }
+
+    return {
+      type: 'remove_ai_player',
+      sessionId: parsed.sessionId,
+      aiPlayerId: parsed.aiPlayerId
     };
   }
 
@@ -228,9 +280,33 @@ function isSessionTurnTimer(value: unknown): value is SessionTurnTimer {
 }
 
 function isSessionAiProfile(value: unknown): value is SessionAiProfile {
-  return value === 'randy' || value === 'martin';
+  return value === 'randy' || value === 'martin' || value === 'juan';
 }
 
 function isSessionTakeoverBot(value: unknown): value is SessionTakeoverBot {
-  return value === 'randy' || value === 'martin';
+  return value === 'randy' || value === 'martin' || value === 'juan';
+}
+
+function isPlayerColor(value: unknown): value is PlayerColor {
+  return (
+    value === 'black' ||
+    value === 'red' ||
+    value === 'yellow' ||
+    value === 'green' ||
+    value === 'blue' ||
+    value === 'gray' ||
+    value === 'pink'
+  );
+}
+
+function isSessionAddon(value: unknown): value is SessionAddon {
+  return typeof value === 'string' && SESSION_ADDONS.includes(value as SessionAddon);
+}
+
+function isSessionAddons(value: unknown): value is SessionAddon[] {
+  return (
+    Array.isArray(value) &&
+    value.every((entry) => isSessionAddon(entry)) &&
+    new Set(value).size === value.length
+  );
 }

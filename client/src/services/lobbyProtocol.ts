@@ -1,7 +1,12 @@
 /**
  * @description Runtime validation for lobby WebSocket messages.
  */
-import type { ServerMessage, SessionSummary } from '@carcassonne/shared';
+import {
+  SESSION_ADDONS,
+  type PlayerColor,
+  type ServerMessage,
+  type SessionSummary
+} from '@carcassonne/shared';
 
 import { isGameState } from './gameStateGuard';
 
@@ -70,13 +75,18 @@ function parseServerMessage(value: unknown): ServerMessage | null {
       return null;
     }
 
-    const players: { id: string; name: string }[] = [];
+    const players: { id: string; name: string; color?: PlayerColor }[] = [];
 
     for (const player of value.lobby.players) {
-      if (!isRecord(player) || typeof player.id !== 'string' || typeof player.name !== 'string') {
+      if (
+        !isRecord(player) ||
+        typeof player.id !== 'string' ||
+        typeof player.name !== 'string' ||
+        (player.color !== undefined && !isPlayerColor(player.color))
+      ) {
         return null;
       }
-      players.push({ id: player.id, name: player.name });
+      players.push({ id: player.id, name: player.name, color: player.color });
     }
 
     return { type: 'lobby_state', sessionId: value.sessionId, lobby: { players } };
@@ -116,21 +126,48 @@ function isSessionSummary(value: unknown): value is SessionSummary {
       (player) =>
         isRecord(player) &&
         typeof player.name === 'string' &&
+        isPlayerColor(player.color) &&
         (player.isAi === undefined || typeof player.isAi === 'boolean') &&
+        (player.aiPlayerId === undefined || typeof player.aiPlayerId === 'string') &&
+        (player.isYou === undefined || typeof player.isYou === 'boolean') &&
         (player.aiProfile === undefined ||
           player.aiProfile === 'randy' ||
-          player.aiProfile === 'martin')
+          player.aiProfile === 'martin' ||
+          player.aiProfile === 'juan')
     ) &&
     (value.deckSize === 'standard' || value.deckSize === 'small') &&
     (value.mode === 'standard' || value.mode === 'sandbox') &&
+    Array.isArray(value.addons) &&
+    value.addons.every(
+      (addon) =>
+        typeof addon === 'string' &&
+        SESSION_ADDONS.includes(addon as (typeof SESSION_ADDONS)[number])
+    ) &&
+    new Set(value.addons).size === value.addons.length &&
+    typeof value.tileCount === 'number' &&
+    value.tileCount >= 0 &&
     (value.turnTimerSeconds === 0 ||
       value.turnTimerSeconds === 30 ||
       value.turnTimerSeconds === 60 ||
       value.turnTimerSeconds === 90) &&
-    (value.takeoverBot === 'randy' || value.takeoverBot === 'martin')
+    (value.takeoverBot === 'randy' ||
+      value.takeoverBot === 'martin' ||
+      value.takeoverBot === 'juan')
   );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
+}
+
+function isPlayerColor(value: unknown): value is PlayerColor {
+  return (
+    value === 'black' ||
+    value === 'red' ||
+    value === 'yellow' ||
+    value === 'green' ||
+    value === 'blue' ||
+    value === 'gray' ||
+    value === 'pink'
+  );
 }

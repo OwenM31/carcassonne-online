@@ -36,8 +36,8 @@ function createStateBeforeScoring(): GameState {
     startingTileId: 'T_R3C4',
     tileDeck: ['T_R1C2', 'T_R1C2'],
     players: [
-      { id: 'p1', name: 'Ada', color: 'red' },
-      { id: 'p2', name: 'Linus', color: 'blue' }
+      { id: 'p1', name: 'Ada', color: 'yellow' },
+      { id: 'p2', name: 'Linus', color: 'green' }
     ]
   };
   const state = createGame(setup);

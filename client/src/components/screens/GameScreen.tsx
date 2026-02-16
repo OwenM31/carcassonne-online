@@ -4,12 +4,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import type {
   GameState,
+  MeepleKind,
   MeeplePlacement,
   Orientation,
   PlacementOption,
   TileId
 } from '@carcassonne/shared';
-import { getLegalMeeplePlacements, getLegalTilePlacements } from '@carcassonne/shared';
+import {
+  getLegalMeeplePlacements,
+  getLegalTilePlacementsForState
+} from '@carcassonne/shared';
 
 import { buildGameHudState } from '../../state/gameHud';
 import { useGameReplay } from '../../state/gameReplay';
@@ -32,8 +36,9 @@ interface GameScreenProps {
   onDrawSandboxTile: (tileId: TileId) => void;
   onPlaceTile: (tileId: TileId, placement: PlacementOption) => void;
   onSetTileOrientation: (orientation: Orientation) => void;
-  onPlaceMeeple: (placement: MeeplePlacement) => void;
+  onPlaceMeeple: (placement: MeeplePlacement, kind: MeepleKind) => void;
   onSkipMeeple: () => void;
+  onReturnAbbot: () => void;
   onUndo: () => void;
   onResetSandboxBoard: () => void;
   error?: string | null;
@@ -49,6 +54,7 @@ export function GameScreen({
   onSetTileOrientation,
   onPlaceMeeple,
   onSkipMeeple,
+  onReturnAbbot,
   onUndo,
   onResetSandboxBoard,
   error,
@@ -59,8 +65,10 @@ export function GameScreen({
   const hud = buildGameHudState(viewGame);
   const liveHud = buildGameHudState(game);
   const [selectedSandboxTileId, setSelectedSandboxTileId] = useState<TileId | null>(null);
+  const [selectedMeepleKind, setSelectedMeepleKind] = useState<MeepleKind>('normal');
   const [clockNowMs, setClockNowMs] = useState(() => Date.now());
   const [isRulesOpen, setRulesOpen] = useState(false);
+  const [autoZoomOnNewTile, setAutoZoomOnNewTile] = useState(false);
   const isSandbox = game.mode === 'sandbox';
   const liveCurrentTileId = game.currentTileId;
   const viewCurrentTileId = viewGame.currentTileId;
@@ -73,6 +81,19 @@ export function GameScreen({
   const canPlaceTile = isActivePlayer && game.phase === 'place_tile' && !!liveCurrentTileId;
   const canShowTilePlacements = replay.isCurrentView && game.phase === 'place_tile' && !!liveCurrentTileId;
   const canPlaceMeeple = isActivePlayer && game.phase === 'place_meeple';
+  const activePlayerState = game.players.find((player) => player.id === playerId) ?? null;
+  const canUseBigMeeple =
+    canPlaceMeeple &&
+    game.addons.includes('inns_and_cathedrals') &&
+    !!activePlayerState?.bigMeepleAvailable;
+  const canUseAbbot =
+    canPlaceMeeple &&
+    game.addons.includes('abbot') &&
+    !!activePlayerState?.abbotAvailable;
+  const canReturnAbbot =
+    canPlaceMeeple &&
+    game.addons.includes('abbot') &&
+    game.meeples.some((meeple) => meeple.playerId === playerId && meeple.kind === 'abbot');
   const canUndo = isActivePlayer;
   const canResetSandbox = isSandbox && isActivePlayer;
 
@@ -80,6 +101,15 @@ export function GameScreen({
     const intervalId = window.setInterval(() => setClockNowMs(Date.now()), 250);
     return () => window.clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    if (!canUseBigMeeple && selectedMeepleKind === 'big') {
+      setSelectedMeepleKind('normal');
+    }
+    if (!canUseAbbot && selectedMeepleKind === 'abbot') {
+      setSelectedMeepleKind('normal');
+    }
+  }, [canUseAbbot, canUseBigMeeple, selectedMeepleKind]);
 
   const sandboxDeckEntries = useMemo(
     () => buildSandboxDeckEntries(viewGame.tileDeck),
@@ -102,18 +132,24 @@ export function GameScreen({
       return [];
     }
 
-    return getLegalTilePlacements(game.board, liveCurrentTileId).filter(
+    return getLegalTilePlacementsForState(game, liveCurrentTileId).filter(
       (option) => option.orientation === shownOrientation
     );
-  }, [canShowTilePlacements, game.board, liveCurrentTileId, shownOrientation]);
+  }, [canShowTilePlacements, game, liveCurrentTileId, shownOrientation]);
 
-  const meepleOptions = useMemo(
+  const statusMeepleOptions = useMemo(
     () => (canPlaceMeeple ? getLegalMeeplePlacements(game) : []),
     [canPlaceMeeple, game]
   );
+  const meepleOptions = useMemo(() => {
+    if (!canPlaceMeeple) {
+      return [];
+    }
+    return getLegalMeeplePlacements(game, selectedMeepleKind);
+  }, [canPlaceMeeple, game, selectedMeepleKind]);
 
   const statusText = replay.isCurrentView
-    ? getStatusText(game, isActivePlayer, liveHud.activePlayer?.name, meepleOptions)
+    ? getStatusText(game, isActivePlayer, liveHud.activePlayer?.name, statusMeepleOptions)
     : `Read-only replay after turn ${replay.replayTurn}. Use jump to current to resume play.`;
 
   const showTurnTimer = replay.isCurrentView && isTurnTimerVisible(game);
@@ -208,12 +244,17 @@ export function GameScreen({
                 board={viewGame.board}
                 meeples={viewGame.meeples}
                 playerColorById={playerColorById}
+                autoZoomOnNewTile={autoZoomOnNewTile}
                 highlightTileId={viewGame.startingTileId}
                 placementOptions={replay.isCurrentView ? placements : []}
                 placementTileId={replay.isCurrentView ? liveCurrentTileId : null}
                 onPlaceTile={canPlaceTile ? handlePlaceTile : undefined}
                 meeplePlacementOptions={replay.isCurrentView && canPlaceMeeple ? meepleOptions : []}
-                onPlaceMeeple={replay.isCurrentView && canPlaceMeeple ? onPlaceMeeple : undefined}
+                onPlaceMeeple={
+                  replay.isCurrentView && canPlaceMeeple
+                    ? (placement) => onPlaceMeeple(placement, selectedMeepleKind)
+                    : undefined
+                }
                 onOpenRules={() => setRulesOpen(true)}
               />
             </div>
@@ -224,24 +265,32 @@ export function GameScreen({
               canPlaceTile={canPlaceTile}
               orientation={shownOrientation}
               canPlaceMeeple={canPlaceMeeple}
+              canUseBigMeeple={canUseBigMeeple}
+              canUseAbbot={canUseAbbot}
+              canReturnAbbot={canReturnAbbot}
+              selectedMeepleKind={selectedMeepleKind}
               canUndo={canUndo}
               currentTileId={viewCurrentTileId}
               error={error}
               onDrawTile={handleDrawTile}
               onUndo={onUndo}
               onRotate={handleRotate}
+              onMeepleKindChange={setSelectedMeepleKind}
               onSkipMeeple={onSkipMeeple}
+              onReturnAbbot={onReturnAbbot}
             />
           </div>
           <GameReplayHotbar
             replayTurn={replay.replayTurn}
             autoJumpOnLiveUpdate={replay.autoJumpOnLiveUpdate}
+            autoZoomOnNewTile={autoZoomOnNewTile}
             canStepBackward={replay.canStepBackward}
             canJumpCurrent={replay.canJumpCurrent}
             canStepForward={replay.canStepForward}
             showSandboxReset={isSandbox}
             canResetSandbox={canResetSandbox}
             onToggleAutoJumpOnLiveUpdate={replay.setAutoJumpOnLiveUpdate}
+            onToggleAutoZoomOnNewTile={setAutoZoomOnNewTile}
             onStepBackward={replay.stepBackward}
             onJumpCurrent={replay.jumpToCurrent}
             onStepForward={replay.stepForward}
@@ -260,7 +309,7 @@ export function GameScreen({
           />
         </section>
       ) : null}
-      <GameRulesModal open={isRulesOpen} onClose={() => setRulesOpen(false)} />
+      <GameRulesModal open={isRulesOpen} onClose={() => setRulesOpen(false)} addons={game.addons} />
     </main>
   );
 }

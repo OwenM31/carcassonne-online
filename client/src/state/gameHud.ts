@@ -9,7 +9,7 @@ import type {
   TurnPhase,
   TileId
 } from '@carcassonne/shared';
-import { analyzeBoardFeatures } from '@carcassonne/shared';
+import { analyzeBoardFeatures, countRiverTiles, hasAnyRiver } from '@carcassonne/shared';
 
 export interface ScoreboardEntry {
   id: string;
@@ -19,6 +19,10 @@ export interface ScoreboardEntry {
   meeplesAvailable: number;
   meeplesPlaced: number;
   meeplesTotal: number;
+  bigMeepleAvailable: boolean;
+  bigMeeplePlaced: boolean;
+  abbotAvailable: boolean;
+  abbotPlaced: boolean;
   isActive: boolean;
 }
 
@@ -26,8 +30,11 @@ export interface GameHudState {
   activePlayer: PlayerState | null;
   phaseLabel: string;
   deckCount: number;
+  riverDeckCount: number;
   currentTileId: TileId | null;
   scoreboard: ScoreboardEntry[];
+  hasBigMeeples: boolean;
+  hasAbbots: boolean;
   featureCounter: FeatureCounter;
   eventLog: GameEvent[];
 }
@@ -52,17 +59,27 @@ export function getActivePlayer(game: GameState): PlayerState | null {
 export function buildGameHudState(game: GameState): GameHudState {
   const activePlayer = getActivePlayer(game);
   const featureCounter = analyzeBoardFeatures(game.board).summary;
+  const hasBigMeeples = game.addons.includes('inns_and_cathedrals');
+  const hasAbbots = game.addons.includes('abbot');
+  const riverDeckCount = hasAnyRiver(game.addons) ? countRiverTiles(game.tileDeck) : 0;
 
   const scoreboard = game.players.map((player, index) => {
-    const meeplesPlaced = game.meeples.filter((meeple) => meeple.playerId === player.id).length;
+    const playerMeeples = game.meeples.filter((meeple) => meeple.playerId === player.id);
+    const normalMeeplesPlaced = playerMeeples.filter((meeple) => meeple.kind === 'normal').length;
+    const bigMeeplePlaced = playerMeeples.some((meeple) => meeple.kind === 'big');
+    const abbotPlaced = playerMeeples.some((meeple) => meeple.kind === 'abbot');
     return {
       id: player.id,
       name: player.name,
       color: player.color,
       score: player.score,
       meeplesAvailable: player.meeplesAvailable,
-      meeplesPlaced,
-      meeplesTotal: player.meeplesAvailable + meeplesPlaced,
+      meeplesPlaced: normalMeeplesPlaced,
+      meeplesTotal: player.meeplesAvailable + normalMeeplesPlaced,
+      bigMeepleAvailable: player.bigMeepleAvailable,
+      bigMeeplePlaced,
+      abbotAvailable: player.abbotAvailable,
+      abbotPlaced,
       isActive: index === game.activePlayerIndex
     };
   });
@@ -71,8 +88,11 @@ export function buildGameHudState(game: GameState): GameHudState {
     activePlayer,
     phaseLabel: formatTurnPhase(game.phase),
     deckCount: game.tileDeck.length,
+    riverDeckCount,
     currentTileId: game.currentTileId,
     scoreboard,
+    hasBigMeeples,
+    hasAbbots,
     featureCounter,
     eventLog: [...game.eventLog]
   };

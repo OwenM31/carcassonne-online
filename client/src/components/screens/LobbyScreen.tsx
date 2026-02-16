@@ -4,10 +4,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type {
   GameState,
+  PlayerColor,
+  SessionAddon,
   SessionAiProfile,
   SessionDeckSize,
   SessionMode,
-  SessionTakeoverBot,
   SessionTurnTimer
 } from '@carcassonne/shared';
 import { LobbyPanel } from '../organisms/LobbyPanel';
@@ -160,6 +161,12 @@ export function LobbyScreen() {
     }
     client.setSessionMode(sessionId, mode);
   };
+  const handleSetSessionAddons = (sessionId: string, addons: SessionAddon[]) => {
+    if (!isConnected) {
+      return;
+    }
+    client.setSessionAddons(sessionId, addons);
+  };
   const handleSetSessionTurnTimer = (
     sessionId: string,
     turnTimerSeconds: SessionTurnTimer
@@ -169,14 +176,15 @@ export function LobbyScreen() {
     }
     client.setSessionTurnTimer(sessionId, turnTimerSeconds);
   };
-  const handleSetSessionTakeoverBot = (
+  const handleSetSessionPlayerColor = (
     sessionId: string,
-    takeoverBot: SessionTakeoverBot
+    color: PlayerColor,
+    targetPlayerId?: string
   ) => {
     if (!isConnected) {
       return;
     }
-    client.setSessionTakeoverBot(sessionId, takeoverBot);
+    client.setSessionPlayerColor(sessionId, color, targetPlayerId);
   };
   const handleAddAiPlayer = (sessionId: string, aiProfile: SessionAiProfile) => {
     if (!isConnected) {
@@ -184,6 +192,13 @@ export function LobbyScreen() {
     }
 
     client.addAiPlayer(sessionId, aiProfile);
+  };
+  const handleRemoveAiPlayer = (sessionId: string, aiPlayerId: string) => {
+    if (!isConnected) {
+      return;
+    }
+
+    client.removeAiPlayer(sessionId, aiPlayerId);
   };
   const activeSession = useMemo(
     () => viewState.sessions.find((session) => session.id === activeSessionId) ?? null,
@@ -215,10 +230,11 @@ export function LobbyScreen() {
         onSetTileOrientation={(orientation) =>
           withSession((sessionId) => client.setTileOrientation(sessionId, playerId, orientation))
         }
-        onPlaceMeeple={(placement) =>
-          withSession((sessionId) => client.placeMeeple(sessionId, playerId, placement))
+        onPlaceMeeple={(placement, kind) =>
+          withSession((sessionId) => client.placeMeeple(sessionId, playerId, placement, kind))
         }
         onSkipMeeple={() => withSession((sessionId) => client.skipMeeple(sessionId, playerId))}
+        onReturnAbbot={() => withSession((sessionId) => client.returnAbbot(sessionId, playerId))}
         onUndo={() => withSession((sessionId) => client.undoTurn(sessionId, playerId))}
         onResetSandboxBoard={() =>
           withSession((sessionId) => client.resetSandboxBoard(sessionId, playerId))
@@ -239,9 +255,11 @@ export function LobbyScreen() {
       onDeleteSession={handleDeleteSession}
       onSetSessionDeckSize={handleSetSessionDeckSize}
       onSetSessionMode={handleSetSessionMode}
+      onSetSessionAddons={handleSetSessionAddons}
       onSetSessionTurnTimer={handleSetSessionTurnTimer}
-      onSetSessionTakeoverBot={handleSetSessionTakeoverBot}
+      onSetSessionPlayerColor={handleSetSessionPlayerColor}
       onAddAiPlayer={handleAddAiPlayer}
+      onRemoveAiPlayer={handleRemoveAiPlayer}
       onLeaveSession={handleLeaveSession}
       onStartGame={handleStartGame}
       isConnected={isConnected}

@@ -3,7 +3,7 @@
  */
 import type { MeeplePlacement, PlacedTile } from '@carcassonne/shared';
 
-import { getMeepleAnchor } from '../src/state/meepleLayout';
+import { getMeepleAnchor, getMeepleRoleLabel } from '../src/state/meepleLayout';
 
 describe('meepleLayout', () => {
   it('positions monastery meeples at the tile center', () => {
@@ -34,5 +34,12 @@ describe('meepleLayout', () => {
     };
 
     expect(getMeepleAnchor(placement, tile)).toEqual({ xPercent: 50, yPercent: 50 });
+  });
+
+  it('prefixes big-meeple role labels with big', () => {
+    expect(getMeepleRoleLabel('city', 'big')).toBe('big knight');
+    expect(getMeepleRoleLabel('road', 'big')).toBe('big highwayman');
+    expect(getMeepleRoleLabel('farm', 'big')).toBe('big farmer');
+    expect(getMeepleRoleLabel('city', 'normal')).toBe('knight');
   });
 });

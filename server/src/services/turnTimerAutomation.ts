@@ -2,16 +2,19 @@
  * @description Shared turn automation flow with strategy-specific decisions.
  */
 import type {
-  BoardState,
   GameState,
   Orientation,
   PlacementOption,
   PlayerId,
   SessionAiProfile
 } from '@carcassonne/shared';
-import { getLegalTilePlacements } from '@carcassonne/shared';
+import { getLegalTilePlacementsForState } from '@carcassonne/shared';
 
 import type { SessionRecord } from './sessionService';
+import {
+  chooseJuanMeeplePlacement,
+  chooseJuanTilePlacement
+} from './turnTimerAi/juanTurnStrategy';
 import {
   chooseMartinMeeplePlacement,
   chooseMartinTilePlacement
@@ -20,6 +23,7 @@ import {
   chooseRandyMeeplePlacement,
   chooseRandyTilePlacement
 } from './turnTimerAi/randyTurnStrategy';
+import { chooseMeepleKindForStrategy } from './turnTimerAi/meepleKindStrategy';
 
 export type AutomationStrategy = 'timeout' | SessionAiProfile;
 
@@ -79,30 +83,38 @@ export function runAutomatedTurn(
 
   if (game.phase === 'place_meeple') {
     if (strategy === 'timeout') {
-      const skipResult = session.gameService.applyAction({
-        type: 'skip_meeple',
-        playerId: activePlayer.id
-      });
+      const timeoutAction =
+        game.addons.includes('abbot') &&
+        game.meeples.some(
+          (meeple) => meeple.playerId === activePlayer.id && meeple.kind === 'abbot'
+        )
+          ? { type: 'return_abbot' as const, playerId: activePlayer.id }
+          : { type: 'skip_meeple' as const, playerId: activePlayer.id };
+      const skipResult = session.gameService.applyAction(timeoutAction);
       if (skipResult.type === 'error') {
         return null;
       }
       return skipResult.game;
     }
 
-    const placement =
-      strategy === 'martin'
-        ? chooseMartinMeeplePlacement(game, activePlayer.id)
-        : chooseRandyMeeplePlacement(game);
+    const placement = chooseMeeplePlacementForStrategy(game, activePlayer.id, strategy);
+    const hasPlacedAbbot =
+      game.addons.includes('abbot') &&
+      game.meeples.some(
+        (meeple) => meeple.playerId === activePlayer.id && meeple.kind === 'abbot'
+      );
     const result = placement
       ? session.gameService.applyAction({
           type: 'place_meeple',
           playerId: activePlayer.id,
-          placement
+          placement,
+          kind: chooseMeepleKindForStrategy(game, activePlayer.id, placement, strategy)
         })
-      : session.gameService.applyAction({
-          type: 'skip_meeple',
-          playerId: activePlayer.id
-        });
+      : session.gameService.applyAction(
+          hasPlacedAbbot
+            ? { type: 'return_abbot', playerId: activePlayer.id }
+            : { type: 'skip_meeple', playerId: activePlayer.id }
+        );
     if (result.type === 'error') {
       return null;
     }
@@ -124,19 +136,32 @@ function choosePlacementForStrategy(
   if (strategy === 'martin') {
     return chooseMartinTilePlacement(game, playerId);
   }
+  if (strategy === 'juan') {
+    return chooseJuanTilePlacement(game, playerId);
+  }
   return chooseRandyTilePlacement(game);
 }
 
-function chooseTimedPlacement(game: {
-  board: BoardState;
-  currentTileId: string | null;
-  currentTileOrientation: Orientation | null;
-}): PlacementOption | null {
+function chooseMeeplePlacementForStrategy(
+  game: GameState,
+  playerId: PlayerId,
+  strategy: Exclude<AutomationStrategy, 'timeout'>
+) {
+  if (strategy === 'martin') {
+    return chooseMartinMeeplePlacement(game, playerId);
+  }
+  if (strategy === 'juan') {
+    return chooseJuanMeeplePlacement(game, playerId);
+  }
+  return chooseRandyMeeplePlacement(game);
+}
+
+function chooseTimedPlacement(game: GameState): PlacementOption | null {
   if (!game.currentTileId) {
     return null;
   }
 
-  const allOptions = getLegalTilePlacements(game.board, game.currentTileId);
+  const allOptions = getLegalTilePlacementsForState(game, game.currentTileId);
   if (allOptions.length === 0) {
     return null;
   }

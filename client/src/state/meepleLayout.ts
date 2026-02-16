@@ -1,7 +1,7 @@
 /**
  * @description Helpers for rendering meeple indicators on top of board tiles.
  */
-import type { FeatureType, MeeplePlacement, PlacedTile } from '@carcassonne/shared';
+import type { FeatureType, MeepleKind, MeeplePlacement, PlacedTile } from '@carcassonne/shared';
 import { getOrientedTileDefinition } from '@carcassonne/shared';
 
 interface Anchor {
@@ -16,11 +16,16 @@ const EDGE_ANCHORS: Record<string, Anchor> = {
   W: { xPercent: 18, yPercent: 50 }
 };
 
-const CORNER_ANCHORS: Record<string, Anchor> = {
-  NW: { xPercent: 28, yPercent: 28 },
-  NE: { xPercent: 72, yPercent: 28 },
-  SE: { xPercent: 72, yPercent: 72 },
-  SW: { xPercent: 28, yPercent: 72 }
+const FARM_ZONE_ANCHORS: Record<string, Anchor> = {
+  NNW: { xPercent: 38, yPercent: 22 },
+  NNE: { xPercent: 62, yPercent: 22 },
+  ENE: { xPercent: 78, yPercent: 38 },
+  ESE: { xPercent: 78, yPercent: 62 },
+  SSE: { xPercent: 62, yPercent: 78 },
+  SSW: { xPercent: 38, yPercent: 78 },
+  WSW: { xPercent: 22, yPercent: 62 },
+  WNW: { xPercent: 22, yPercent: 38 },
+  CENTER: { xPercent: 50, yPercent: 50 }
 };
 
 const CENTER_ANCHOR: Anchor = { xPercent: 50, yPercent: 50 };
@@ -28,11 +33,17 @@ const FEATURE_ROLES: Record<FeatureType, string> = {
   city: 'knight',
   road: 'highwayman',
   farm: 'farmer',
-  monastery: 'monk'
+  monastery: 'monk',
+  garden: 'abbot'
 };
 
 export function getMeepleRole(featureType: FeatureType): string {
   return FEATURE_ROLES[featureType];
+}
+
+export function getMeepleRoleLabel(featureType: FeatureType, kind: MeepleKind = 'normal'): string {
+  const role = getMeepleRole(featureType);
+  return kind === 'big' ? `big ${role}` : role;
 }
 
 export function getMeepleAnchor(placement: MeeplePlacement, tile: PlacedTile): Anchor {
@@ -41,7 +52,7 @@ export function getMeepleAnchor(placement: MeeplePlacement, tile: PlacedTile): A
     return CENTER_ANCHOR;
   }
 
-  if (placement.featureType === 'monastery') {
+  if (placement.featureType === 'monastery' || placement.featureType === 'garden') {
     return CENTER_ANCHOR;
   }
 
@@ -56,7 +67,7 @@ export function getMeepleAnchor(placement: MeeplePlacement, tile: PlacedTile): A
   }
 
   const feature = definition.farms[placement.featureIndex];
-  return averageAnchors(feature?.corners ?? [], CORNER_ANCHORS);
+  return averageAnchors(feature?.zones ?? [], FARM_ZONE_ANCHORS);
 }
 
 function averageAnchors(

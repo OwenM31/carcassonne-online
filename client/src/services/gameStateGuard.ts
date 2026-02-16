@@ -2,6 +2,7 @@
  * @description Runtime guard for game state payloads from the server.
  */
 import type { GameState } from '@carcassonne/shared';
+import { SESSION_ADDONS } from '@carcassonne/shared';
 import {
   isBoardState,
   isGameEvent,
@@ -25,6 +26,17 @@ export function isGameState(value: unknown): value is GameState {
   }
 
   if (!isSessionMode(value.mode)) {
+    return false;
+  }
+
+  if (
+    !Array.isArray(value.addons) ||
+    value.addons.some(
+      (addon) =>
+        typeof addon !== 'string' ||
+        !SESSION_ADDONS.includes(addon as (typeof SESSION_ADDONS)[number])
+    )
+  ) {
     return false;
   }
 

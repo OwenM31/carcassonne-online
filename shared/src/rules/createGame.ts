@@ -2,14 +2,23 @@ import { GameSetup, GameState, PlacedTile, PlayerState } from '../types/game';
 import { createBoardWithTile } from './board';
 
 const DEFAULT_MEEPLES = 7;
+const INNS_AND_CATHEDRALS = 'inns_and_cathedrals';
+const ABBOT = 'abbot';
 
 export function createGame(setup: GameSetup): GameState {
   const createdAt = new Date().toISOString();
+  const addons = setup.addons ?? [];
+  const hasInnsAndCathedrals = addons.includes(INNS_AND_CATHEDRALS);
+  const hasAbbot = addons.includes(ABBOT);
   const players: PlayerState[] = setup.players.map((player) => ({
     id: player.id,
     name: player.name,
     color: player.color,
     meeplesAvailable: player.meeplesAvailable ?? DEFAULT_MEEPLES,
+    bigMeepleAvailable:
+      player.bigMeepleAvailable ?? hasInnsAndCathedrals,
+    abbotAvailable:
+      player.abbotAvailable ?? hasAbbot,
     score: 0
   }));
 
@@ -29,6 +38,7 @@ export function createGame(setup: GameSetup): GameState {
   return {
     id: setup.gameId,
     mode: setup.mode ?? 'standard',
+    addons,
     status: 'active',
     phase: 'draw_tile',
     players,
@@ -49,7 +59,7 @@ export function createGame(setup: GameSetup): GameState {
       }
     ],
     startingTileId: setup.startingTileId,
-    turnTimerSeconds: setup.turnTimerSeconds ?? 60,
+    turnTimerSeconds: setup.turnTimerSeconds ?? 0,
     turnStartedAt: createdAt,
     turnNumber: 1,
     seed: setup.seed

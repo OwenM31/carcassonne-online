@@ -31,12 +31,15 @@ function resolveScoring(state: GameState, isFinal: boolean): ScoringResolution {
       ? true
       : (component.type === 'city' ||
           component.type === 'road' ||
-          component.type === 'monastery') &&
+          component.type === 'monastery' ||
+          component.type === 'garden') &&
         component.openEnds === 0
   );
   const meeplesByComponent = indexMeeplesByComponent(state, analysis.componentByFeatureKey);
   const awardedScores: Record<string, number> = {};
-  const returnedMeeples: Record<string, number> = {};
+  const returnedNormalMeeples: Record<string, number> = {};
+  const returnedBigMeeples: Record<string, true> = {};
+  const returnedAbbots: Record<string, true> = {};
   const removeMeeplesFromComponents = new Set<string>();
   const events: GameEvent[] = [];
   const playerNames = indexPlayerNames(state.players);
@@ -56,7 +59,15 @@ function resolveScoring(state: GameState, isFinal: boolean): ScoringResolution {
     if (!isFinal) {
       removeMeeplesFromComponents.add(component.id);
       meeples.forEach((meeple) => {
-        returnedMeeples[meeple.playerId] = (returnedMeeples[meeple.playerId] ?? 0) + 1;
+        if (meeple.kind === 'big') {
+          returnedBigMeeples[meeple.playerId] = true;
+          return;
+        }
+        if (meeple.kind === 'abbot') {
+          returnedAbbots[meeple.playerId] = true;
+          return;
+        }
+        returnedNormalMeeples[meeple.playerId] = (returnedNormalMeeples[meeple.playerId] ?? 0) + 1;
       });
     }
 
@@ -73,7 +84,9 @@ function resolveScoring(state: GameState, isFinal: boolean): ScoringResolution {
   const players = state.players.map((player) => ({
     ...player,
     score: player.score + (awardedScores[player.id] ?? 0),
-    meeplesAvailable: player.meeplesAvailable + (returnedMeeples[player.id] ?? 0)
+    meeplesAvailable: player.meeplesAvailable + (returnedNormalMeeples[player.id] ?? 0),
+    bigMeepleAvailable: player.bigMeepleAvailable || !!returnedBigMeeples[player.id],
+    abbotAvailable: player.abbotAvailable || !!returnedAbbots[player.id]
   }));
   const meeples = state.meeples.filter((meeple) => {
     const featureKey = toFeatureKey(
@@ -95,24 +108,32 @@ function scoreComponent(
 ): number {
   if (!isFinal) {
     if (component.type === 'city') {
-      return component.tileKeys.length * 2 + component.pennants * 2;
+      const unit = component.hasCathedral ? 3 : 2;
+      return component.tileKeys.length * unit + component.pennants * unit;
     }
     if (component.type === 'road') {
-      return component.tileKeys.length;
+      return component.tileKeys.length * (component.hasInn ? 2 : 1);
     }
-    if (component.type === 'monastery') {
+    if (component.type === 'monastery' || component.type === 'garden') {
       return 9;
     }
     return 0;
   }
 
   if (component.type === 'city') {
-    return component.tileKeys.length + component.pennants;
+    if (component.hasCathedral && component.openEnds > 0) {
+      return 0;
+    }
+    const unit = component.hasCathedral ? 3 : 1;
+    return component.tileKeys.length * unit + component.pennants * unit;
   }
   if (component.type === 'road') {
-    return component.tileKeys.length;
+    if (component.hasInn && component.openEnds > 0) {
+      return 0;
+    }
+    return component.tileKeys.length * (component.hasInn ? 2 : 1);
   }
-  if (component.type === 'monastery') {
+  if (component.type === 'monastery' || component.type === 'garden') {
     return 9 - component.openEnds;
   }
 
@@ -125,7 +146,8 @@ function scoreComponent(
 function getMajorityPlayers(meeples: PlacedMeeple[]): string[] {
   const counts: Record<string, number> = {};
   meeples.forEach((meeple) => {
-    counts[meeple.playerId] = (counts[meeple.playerId] ?? 0) + 1;
+    const strength = meeple.kind === 'big' ? 2 : 1;
+    counts[meeple.playerId] = (counts[meeple.playerId] ?? 0) + strength;
   });
 
   const highest = Math.max(...Object.values(counts));

@@ -18,6 +18,8 @@ export interface FeatureComponent {
   tileKeys: string[];
   openEnds: number;
   pennants: number;
+  hasInn: boolean;
+  hasCathedral: boolean;
   adjacentCityComponentIds: string[];
 }
 
@@ -59,6 +61,8 @@ export function analyzeBoardFeatures(board: BoardState): BoardFeatureAnalysis {
     componentByFeatureKey[key] = componentId;
     let openEnds = 0;
     let pennants = 0;
+    let hasInn = false;
+    let hasCathedral = false;
 
     while (queue.length > 0) {
       const currentKey = queue.shift();
@@ -75,6 +79,8 @@ export function analyzeBoardFeatures(board: BoardState): BoardFeatureAnalysis {
       tileKeys.add(currentNode.tileKey);
       openEnds += currentNode.openEnds;
       pennants += currentNode.pennants;
+      hasInn ||= currentNode.inn;
+      hasCathedral ||= currentNode.cathedral;
       currentNode.adjacentCityFeatureKeys.forEach((featureKey) =>
         adjacentCityFeatures.add(featureKey)
       );
@@ -104,7 +110,7 @@ export function analyzeBoardFeatures(board: BoardState): BoardFeatureAnalysis {
       }
     } else if (node.type === 'farm') {
       summary.grasslands += 1;
-    } else {
+    } else if (node.type === 'monastery' || node.type === 'garden') {
       summary.monasteries += 1;
     }
 
@@ -115,6 +121,8 @@ export function analyzeBoardFeatures(board: BoardState): BoardFeatureAnalysis {
       tileKeys: [...tileKeys],
       openEnds,
       pennants,
+      hasInn,
+      hasCathedral,
       adjacentCityComponentIds: []
     });
 

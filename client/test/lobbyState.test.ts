@@ -51,6 +51,8 @@ describe('applyLobbyMessage', () => {
           players: [],
           deckSize: 'standard',
           mode: 'standard',
+          addons: [],
+          tileCount: 72,
           turnTimerSeconds: 60,
           takeoverBot: 'randy'
         }
@@ -65,6 +67,8 @@ describe('applyLobbyMessage', () => {
         players: [],
         deckSize: 'standard',
         mode: 'standard',
+        addons: [],
+        tileCount: 72,
         turnTimerSeconds: 60,
         takeoverBot: 'randy'
       }

@@ -46,6 +46,14 @@ describe('wsMessagePredicates', () => {
 
     expect(
       requiresBoundPlayer({
+        type: 'return_abbot',
+        sessionId: 'session-1',
+        playerId: 'p1'
+      })
+    ).toBe(true);
+
+    expect(
+      requiresBoundPlayer({
         type: 'join_lobby',
         sessionId: 'session-1',
         playerId: 'p1',
@@ -63,9 +71,25 @@ describe('wsMessagePredicates', () => {
 
     expect(
       requiresBoundPlayer({
+        type: 'remove_ai_player',
+        sessionId: 'session-1',
+        aiPlayerId: 'ai-randy-1'
+      })
+    ).toBe(false);
+
+    expect(
+      requiresBoundPlayer({
         type: 'set_session_takeover_bot',
         sessionId: 'session-1',
         takeoverBot: 'martin'
+      })
+    ).toBe(false);
+
+    expect(
+      requiresBoundPlayer({
+        type: 'set_session_takeover_bot',
+        sessionId: 'session-1',
+        takeoverBot: 'juan'
       })
     ).toBe(false);
   });
@@ -90,6 +114,14 @@ describe('wsMessagePredicates', () => {
 
     expect(
       shouldRefreshSessions({
+        type: 'return_abbot',
+        sessionId: 'session-1',
+        playerId: 'p1'
+      })
+    ).toBe(false);
+
+    expect(
+      shouldRefreshSessions({
         type: 'add_ai_player',
         sessionId: 'session-1',
         aiProfile: 'randy'
@@ -101,6 +133,22 @@ describe('wsMessagePredicates', () => {
         type: 'set_session_takeover_bot',
         sessionId: 'session-1',
         takeoverBot: 'martin'
+      })
+    ).toBe(true);
+
+    expect(
+      shouldRefreshSessions({
+        type: 'add_ai_player',
+        sessionId: 'session-1',
+        aiProfile: 'juan'
+      })
+    ).toBe(true);
+
+    expect(
+      shouldRefreshSessions({
+        type: 'remove_ai_player',
+        sessionId: 'session-1',
+        aiPlayerId: 'ai-randy-1'
       })
     ).toBe(true);
   });

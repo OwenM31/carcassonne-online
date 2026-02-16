@@ -7,6 +7,7 @@ import type {
   DrawTileAction,
   PlaceMeepleAction,
   PlaceTileAction,
+  ReturnAbbotAction,
   SetTileOrientationAction,
   SessionId,
   SkipMeepleAction
@@ -17,7 +18,8 @@ export function isLobbyMessage(message: ClientMessage): boolean {
     message.type === 'join_lobby' ||
     message.type === 'leave_lobby' ||
     message.type === 'start_game' ||
-    message.type === 'add_ai_player'
+    message.type === 'add_ai_player' ||
+    message.type === 'remove_ai_player'
   );
 }
 
@@ -28,6 +30,7 @@ type SessionGameAction = (
   | PlaceTileAction
   | PlaceMeepleAction
   | SkipMeepleAction
+  | ReturnAbbotAction
 ) & { sessionId: SessionId };
 
 export function isGameAction(message: ClientMessage): message is SessionGameAction {
@@ -37,7 +40,8 @@ export function isGameAction(message: ClientMessage): message is SessionGameActi
     message.type === 'set_tile_orientation' ||
     message.type === 'place_tile' ||
     message.type === 'place_meeple' ||
-    message.type === 'skip_meeple'
+    message.type === 'skip_meeple' ||
+    message.type === 'return_abbot'
   );
 }
 
@@ -62,6 +66,9 @@ export function shouldRefreshSessions(message: ClientMessage): boolean {
     message.type === 'leave_lobby' ||
     message.type === 'start_game' ||
     message.type === 'add_ai_player' ||
+    message.type === 'remove_ai_player' ||
+    message.type === 'set_session_addons' ||
+    message.type === 'set_session_player_color' ||
     message.type === 'set_session_takeover_bot'
   );
 }

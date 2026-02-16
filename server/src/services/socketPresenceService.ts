@@ -60,6 +60,15 @@ export class SocketPresenceService {
     return identity.sessionId === sessionId && identity.playerId === playerId;
   }
 
+  getIdentity(socket: WebSocket): PresenceIdentity | null {
+    const identity = this.sessionBySocket.get(socket);
+    if (!identity) {
+      return null;
+    }
+
+    return { ...identity };
+  }
+
   scheduleGracefulDisconnect(socket: WebSocket): void {
     const identity = this.unbind(socket);
     if (!identity) {

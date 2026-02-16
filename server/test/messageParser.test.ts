@@ -124,6 +124,44 @@ describe('parseClientMessage', () => {
     });
   });
 
+  it('parses set_session_player_color payloads', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'set_session_player_color',
+          sessionId: 'session-1',
+          color: 'blue'
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'set_session_player_color',
+      sessionId: 'session-1',
+      color: 'blue'
+    });
+  });
+
+  it('parses set_session_player_color payloads with target player ids', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'set_session_player_color',
+          sessionId: 'session-1',
+          color: 'blue',
+          targetPlayerId: 'ai-randy-1'
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'set_session_player_color',
+      sessionId: 'session-1',
+      color: 'blue',
+      targetPlayerId: 'ai-randy-1'
+    });
+  });
+
   it('parses set_session_takeover_bot payloads', () => {
     const result = parseClientMessage(
       Buffer.from(
@@ -139,6 +177,24 @@ describe('parseClientMessage', () => {
       type: 'set_session_takeover_bot',
       sessionId: 'session-1',
       takeoverBot: 'martin'
+    });
+  });
+
+  it('parses set_session_takeover_bot payloads for JUAN', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'set_session_takeover_bot',
+          sessionId: 'session-1',
+          takeoverBot: 'juan'
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'set_session_takeover_bot',
+      sessionId: 'session-1',
+      takeoverBot: 'juan'
     });
   });
 
@@ -175,6 +231,42 @@ describe('parseClientMessage', () => {
       type: 'add_ai_player',
       sessionId: 'session-1',
       aiProfile: 'martin'
+    });
+  });
+
+  it('parses add_ai_player payloads for JUAN', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'add_ai_player',
+          sessionId: 'session-1',
+          aiProfile: 'juan'
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'add_ai_player',
+      sessionId: 'session-1',
+      aiProfile: 'juan'
+    });
+  });
+
+  it('parses remove_ai_player payloads', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'remove_ai_player',
+          sessionId: 'session-1',
+          aiPlayerId: 'ai-randy-1'
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'remove_ai_player',
+      sessionId: 'session-1',
+      aiPlayerId: 'ai-randy-1'
     });
   });
 
@@ -302,6 +394,19 @@ describe('parseClientMessage', () => {
     expect(result).toBeNull();
   });
 
+  it('rejects remove_ai_player payloads without an AI id', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'remove_ai_player',
+          sessionId: 'session-1'
+        })
+      )
+    );
+
+    expect(result).toBeNull();
+  });
+
   it('rejects invalid takeover bot values', () => {
     const result = parseClientMessage(
       Buffer.from(
@@ -314,5 +419,68 @@ describe('parseClientMessage', () => {
     );
 
     expect(result).toBeNull();
+  });
+
+  it('rejects set_session_player_color payloads with non-string target ids', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'set_session_player_color',
+          sessionId: 'session-1',
+          color: 'blue',
+          targetPlayerId: 42
+        })
+      )
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it('parses place_meeple payloads with abbot kind', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'place_meeple',
+          sessionId: 'session-1',
+          playerId: 'p1',
+          kind: 'abbot',
+          placement: {
+            tilePosition: { x: 1, y: 2 },
+            featureType: 'garden',
+            featureIndex: 0
+          }
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'place_meeple',
+      sessionId: 'session-1',
+      playerId: 'p1',
+      kind: 'abbot',
+      placement: {
+        tilePosition: { x: 1, y: 2 },
+        featureType: 'garden',
+        featureIndex: 0
+      }
+    });
+  });
+
+  it('parses return_abbot payloads', () => {
+    const result = parseClientMessage(
+      Buffer.from(
+        JSON.stringify({
+          type: 'return_abbot',
+          sessionId: 'session-1',
+          playerId: 'p1'
+        })
+      )
+    );
+
+    expect(result).toEqual({
+      type: 'return_abbot',
+      sessionId: 'session-1',
+      playerId: 'p1'
+    });
   });
 });

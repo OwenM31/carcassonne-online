@@ -1,7 +1,7 @@
 /**
  * @description Right-side controls for draw/rotate/meeple actions and tile preview.
  */
-import type { Orientation, TileId } from '@carcassonne/shared';
+import type { MeepleKind, Orientation, TileId } from '@carcassonne/shared';
 import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { TileSprite } from '../atoms/TileSprite';
@@ -15,13 +15,19 @@ interface GamePlacementPanelProps {
   canPlaceTile: boolean;
   orientation: Orientation;
   canPlaceMeeple: boolean;
+  canUseBigMeeple: boolean;
+  canUseAbbot: boolean;
+  canReturnAbbot: boolean;
+  selectedMeepleKind: MeepleKind;
   canUndo: boolean;
   currentTileId: TileId | null;
   error?: string | null;
   onDrawTile: () => void;
   onUndo: () => void;
   onRotate: (step: number) => void;
+  onMeepleKindChange: (kind: MeepleKind) => void;
   onSkipMeeple: () => void;
+  onReturnAbbot: () => void;
 }
 
 export function GamePlacementPanel({
@@ -31,13 +37,19 @@ export function GamePlacementPanel({
   canPlaceTile,
   orientation,
   canPlaceMeeple,
+  canUseBigMeeple,
+  canUseAbbot,
+  canReturnAbbot,
+  selectedMeepleKind,
   canUndo,
   currentTileId,
   error,
   onDrawTile,
   onUndo,
   onRotate,
-  onSkipMeeple
+  onMeepleKindChange,
+  onSkipMeeple,
+  onReturnAbbot
 }: GamePlacementPanelProps) {
   return (
     <aside className="board-turn-panel">
@@ -71,9 +83,46 @@ export function GamePlacementPanel({
           Rotate right
         </Button>
       </div>
+      {canUseBigMeeple || canUseAbbot ? (
+        <div className="board-turn-panel__row">
+          <Button
+            type="button"
+            variant={selectedMeepleKind === 'normal' ? 'primary' : 'ghost'}
+            disabled={!canPlaceMeeple}
+            onClick={() => onMeepleKindChange('normal')}
+          >
+            Normal meeple
+          </Button>
+          {canUseBigMeeple ? (
+            <Button
+              type="button"
+              variant={selectedMeepleKind === 'big' ? 'primary' : 'ghost'}
+              disabled={!canPlaceMeeple}
+              onClick={() => onMeepleKindChange('big')}
+            >
+              Big meeple
+            </Button>
+          ) : null}
+          {canUseAbbot ? (
+            <Button
+              type="button"
+              variant={selectedMeepleKind === 'abbot' ? 'primary' : 'ghost'}
+              disabled={!canPlaceMeeple}
+              onClick={() => onMeepleKindChange('abbot')}
+            >
+              Abbot
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
       <Button type="button" variant="ghost" disabled={!canPlaceMeeple} onClick={onSkipMeeple}>
         Skip meeple
       </Button>
+      {canReturnAbbot ? (
+        <Button type="button" variant="ghost" disabled={!canPlaceMeeple} onClick={onReturnAbbot}>
+          Return abbot
+        </Button>
+      ) : null}
       {error ? <p className="error">{error}</p> : null}
     </aside>
   );

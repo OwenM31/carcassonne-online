@@ -8,22 +8,32 @@ import {
   shuffleTileDeck,
   type PlayerSetup,
   type SessionAiProfile,
-  type SessionDeckSize,
-  type SessionSummary
+  type SessionDeckSize
 } from '@carcassonne/shared';
 
 import { InMemoryGameService } from '../services/gameService';
 import { InMemoryLobbyService } from '../services/lobbyService';
-import type { SessionRecord, SessionService } from '../services/sessionService';
+import type { SessionRecord } from '../services/sessionService';
 import { TurnTimerService } from '../services/turnTimerService';
+import {
+  createProfileScoreMap,
+  formatAiProfileName,
+  inferProfileFromPlayerId,
+  resolveSimulationProfilePair,
+  type SimulationProfilePair
+} from './aiSimulationProfiles';
+import { buildSimulationSessionService } from './aiSimulationSessionService';
 
 export interface SimulationOptions {
   matches: number;
   deckSize: SessionDeckSize;
   maxTicks: number;
+  firstProfile?: SessionAiProfile;
+  secondProfile?: SessionAiProfile;
 }
 
 export interface SimulationStats {
+  profiles: SimulationProfilePair;
   wins: Record<SessionAiProfile, number>;
   scoreTotals: Record<SessionAiProfile, number>;
   ties: number;
@@ -35,16 +45,18 @@ interface MatchResult {
 }
 
 export async function runSimulation(options: SimulationOptions): Promise<SimulationStats> {
+  const profiles = resolveSimulationProfilePair(options);
   const stats: SimulationStats = {
-    wins: { randy: 0, martin: 0 },
-    scoreTotals: { randy: 0, martin: 0 },
+    profiles,
+    wins: createProfileScoreMap(),
+    scoreTotals: createProfileScoreMap(),
     ties: 0
   };
 
   for (let matchIndex = 0; matchIndex < options.matches; matchIndex += 1) {
-    const result = await simulateMatch(matchIndex, options);
-    stats.scoreTotals.randy += result.scores.randy;
-    stats.scoreTotals.martin += result.scores.martin;
+    const result = await simulateMatch(matchIndex, options, profiles);
+    stats.scoreTotals[profiles.first] += result.scores[profiles.first];
+    stats.scoreTotals[profiles.second] += result.scores[profiles.second];
 
     if (result.winner === 'tie') {
       stats.ties += 1;
@@ -56,7 +68,11 @@ export async function runSimulation(options: SimulationOptions): Promise<Simulat
   return stats;
 }
 
-function createSimulationSession(matchIndex: number, deckSize: SessionDeckSize): SessionRecord {
+function createSimulationSession(
+  matchIndex: number,
+  deckSize: SessionDeckSize,
+  profiles: SimulationProfilePair
+): SessionRecord {
   const startingTileId = getStartingTileCandidates()[0];
   if (!startingTileId) {
     throw new Error('No starting tile configured.');
@@ -65,17 +81,18 @@ function createSimulationSession(matchIndex: number, deckSize: SessionDeckSize):
   const playerOrder: PlayerSetup[] =
     matchIndex % 2 === 0
       ? [
-          { id: 'ai-randy-1', name: 'RANDY', color: 'red' },
-          { id: 'ai-martin-1', name: 'MARTIN', color: 'blue' }
+          buildAiPlayer(profiles.first, 'yellow'),
+          buildAiPlayer(profiles.second, 'green')
         ]
       : [
-          { id: 'ai-martin-1', name: 'MARTIN', color: 'red' },
-          { id: 'ai-randy-1', name: 'RANDY', color: 'blue' }
+          buildAiPlayer(profiles.second, 'yellow'),
+          buildAiPlayer(profiles.first, 'green')
         ];
 
   const game = createGame({
     gameId: `sim-game-${matchIndex + 1}`,
     mode: 'standard',
+    addons: [],
     players: playerOrder,
     tileDeck: shuffleTileDeck(buildTileDeck(undefined, deckSize)),
     startingTileId,
@@ -86,7 +103,7 @@ function createSimulationSession(matchIndex: number, deckSize: SessionDeckSize):
   const gameService = new InMemoryGameService(() => game.id, {
     game,
     history: [],
-    startConfig: { deckSize, mode: 'standard', turnTimerSeconds: 0 }
+    startConfig: { deckSize, mode: 'standard', addons: [], turnTimerSeconds: 0 }
   });
   const lobbyService = new InMemoryLobbyService();
   playerOrder.forEach((player) => lobbyService.join(player.id, player.name));
@@ -95,6 +112,7 @@ function createSimulationSession(matchIndex: number, deckSize: SessionDeckSize):
     id: `sim-session-${matchIndex + 1}`,
     deckSize,
     mode: 'standard',
+    addons: [],
     turnTimerSeconds: 0,
     takeoverBot: 'randy',
     aiPlayerIds: new Set(playerOrder.map((player) => player.id)),
@@ -103,9 +121,21 @@ function createSimulationSession(matchIndex: number, deckSize: SessionDeckSize):
   };
 }
 
-async function simulateMatch(matchIndex: number, options: SimulationOptions): Promise<MatchResult> {
-  const session = createSimulationSession(matchIndex, options.deckSize);
-  const sessionService = buildSessionService(session);
+function buildAiPlayer(profile: SessionAiProfile, color: PlayerSetup['color']): PlayerSetup {
+  return {
+    id: `ai-${profile}-1`,
+    name: formatAiProfileName(profile),
+    color
+  };
+}
+
+async function simulateMatch(
+  matchIndex: number,
+  options: SimulationOptions,
+  profiles: SimulationProfilePair
+): Promise<MatchResult> {
+  const session = createSimulationSession(matchIndex, options.deckSize, profiles);
+  const sessionService = buildSimulationSessionService(session);
   const timerService = new TurnTimerService({
     sessionService,
     broadcast: () => {}
@@ -120,17 +150,17 @@ async function simulateMatch(matchIndex: number, options: SimulationOptions): Pr
     throw new Error(`Match ${matchIndex + 1} ended without a game state.`);
   }
 
-  const scores: Record<SessionAiProfile, number> = { randy: 0, martin: 0 };
+  const scores = createProfileScoreMap();
   finalGame.players.forEach((player) => {
-    scores[inferProfile(player.id)] = player.score;
+    scores[inferProfileFromPlayerId(player.id)] = player.score;
   });
 
-  if (scores.randy === scores.martin) {
+  if (scores[profiles.first] === scores[profiles.second]) {
     return { winner: 'tie', scores };
   }
 
   return {
-    winner: scores.randy > scores.martin ? 'randy' : 'martin',
+    winner: scores[profiles.first] > scores[profiles.second] ? profiles.first : profiles.second,
     scores
   };
 }
@@ -145,39 +175,4 @@ async function waitForGameCompletion(session: SessionRecord, maxTicks: number): 
   }
 
   throw new Error(`Simulation exceeded max tick budget (${maxTicks}).`);
-}
-
-function buildSessionService(session: SessionRecord): SessionService {
-  const buildSummary = (): SessionSummary => ({
-    id: session.id,
-    status: session.gameService.getGame() ? 'in_progress' : 'lobby',
-    playerCount: session.lobbyService.getState().players.length,
-    players: session.lobbyService.getState().players.map((player) => ({
-      name: player.name,
-      isAi: true,
-      aiProfile: inferProfile(player.id)
-    })),
-    deckSize: session.deckSize,
-    mode: session.mode,
-    turnTimerSeconds: session.turnTimerSeconds,
-    takeoverBot: session.takeoverBot
-  });
-
-  return {
-    createSession: () => session,
-    updateSessionDeckSize: () => ({ type: 'success', session }),
-    updateSessionMode: () => ({ type: 'success', session }),
-    updateSessionTurnTimer: () => ({ type: 'success', session }),
-    updateSessionTakeoverBot: () => ({ type: 'success', session }),
-    addAiPlayer: () => ({ type: 'success', session }),
-    isAiPlayer: (_sessionId, playerId) => session.aiPlayerIds.has(playerId),
-    getSession: (sessionId) => (sessionId === session.id ? session : null),
-    listSessions: () => [buildSummary()],
-    deleteSession: () => false,
-    persist: () => {}
-  };
-}
-
-function inferProfile(playerId: string): SessionAiProfile {
-  return playerId.includes('martin') ? 'martin' : 'randy';
 }
