@@ -2,7 +2,7 @@ import {
   createBoardWithTile,
   getLegalTilePlacements,
   isTilePlacementValid,
-  type PlacedTile
+  PlacedTile
 } from '../src';
 
 describe('tile placement validation', () => {

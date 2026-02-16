@@ -1334,27 +1334,6 @@ button.board-tile {
   height: 100%;
 }
 
-.tile-tooltip {
-  position: absolute;
-  pointer-events: none;
-  z-index: 100;
-  padding: 0.4rem 0.8rem;
-  background: rgba(28, 24, 20, 0.92);
-  color: #fff;
-  border-radius: 0.5rem;
-  font-size: 0.85rem;
-  font-family: var(--font-display);
-  box-shadow: 0 0.3rem 0.8rem rgba(0, 0, 0, 0.25);
-  transform: translate(-50%, -130%);
-  white-space: nowrap;
-  animation: tooltip-fade 0.15s ease-out;
-}
-
-@keyframes tooltip-fade {
-  from { opacity: 0; transform: translate(-50%, -120%); }
-  to { opacity: 1; transform: translate(-50%, -130%); }
-}
-
 .field {
   display: grid;
   gap: 0.6rem;

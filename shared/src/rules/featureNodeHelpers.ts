@@ -127,7 +127,7 @@ export function getFarmFeatureNeighbors(
 
   zones.forEach((zone) => {
     FARM_ZONE_LINKS[zone]?.forEach((link) => {
-      if (definition.edges[link.edge] === 'city') {
+      if (definition.edges[link.edge] !== 'farm') {
         return;
       }
 
@@ -138,7 +138,7 @@ export function getFarmFeatureNeighbors(
       }
 
       const oppositeEdge = EDGE_DELTAS[link.edge].opposite;
-      if (neighborDefinition.edges[oppositeEdge] === 'city') {
+      if (neighborDefinition.edges[oppositeEdge] !== 'farm') {
         return;
       }
 

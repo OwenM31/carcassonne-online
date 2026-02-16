@@ -109,7 +109,6 @@ export function BoardView({
 
   const [isHighlightEnabled, setHighlightEnabled] = useState(false);
   const [hoveredFeatureKey, setHoveredFeatureKey] = useState<string | null>(null);
-  const [mousePosition, setMousePosition] = useState<{ x: number; y: number } | null>(null);
 
   const analysis = useMemo(() => analyzeBoardFeatures(board), [board]);
 
@@ -128,30 +127,8 @@ export function BoardView({
     return component;
   }, [isHighlightEnabled, hoveredFeatureKey, analysis]);
 
-  const hoveredTileInfo = useMemo(() => {
-    if (!isHighlightEnabled || !hoveredFeatureKey) {
-      return null;
-    }
-    const [posStr] = hoveredFeatureKey.split(':');
-    const tile = board.tiles[posStr];
-    if (!tile) {
-      return null;
-    }
-    const entry = FULL_TILE_CATALOG.find((e) => e.id === tile.tileId);
-    return {
-      id: tile.tileId,
-      label: (entry?.label ?? tile.tileId).replace(/_/g, ' ')
-    };
-  }, [isHighlightEnabled, hoveredFeatureKey, board.tiles]);
-
   const handleTilePointerMove = useCallback(
     (event: PointerEvent<HTMLDivElement>, tile: PlacedTile) => {
-      const shell = shellRef.current;
-      if (shell) {
-        const rect = shell.getBoundingClientRect();
-        setMousePosition({ x: event.clientX - rect.left, y: event.clientY - rect.top });
-      }
-
       if (!isHighlightEnabled) {
         return;
       }
@@ -437,7 +414,6 @@ export function BoardView({
                 onPointerMove={(e) => handleTilePointerMove(e, tile)}
                 onPointerLeave={() => {
                   setHoveredFeatureKey(null);
-                  setMousePosition(null);
                 }}
               >
                 {source ? null : <span className="board-tile__label">{tile.tileId}</span>}
@@ -647,18 +623,6 @@ export function BoardView({
           ?
         </button>
       ) : null}
-      {isHighlightEnabled && hoveredTileInfo && mousePosition && (
-        <div
-          className="tile-tooltip"
-          style={{
-            position: 'absolute',
-            left: mousePosition.x,
-            top: mousePosition.y
-          }}
-        >
-          [{hoveredTileInfo.id}] {hoveredTileInfo.label}
-        </div>
-      )}
     </div>
   );
 }
