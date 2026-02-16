@@ -14,7 +14,7 @@ function classifyPixel(r, g, b, a) {
   const min = Math.min(r, g, b);
   const chroma = max - min;
 
-  if (g > r + 5 && g > b + 20) return 'farm';
+  if (g > r + 5 && g > b + 30) return 'farm';
   if (b > r + 3 && b > g - 10) return 'water';
   
   // Refined road detection:
@@ -95,7 +95,11 @@ class MinHeap {
 
 function partitionTilePixels(tilePixels, width, height, tile) {
   const allFeatureSeeds = [];
-  tile.features.cities.forEach((f, i) => allFeatureSeeds.push({ type: 'city', fIdx: i, logicalSeeds: f.edges.map(e => EDGE_SEEDS[e]) }));
+  tile.features.cities.forEach((f, i) => {
+    const logicalSeeds = f.edges.map(e => EDGE_SEEDS[e]);
+    if (logicalSeeds.length === 0) logicalSeeds.push(CENTER_COORD);
+    allFeatureSeeds.push({ type: 'city', fIdx: i, logicalSeeds });
+  });
   tile.features.roads.forEach((f, i) => {
     const logicalSeeds = f.edges.map(e => EDGE_SEEDS[e]);
     // Add center seed for junction-heavy and bridge tiles to ensure road masks meet and block farms
